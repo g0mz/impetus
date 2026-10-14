@@ -40,8 +40,8 @@ sudo apt update && sudo apt -y upgrade
 sudo apt -y install build-essential python3 git sqlite3 rclone unattended-upgrades
 sudo dpkg-reconfigure -plow unattended-upgrades
 
-# Node 22 LTS (nodesource ou fnm)
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+# Node 24 LTS (nodesource ou fnm)
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt -y install nodejs
 
 # usuário de serviço

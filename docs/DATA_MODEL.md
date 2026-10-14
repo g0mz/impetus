@@ -94,7 +94,8 @@ CREATE TABLE exercises (
   source TEXT NOT NULL,               -- 'free-exercise-db' | 'custom'
   source_id TEXT,
   created_at TEXT NOT NULL,
-  deleted_at TEXT
+  deleted_at TEXT,
+  UNIQUE (source, source_id)          -- seeds idempotentes (D-010)
 );
 
 CREATE TABLE exercise_aliases (
@@ -102,8 +103,9 @@ CREATE TABLE exercise_aliases (
   exercise_id INTEGER NOT NULL REFERENCES exercises(id),
   origin TEXT NOT NULL                -- 'seed' | 'user' | 'llm'
 );
-CREATE VIRTUAL TABLE exercises_fts USING fts5(name_pt, name_en, aliases, content='');
--- manter sincronizado via código (rebuild após seeds e inserts)
+-- conteúdo próprio (não contentless), rowid = exercises.id; mantido pelo código (D-005)
+CREATE VIRTUAL TABLE exercises_fts USING fts5(name_pt, name_en, aliases,
+                                              tokenize="unicode61 remove_diacritics 2");
 
 CREATE TABLE routines (
   id INTEGER PRIMARY KEY,
@@ -191,19 +193,23 @@ CREATE TABLE foods (
   fat_100g REAL NOT NULL,
   fiber_100g REAL,
   sodium_mg_100g REAL,
-  is_prepared INTEGER NOT NULL DEFAULT 0, -- cozido/grelhado/assado vs. cru
+  is_prepared INTEGER NOT NULL DEFAULT 0, -- cozido/grelhado/assado vs. cru (heurística, D-011)
   created_at TEXT NOT NULL,
-  deleted_at TEXT
+  deleted_at TEXT,
+  UNIQUE (source, source_id)          -- seeds idempotentes (D-010)
 );
 CREATE VIRTUAL TABLE foods_fts USING fts5(name, brand, content='foods', content_rowid='id',
                                           tokenize="unicode61 remove_diacritics 2");
+-- external content: triggers foods_ai / foods_ad / foods_au mantêm o índice (D-006)
 
 CREATE TABLE food_portions (          -- medidas caseiras e porções nomeadas
   id INTEGER PRIMARY KEY,
-  food_id INTEGER REFERENCES foods(id), -- NULL = medida genérica
+  food_id INTEGER REFERENCES foods(id), -- NULL = medida não ligada a alimento da tabela
+  food_name TEXT,                     -- nome do alimento na fonte (ex.: IBGE) quando food_id é NULL (D-009)
   label TEXT NOT NULL,                -- 'concha média', 'colher de sopa cheia', 'scoop', 'unidade média'
   grams REAL NOT NULL,
-  source TEXT NOT NULL                -- 'ibge' | 'user' | 'label'
+  source TEXT NOT NULL,               -- 'ibge' | 'user' | 'label'
+  source_ref TEXT                     -- procedência (página do PDF, medida, referência) (D-009)
 );
 
 CREATE TABLE meals (
@@ -250,18 +256,9 @@ CREATE TABLE meal_corrections (       -- memória de aprendizado
   created_at TEXT NOT NULL
 );
 
--- Priors pessoais: porções típicas do usuário por rótulo normalizado, últimos 120 dias
-CREATE VIEW v_food_priors AS
-SELECT label_norm,
-       COUNT(*) AS n,
-       -- mediana calculada no código (SQLite não tem MEDIAN); a view entrega a base
-       group_concat(grams) AS grams_list,
-       MAX(created_at) AS last_seen
-FROM meal_items
-WHERE deleted_at IS NULL
-  AND origin IN ('user_stated','corrected','label')
-  AND created_at >= datetime('now','-120 days')
-GROUP BY label_norm;
+-- Priors pessoais (D-007): sem view. Mediana, p25 e p75 dos itens 'user_stated' | 'corrected' | 'label'
+-- dos últimos 120 dias são calculados em domain/nutrition/priors.ts, com `now` como parâmetro.
+CREATE INDEX idx_meal_items_priors ON meal_items(label_norm, created_at);
 ```
 
 ## 4. Corpo e saúde
@@ -298,8 +295,9 @@ CREATE TABLE health_samples (         -- normalizado, uma linha por amostra/inte
   end_at TEXT,
   value REAL,                         -- unidade padrão do tipo
   extra TEXT,                         -- JSON (ex.: estágios do sono)
-  external_key TEXT NOT NULL UNIQUE,  -- type|start|end|value → idempotência entre reenvios
-  created_at TEXT NOT NULL
+  external_key TEXT NOT NULL UNIQUE,  -- type|start|end → idempotência; reenvio atualiza o valor (upsert, D-008)
+  created_at TEXT NOT NULL,
+  updated_at TEXT
 );
 CREATE INDEX idx_hs_type_start ON health_samples(type, start_at);
 
@@ -366,7 +364,7 @@ CREATE TABLE job_runs (
 
 | Seed | Fonte | Observação |
 |---|---|---|
-| `foods` (TACO) | TACO 4ª ed. (NEPA/Unicamp). Planilha oficial ou dados do repositório `raulfdm/taco-api` | Importer em `scripts/seed-taco.ts`. Valores "Tr"/"NA"/"*" viram 0 ou NULL conforme o campo. Validar contagem e 5 alimentos de amostra contra a tabela oficial |
-| `food_portions` | IBGE — Tabela de medidas referidas para os alimentos consumidos no Brasil (POF 2008–2009) | Só as ~60 medidas mais comuns (arroz, feijão, carnes, pão, ovos, frutas, leite). Conferir cada valor na fonte; **não inventar gramaturas** |
-| `exercises` | `yuhonas/free-exercise-db` (domínio público) | Importar todos com `name_en`; `seeds/exercises_ptbr.csv` cobre ~80 exercícios comuns com `name_pt`, aliases, `load_kind`, `increment_kg`, `is_compound` |
+| `foods` (TACO) | TACO 4ª ed. (NEPA/Unicamp), CSVs do `raulfdm/taco-api` versionados em `seeds/vendor/taco/` e conferidos contra o PDF oficial (D-013) | `src/seeds/taco.ts`. "Tr" = 0; macros NA/* = 0; fibra/sódio NA/* = NULL. 591 de 597 itens: 6 sem energia na fonte não entram (inclui leite integral) |
+| `food_portions` | IBGE — Tabela de medidas referidas para os alimentos consumidos no Brasil (POF 2008–2009), `liv50000.pdf` | `seeds/portions_ibge.csv`: 84 medidas comuns, cada uma conferida no PDF, com página e referência. **Não inventar gramaturas** |
+| `exercises` | `yuhonas/free-exercise-db` (domínio público), versionado em `seeds/vendor/free-exercise-db/` | Importa os 876; `seeds/exercises_ptbr.csv` sobrescreve ~100 exercícios comuns com `name_pt`, aliases, `load_kind`, `increment_kg`, `is_compound` e músculos (D-012) |
 | `exercise_aliases` | `seeds/exercises_ptbr.csv` | Ex.: "sup inc", "supino inclinado", "supino inclinado halter" → mesmo id |

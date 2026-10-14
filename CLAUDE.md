@@ -2,13 +2,13 @@
 
 Assistente pessoal de treino, nutrição e saúde via WhatsApp para **um usuário**. Roda numa VM Oracle A1 (arm64) gratuita. O "cérebro" em produção é o Claude Code headless (`claude -p`), que acessa dados apenas por tools MCP deste app.
 
-> Este arquivo orienta **você, Claude Code, desenvolvendo o projeto**. Ele **não** é lido pelo coach em produção (o coach roda com cwd `data/brain/` e `--system-prompt-file runtime/prompts/system.md`).
+> Este arquivo orienta **você, Claude Code, desenvolvendo o projeto**. Ele **não** é lido pelo coach em produção (o coach roda com cwd `BRAIN_DIR`, fora do repositório, e `--system-prompt-file runtime/prompts/system.md`).
 
 ## Fonte da verdade
 Leia antes de implementar qualquer fase e siga à risca. Em conflito, a ordem de precedência é: `docs/TASKS.md` (escopo da fase) > `docs/ARCHITECTURE.md` > `docs/DATA_MODEL.md` / `docs/TOOLS.md` > `docs/SPEC.md`. Se uma spec estiver errada ou inviável, **pare e explique** antes de desviar; registre a decisão em `docs/DECISIONS.md`.
 
 ## Stack
-Node 22 LTS · TypeScript ESM estrito · better-sqlite3 (WAL) · zod · @modelcontextprotocol/sdk (streamable HTTP) · hono · baileys (versão fixada) · croner · p-queue · execa · sharp · pino · vitest.
+Node 24 LTS (TypeScript nativo, sem tsx) · TypeScript 6 ESM estrito · better-sqlite3 (WAL) · zod · @modelcontextprotocol/sdk (streamable HTTP) · hono · baileys (versão fixada) · croner · p-queue · execa · sharp · pino · vitest.
 
 ## Comandos
 - `npm run dev`: app com canal definido em `CHANNEL` (use `terminal` localmente)
@@ -17,6 +17,8 @@ Node 22 LTS · TypeScript ESM estrito · better-sqlite3 (WAL) · zod · @modelco
 - `npm run db:migrate` / `npm run db:seed`
 - `npm run eval`: evals contra o cérebro real (consome cota; rode só quando pedido ou ao fechar a Fase 3/5)
 - `npm run wa:link`: vincula o número do bot (pairing code ou QR)
+
+TypeScript roda direto no Node (type stripping): imports relativos com `.ts`, `import type` para tipos, sem `enum`/`namespace`/parameter properties (ver `docs/DECISIONS.md` D-003).
 
 ## Regras de arquitetura
 1. **Matemática no código.** Macros, somas, e1RM, médias, tendências e correlações são funções puras em `src/domain/` com testes. O LLM nunca calcula.

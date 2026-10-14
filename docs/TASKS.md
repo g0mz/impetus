@@ -7,7 +7,7 @@ Cada fase termina **utilizável e testada**. Não avance com testes falhando. Ao
 ```
 impetus/
 ├─ CLAUDE.md
-├─ package.json · tsconfig.json · vitest.config.ts · .eslintrc.cjs · .gitignore
+├─ package.json · tsconfig.json · tsconfig.build.json · vitest.config.ts · eslint.config.js · .gitignore
 ├─ docs/                      (este kit)
 ├─ runtime/
 │  ├─ prompts/system.md       (system prompt do coach)
@@ -16,9 +16,11 @@ impetus/
 │  └─ deploy/impetus.service
 ├─ seeds/
 │  ├─ exercises_ptbr.csv      (~80 exercícios comuns, aliases, load_kind, increment_kg)
-│  └─ portions_ibge.csv       (medidas caseiras conferidas na fonte)
+│  ├─ portions_ibge.csv       (medidas caseiras conferidas na fonte)
+│  └─ vendor/                 (TACO e free-exercise-db versionados + manifest.json com sha256; D-013)
 ├─ scripts/
-│  ├─ seed-taco.ts · seed-exercises.ts · seed-portions.ts
+│  ├─ db-migrate.ts · db-seed.ts (lógica dos seeds em src/seeds/)
+│  ├─ provenance/             (scripts Python que conferiram TACO e IBGE nos PDFs oficiais)
 │  ├─ wa-link.ts              (vincular número do bot)
 │  ├─ chat.ts                 (REPL no terminal usando o cérebro real)
 │  ├─ eval.ts                 (roda evals/ contra o cérebro real)
@@ -26,9 +28,12 @@ impetus/
 ├─ evals/cases/*.yaml         (conversas de referência + asserções no banco)
 ├─ src/
 │  ├─ main.ts                 (bootstrap: config, db, mcp, ingest, canal, scheduler)
+│  ├─ cli.ts                  (erro de configuração vira mensagem limpa)
 │  ├─ config.ts               (zod sobre process.env)
 │  ├─ logger.ts
 │  ├─ time.ts                 (fuso, local_date com cutoff)
+│  ├─ text/normalize.ts       (normalize() e consultas FTS)
+│  ├─ seeds/                  (TACO, exercícios, medidas IBGE, verificação do manifest)
 │  ├─ db/ index.ts · migrate.ts · migrations/NNN_*.sql · repos/*.ts
 │  ├─ domain/
 │  │  ├─ training/ parse-helpers.ts · progression.ts · prs.ts · volume.ts
@@ -46,23 +51,23 @@ impetus/
 │  ├─ reports/ build.ts · render-fallback.ts · charts.ts
 │  └─ scheduler/ jobs.ts
 ├─ tests/ unit/ · integration/ · fixtures/
-└─ data/                      (gitignored: impetus.db, media/, wa-auth/, backups/, brain/)
+└─ data/                      (gitignored: impetus.db, media/, wa-auth/, backups/; o cwd do cérebro fica em BRAIN_DIR, fora do repo)
 ```
 
 ---
 
 ## Fase 0 — Fundação
 
-- [ ] Scaffold Node 22 + TS (ESM), eslint, prettier, vitest, scripts npm: `dev`, `build`, `check`, `db:migrate`, `db:seed`, `chat`, `eval`, `wa:link`, `logs:pretty` (os dois últimos podem ser stubs até a Fase 2).
-- [ ] `config.ts` com zod; falha clara se faltar variável.
-- [ ] `time.ts`: `toLocalDate(utc, cutoffHour)`, formatação pt-BR, testes cobrindo virada à meia-noite, 04:00 e horário de verão (o Brasil não tem DST desde 2019, mas não codifique esse pressuposto; use a base de fusos).
-- [ ] DB: conexão, PRAGMAs, migrations de **todo** o DATA_MODEL.md.
+- [x] Scaffold Node 24 + TS (ESM), eslint, prettier, vitest, scripts npm: `dev`, `build`, `check`, `db:migrate`, `db:seed`, `chat`, `eval`, `wa:link`, `logs:pretty` (os dois últimos podem ser stubs até a Fase 2).
+- [x] `config.ts` com zod; falha clara se faltar variável.
+- [x] `time.ts`: `toLocalDate(utc, cutoffHour)`, formatação pt-BR, testes cobrindo virada à meia-noite, 04:00 e horário de verão (o Brasil não tem DST desde 2019, mas não codifique esse pressuposto; use a base de fusos).
+- [x] DB: conexão, PRAGMAs, migrations de **todo** o DATA_MODEL.md.
 - [ ] Seeds:
   - TACO: importer com validação (contagem e 5 alimentos conferidos contra a tabela oficial, registrados no teste).
   - free-exercise-db: download via script, mapeamento de músculos para o vocabulário fixo.
   - `seeds/exercises_ptbr.csv`: gerar uma proposta com ~80 exercícios comuns de academia brasileira e **pausar para revisão do usuário** antes de commitar.
   - `seeds/portions_ibge.csv`: só valores conferidos na fonte IBGE, com coluna `fonte_pagina`. Valor não confirmado não entra.
-- [ ] FTS de alimentos e exercícios; função `normalize()` (minúsculas, sem acento, espaços).
+- [x] FTS de alimentos e exercícios; função `normalize()` (minúsculas, sem acento, espaços).
 
 **Aceite:** `npm run db:migrate && npm run db:seed` num banco vazio; `search_foods("arroz cozido")` e `search_exercises("sup inc")` (direto pelos repos) retornam resultados corretos; `npm run check` verde.
 

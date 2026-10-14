@@ -7,7 +7,7 @@ Um único processo Node.js (`impetus`) roda na VPS sob systemd. O "cérebro" é 
 ```
  Celular (dono)                         VPS Oracle A1 (Ubuntu 24.04 arm64)
  ┌──────────────┐                 ┌────────────────────────────────────────────────────┐
- │ WhatsApp     │◄──── WA Web ───►│ impetus (Node 22, 1 processo)                      │
+ │ WhatsApp     │◄──── WA Web ───►│ impetus (Node 24, 1 processo)                      │
  │ (seu número) │   (Baileys)     │                                                    │
  └──────────────┘                 │  channels/whatsapp ─► gateway/inbox ─► debounce     │
                                   │                            │                       │
@@ -52,7 +52,7 @@ Um único processo Node.js (`impetus`) roda na VPS sob systemd. O "cérebro" é 
 
 | Camada | Escolha |
 |---|---|
-| Runtime | Node.js 22 LTS, TypeScript (ESM), `tsx` em dev, `tsc` no build |
+| Runtime | Node.js 24 LTS, TypeScript (ESM) executado nativamente em dev e scripts, `tsc` no build (D-003) |
 | WhatsApp | `baileys` (WhiskeySockets), **versão fixada** no lockfile |
 | DB | `better-sqlite3` com WAL, `busy_timeout=5000`, `foreign_keys=ON`, FTS5 |
 | Validação | `zod` |
@@ -145,7 +145,7 @@ MCP inline, gerado por turno:
 ```
 
 Regras:
-- **Diretório de trabalho do processo filho:** `data/brain/`, uma pasta vazia **sem CLAUDE.md**. O `CLAUDE.md` do repositório é para o Claude Code que *desenvolve* o projeto e não pode vazar para o coach.
+- **Diretório de trabalho do processo filho:** `BRAIN_DIR` (padrão `~/.local/state/impetus/brain`), uma pasta vazia **fora do repositório**. O `claude` procura `CLAUDE.md` subindo a partir do cwd, então uma pasta dentro do repo herdaria o `CLAUDE.md` de desenvolvimento (D-004). `loadConfig` recusa `BRAIN_DIR` dentro do repo.
 - **Não usar `--bare`.** O modo bare lê apenas API key ou apiKeyHelper e não usa o token OAuth da assinatura. Verifique na documentação atual antes de mudar.
 - `--system-prompt-file` **substitui** o prompt padrão do Claude Code. O coach não é um agente de código; a documentação recomenda substituição nesse caso.
 - `--tools "Read"` deixa só o Read como ferramenta nativa, para ver as imagens. Sem Bash, Edit ou WebFetch.
