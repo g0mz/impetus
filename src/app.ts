@@ -10,6 +10,7 @@ import { openDb } from './db/index.ts';
 import { migrate } from './db/migrate.ts';
 import { countExercises } from './db/repos/exercises.ts';
 import { createInbox } from './gateway/inbox.ts';
+import { createIngestApp, startIngestServer } from './ingest/http.ts';
 import { createOwnerGuard } from './gateway/owner-pairing.ts';
 import { createTurnRunner } from './gateway/turn-runner.ts';
 import type { Logger } from './logger.ts';
@@ -74,6 +75,13 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     config.MCP_PORT,
   );
   const brain = createBrain(config, mcp.url, logger);
+  const ingestApp = createIngestApp({
+    db,
+    apiKey: config.INGEST_API_KEY,
+    settings,
+    logger: logger.child({ mod: 'ingest' }),
+  });
+  const ingest = await startIngestServer(ingestApp, config.INGEST_PORT);
 
   const owner = createOwnerGuard(db, logger.child({ mod: 'owner' }));
   let channel: Channel;
@@ -112,7 +120,10 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       : { owner, debounceMs: config.DEBOUNCE_MS, debounceImageMs: config.DEBOUNCE_IMAGE_MS }),
     ...(config.CLAUDE_TOKEN_EXPIRES_AT ? { claudeTokenExpiresAt: config.CLAUDE_TOKEN_EXPIRES_AT } : {}),
   });
-  logger.info({ channel: channel.name, brain: brain.name, mcp: mcp.url }, 'impetus iniciado');
+  logger.info(
+    { channel: channel.name, brain: brain.name, mcp: mcp.url, ingest: ingest.url },
+    'impetus iniciado',
+  );
 
   const done = channel.start(async (m) => {
     try {
@@ -129,6 +140,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       await channel.stop();
       await handle.drain();
       await mcp.close();
+      await ingest.close();
       db.close();
     },
   };

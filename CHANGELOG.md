@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 4 — Saúde (Health Connect via HC Webhook) (2026-10-14)
+
+#### Adicionado
+- `POST /ingest/health` (Hono, 127.0.0.1): `X-Api-Key` com comparação em tempo constante, até 1 MB, 60 req/min,
+  bruto em `health_raw` com dedupe por SHA-256, normalização numa fila interna; `GET /healthz`.
+- Normalização (D-025): passos, sono com estágios, FC (amostra ou agregado), FC de repouso, HRV, calorias ativas e
+  totais, distância, SpO₂, peso e % de gordura (`body_metrics`), exercícios (`cardio_sessions`); outros tipos ficam
+  só no bruto.
+- `health_daily` recalculado por dia afetado; tool `get_health_range`; `get_day_summary` com passos e sono.
+- Alerta `hc_stale` (1 por ocorrência).
+- `npm run hc:fixture`: exporta o último payload real anonimizado para `tests/fixtures/`.
+
+#### Pendente (dono)
+- Configurar o HC Webhook, capturar um payload real e rodar `npm run hc:fixture` para validar o mapeamento.
+
 ### Fase 3 — Nutrição (2026-10-14)
 
 #### Adicionado

@@ -151,6 +151,19 @@ gordura de preparo. O system prompt passou a exigir um item com o total e `text_
 óleo/manteiga obrigatório (exceto quando o alimento da tabela já é o preparo com gordura). Após o ajuste, 9/9 casos
 de texto passam com o haiku. Fotos continuam no `MODEL_VISION`.
 
+### D-025 — Formato do HC Webhook conferido no código-fonte do app (2026-10-14, Fase 4; provisório até o payload real)
+Sem payload real ainda, o mapeamento seguiu `docs/webhook.md` e o código do app (`SyncManager.kt`,
+`HealthConnectManager.kt`), conferidos com as constantes do AndroidX:
+- Estágio do sono = `stage.toString()` do AndroidX (inteiro como texto): 0 desconhecido, 1 acordado, 2 dormindo,
+  3 fora da cama, 4 leve, 5 profundo, 6 REM, 7 acordado na cama. O payload de teste do app usa nomes ("deep");
+  aceitamos os dois. Minutos de sono = soma dos estágios exceto acordado/fora da cama.
+- Tipo de exercício = `EXERCISE_TYPE_*` como texto (56 corrida, 57 esteira, 70/81 musculação…); força vira cardio
+  "musculação (relógio)" só como referência de duração.
+- FC/HRV/SpO₂ podem vir como agregados de N minutos (`avg/min/max`): usamos `avg`.
+- O JSON não traz id de registro: idempotência por `type|start|end` (D-008).
+- Dia contábil: intervalos pelo ponto médio; sono pelo fim da sessão.
+- Risco a validar com o payload real: passos agregados por dia somados a intervalos finos (contagem dupla).
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

@@ -1,0 +1,36 @@
+{
+  "_comment": "SINTÉTICO — montado a partir de docs/webhook.md do HC Webhook (sem dados reais). Substituir por payload real anonimizado (Fase 4).",
+  "timestamp": "2026-10-13T12:00:00.123Z",
+  "app_version": "1.9.0",
+  "steps": [
+    { "count": 3200, "start_time": "2026-10-13T10:00:00Z", "end_time": "2026-10-13T11:00:00Z" },
+    { "count": 1800, "start_time": "2026-10-13T11:00:00Z", "end_time": "2026-10-13T12:00:00Z" }
+  ],
+  "sleep": [
+    {
+      "session_end_time": "2026-10-13T10:00:00Z",
+      "duration_seconds": 27000,
+      "stages": [
+        { "stage": "4", "start_time": "2026-10-13T02:30:00Z", "end_time": "2026-10-13T04:30:00Z", "duration_seconds": 7200 },
+        { "stage": "5", "start_time": "2026-10-13T04:30:00Z", "end_time": "2026-10-13T06:00:00Z", "duration_seconds": 5400 },
+        { "stage": "1", "start_time": "2026-10-13T06:00:00Z", "end_time": "2026-10-13T06:20:00Z", "duration_seconds": 1200 },
+        { "stage": "6", "start_time": "2026-10-13T06:20:00Z", "end_time": "2026-10-13T08:00:00Z", "duration_seconds": 6000 },
+        { "stage": "4", "start_time": "2026-10-13T08:00:00Z", "end_time": "2026-10-13T10:00:00Z", "duration_seconds": 7200 }
+      ]
+    }
+  ],
+  "heart_rate": [
+    { "time": "2026-10-13T11:00:00Z", "avg": 70, "min": 64, "max": 80, "bpm": 70 },
+    { "time": "2026-10-13T11:01:00Z", "avg": 74, "min": 70, "max": 79, "bpm": 74 }
+  ],
+  "resting_heart_rate": [{ "bpm": 56, "time": "2026-10-13T10:00:00Z" }],
+  "heart_rate_variability": [{ "rmssd_millis": 48.5, "time": "2026-10-13T09:00:00Z" }],
+  "active_calories": [{ "calories": 210.4, "start_time": "2026-10-13T10:00:00Z", "end_time": "2026-10-13T12:00:00Z" }],
+  "weight": [{ "kilograms": 74.2, "time": "2026-10-13T10:30:00Z" }],
+  "body_fat": [{ "percentage": 17.8, "time": "2026-10-13T10:30:00Z" }],
+  "exercise": [
+    { "type": "56", "start_time": "2026-10-13T11:00:00Z", "end_time": "2026-10-13T11:30:00Z", "duration_seconds": 1800, "distance_meters": 5000 },
+    { "type": "70", "start_time": "2026-10-13T21:00:00Z", "end_time": "2026-10-13T22:00:00Z", "duration_seconds": 3600 }
+  ],
+  "menstruation_flow": [{ "flow": 2, "time": "2026-10-13T10:00:00Z" }]
+}

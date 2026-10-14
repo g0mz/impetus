@@ -117,10 +117,10 @@ impetus/
 
 ## Fase 4 — Saúde (Health Connect)
 
-- [ ] `ingest/http.ts`: `POST /ingest/health` (X-Api-Key, rate limit, 1 MB máx.), `GET /healthz`.
-- [ ] `health_raw` com dedupe; normalização para `health_samples`; recálculo de `health_daily`; peso para `body_metrics`; exercícios para `cardio_sessions`.
-- [ ] Capturar **um payload real** do HC Webhook, anonimizar e salvar como fixture; ajustar o mapeamento de estágios do sono a partir dele.
-- [ ] Alerta `hc_stale`.
+- [x] `ingest/http.ts`: `POST /ingest/health` (X-Api-Key, rate limit, 1 MB máx.), `GET /healthz`.
+- [x] `health_raw` com dedupe; normalização para `health_samples`; recálculo de `health_daily`; peso para `body_metrics`; exercícios para `cardio_sessions`.
+- [ ] (dono) Capturar **um payload real** (`npm run hc:fixture` gera o fixture anonimizado) do HC Webhook, anonimizar e salvar como fixture; ajustar o mapeamento de estágios do sono a partir dele.
+- [x] Alerta `hc_stale` (função pronta; disparo agendado na Fase 5).
 
 **Aceite:** reenvio do mesmo payload não duplica nada; `get_day_summary` mostra passos e sono do relógio; sono que termina às 07:00 conta no dia contábil correto.
 

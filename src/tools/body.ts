@@ -182,4 +182,59 @@ export const getDaySummaryTool = defineTool({
     ),
 });
 
-export const bodyTools = [setGoalTool, getGoalsTool, getDaySummaryTool];
+const HEALTH_FIELDS = ['steps', 'sleep', 'resting_hr', 'hrv', 'active_kcal', 'weight'] as const;
+
+export const getHealthRangeTool = defineTool({
+  name: 'get_health_range',
+  scope: 'read',
+  description:
+    'Dados do relógio por dia (passos, sono, FC de repouso, HRV, calorias ativas) e peso, num intervalo de até 120 dias. ' +
+    'Ex.: { "from": "2026-10-01", "to": "2026-10-13", "fields": ["sleep", "steps"] }.',
+  input: z
+    .object({
+      from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      fields: z.array(z.enum(HEALTH_FIELDS)).min(1).optional(),
+    })
+    .refine((v) => v.from <= v.to, 'from depois de to')
+    .refine(
+      (v) => (new Date(v.to).getTime() - new Date(v.from).getTime()) / 86400_000 <= 120,
+      'máximo de 120 dias',
+    ),
+  handler: (ctx, { from, to, fields }) => {
+    const want = new Set(fields ?? HEALTH_FIELDS);
+    const rows = ctx.db
+      .prepare('SELECT * FROM health_daily WHERE local_date BETWEEN ? AND ? ORDER BY local_date')
+      .all(from, to) as Record<string, number | string | null>[];
+    const weights = new Map(
+      (
+        ctx.db
+          .prepare(
+            `SELECT local_date, weight_kg FROM body_metrics WHERE weight_kg IS NOT NULL AND deleted_at IS NULL
+               AND local_date BETWEEN ? AND ? ORDER BY measured_at`,
+          )
+          .all(from, to) as { local_date: string; weight_kg: number }[]
+      ).map((w) => [w.local_date, w.weight_kg]),
+    );
+    const dates = [...new Set([...rows.map((r) => r.local_date as string), ...weights.keys()])].sort();
+    const byDate = new Map(rows.map((r) => [r.local_date as string, r]));
+    const days = dates.map((d) => {
+      const r = byDate.get(d);
+      const out: Record<string, unknown> = { local_date: d };
+      if (r && want.has('steps') && r.steps != null) out.steps = r.steps;
+      if (r && want.has('sleep') && r.sleep_minutes != null) {
+        out.sleep_minutes = r.sleep_minutes;
+        for (const k of ['sleep_deep_min', 'sleep_rem_min', 'sleep_light_min', 'sleep_awake_min'] as const)
+          if (r[k] != null) out[k] = r[k];
+      }
+      if (r && want.has('resting_hr') && r.resting_hr != null) out.resting_hr = r.resting_hr;
+      if (r && want.has('hrv') && r.hrv_rmssd_ms != null) out.hrv_rmssd_ms = r.hrv_rmssd_ms;
+      if (r && want.has('active_kcal') && r.active_kcal != null) out.active_kcal = r.active_kcal;
+      if (want.has('weight') && weights.has(d)) out.weight_kg = weights.get(d);
+      return out;
+    });
+    return ok({ days: days.filter((d) => Object.keys(d).length > 1) });
+  },
+});
+
+export const bodyTools = [setGoalTool, getGoalsTool, getDaySummaryTool, getHealthRangeTool];
