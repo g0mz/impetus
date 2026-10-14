@@ -75,7 +75,7 @@ const schema = z
     }
   });
 
-export type Config = z.infer<typeof schema> & { dbPath: string; mediaDir: string };
+export type Config = z.infer<typeof schema> & { dbPath: string; mediaDir: string; waAuthDir: string };
 
 /** Raiz do repositório (este arquivo vive em src/ ou dist/). */
 export const REPO_ROOT = path.resolve(import.meta.dirname, '..');
@@ -110,5 +110,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dbPath: path.join(dataDir, 'impetus.db'),
     BRAIN_DIR: brainDir,
     mediaDir: path.join(dataDir, 'media'),
+    waAuthDir: path.join(dataDir, 'wa-auth'),
   };
 }

@@ -3,12 +3,14 @@ import path from 'node:path';
 import { createClaudeCliBrain } from './brain/claude-cli.ts';
 import { noneBrain, type Brain } from './brain/types.ts';
 import { createTerminalChannel } from './channels/terminal.ts';
+import { createWhatsAppChannel } from './channels/whatsapp-baileys.ts';
 import type { Channel } from './channels/types.ts';
 import { REPO_ROOT, type Config } from './config.ts';
 import { openDb } from './db/index.ts';
 import { migrate } from './db/migrate.ts';
 import { countExercises } from './db/repos/exercises.ts';
 import { createInbox } from './gateway/inbox.ts';
+import { createOwnerGuard } from './gateway/owner-pairing.ts';
 import { createTurnRunner } from './gateway/turn-runner.ts';
 import type { Logger } from './logger.ts';
 import { MCP_SERVER_NAME, createTokenStore, startMcpServer } from './mcp/server.ts';
@@ -73,10 +75,20 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
   );
   const brain = createBrain(config, mcp.url, logger);
 
+  const owner = createOwnerGuard(db, logger.child({ mod: 'owner' }));
   let channel: Channel;
   if (channelOverride) channel = channelOverride;
   else if (config.CHANNEL === 'terminal') channel = createTerminalChannel({ mediaDir: config.mediaDir });
-  else throw new Error(`CHANNEL=${config.CHANNEL} ainda não implementado (Fase 2)`);
+  else if (config.CHANNEL === 'whatsapp')
+    channel = createWhatsAppChannel({
+      authDir: config.waAuthDir,
+      mediaDir: config.mediaDir,
+      sendMinIntervalMs: config.WA_SEND_MIN_INTERVAL_MS,
+      logger: logger.child({ mod: 'whatsapp' }),
+      defaultTo: () => owner.defaultChat(),
+    });
+  else throw new Error(`CHANNEL=${config.CHANNEL} ainda não implementado (Fase 7)`);
+  const isTerminal = channel.name === 'terminal';
 
   const runTurn = createTurnRunner({
     db,
@@ -95,6 +107,10 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     settings,
     runTurn,
     logger: logger.child({ mod: 'inbox' }),
+    ...(isTerminal
+      ? {}
+      : { owner, debounceMs: config.DEBOUNCE_MS, debounceImageMs: config.DEBOUNCE_IMAGE_MS }),
+    ...(config.CLAUDE_TOKEN_EXPIRES_AT ? { claudeTokenExpiresAt: config.CLAUDE_TOKEN_EXPIRES_AT } : {}),
   });
   logger.info({ channel: channel.name, brain: brain.name, mcp: mcp.url }, 'impetus iniciado');
 
@@ -111,6 +127,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     done,
     async stop() {
       await channel.stop();
+      await handle.drain();
       await mcp.close();
       db.close();
     },

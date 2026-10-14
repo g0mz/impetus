@@ -68,7 +68,7 @@ async function setup(makeScript: (ex: Record<string, number>) => Script) {
     start: async () => {},
     send: async (text) => {
       sent.push(text);
-      return { externalId: `out-${++n}` };
+      return { externalIds: [`out-${++n}`] };
     },
     stop: async () => {},
   };

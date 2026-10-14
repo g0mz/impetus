@@ -93,16 +93,16 @@ impetus/
 
 ## Fase 2 — WhatsApp
 
-- [ ] `channels/whatsapp-baileys.ts`: conexão, reconexão com backoff, envio com intervalo mínimo, reação, presença, download de mídia, `stanzaId` da mensagem citada.
-- [ ] `scripts/wa-link.ts` (pairing code e QR).
-- [ ] Pareamento do dono (`PAREAR <código>`), allowlist com JID e LID.
-- [ ] Inbox idempotente, debounce (ARCHITECTURE.md §4.2), fila serial, 👀 + "digitando…".
-- [ ] `message_links` e correção por citação.
-- [ ] Imagens: sharp (lado maior 1568 px, JPEG q85, sem EXIF).
-- [ ] Mensagens grandes divididas em até 3 partes, respeitando quebras de linha.
-- [ ] `/status` (WhatsApp, último turno, custo estimado do dia, último backup, último sync de saúde).
+- [x] `channels/whatsapp-baileys.ts`: conexão, reconexão com backoff, envio com intervalo mínimo, reação, presença, download de mídia, `stanzaId` da mensagem citada.
+- [x] `scripts/wa-link.ts` (pairing code e QR).
+- [x] Pareamento do dono (`PAREAR <código>`), allowlist com JID e LID.
+- [x] Inbox idempotente, debounce (ARCHITECTURE.md §4.2), fila serial, 👀 + "digitando…".
+- [x] `message_links` e correção por citação.
+- [x] Imagens: sharp (lado maior 1568 px, JPEG q85, sem EXIF).
+- [x] Mensagens grandes divididas em até 3 partes, respeitando quebras de linha.
+- [x] `/status` (WhatsApp, último turno, custo estimado do dia, último backup, último sync de saúde).
 
-**Aceite:** do celular, os 5 cenários da Fase 1 funcionam via WhatsApp; mensagem de número não pareado é ignorada; foto seguida de texto em 10 s vira um turno só; reinício do serviço não perde mensagens nem exige novo vínculo.
+**Aceite** (manual pelo celular: `docs/MANUAL_TEST_WHATSAPP.md`): do celular, os 5 cenários da Fase 1 funcionam via WhatsApp; mensagem de número não pareado é ignorada; foto seguida de texto em 10 s vira um turno só; reinício do serviço não perde mensagens nem exige novo vínculo.
 
 ## Fase 3 — Nutrição
 

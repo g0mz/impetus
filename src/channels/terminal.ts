@@ -90,7 +90,7 @@ export function createTerminalChannel(opts: TerminalOptions): Channel {
       const externalId = `term-${runId}-out-${n}`;
       outIds.set(n, externalId);
       print(`impetus [${n}]> ${text}`);
-      return { externalId };
+      return { externalIds: [externalId] };
     },
     async stop() {
       rl?.close();

@@ -126,6 +126,12 @@ Testado com o CLI 2.1.224 logado, com o `ClaudeCliBrain` real contra um MCP real
 `search_exercises` aceita `queries: string[]` (até 10) além de `query`, devolvendo os resultados por consulta, para
 um treino com vários exercícios caber no `--max-turns`.
 
+### D-020 — Baileys 7.0.0-rc14 fixado (2026-10-14, Fase 2)
+A tag `latest` do pacote oficial `baileys` (WhiskeySockets) já é a 7.0.0-rc14; a 6.7.x virou `legacy`. Fixamos a
+rc14 (suporte a LID: `remoteJidAlt`/`participantAlt`) com versão exata no lockfile. Atualizar só após ler o changelog.
+Áudio é ignorado até a Fase 7 (transcrição). O pareamento grava todos os identificadores do remetente e aprende
+novos (JID ↔ LID) quando chegam junto de um já conhecido.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — Latência e `--max-turns 15` em refeições com foto.** Aplicar a `search_foods` e `get_portions` o mesmo

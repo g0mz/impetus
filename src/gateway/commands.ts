@@ -11,9 +11,16 @@ import { GOAL_LABELS, t } from '../i18n/pt-br.ts';
 import { GOAL_ALIASES, GOAL_KEYS, getGoals, type GoalKey } from '../tools/body.ts';
 import { callTool, type Registry, type ToolSettings } from '../tools/registry.ts';
 import { computeTargets } from '../tools/training.ts';
-import { formatDayMonth } from '../time.ts';
+import { formatDayMonth, localDayBounds, toLocalDate } from '../time.ts';
 
-export type CommandContext = { db: Db; registry: Registry; settings: ToolSettings; now: string };
+export type CommandContext = {
+  db: Db;
+  registry: Registry;
+  settings: ToolSettings;
+  now: string;
+  channelStatus?: () => string;
+  claudeTokenExpiresAt?: string;
+};
 export type CommandResult = { text: string; turnId?: number };
 
 /** "/treino upper B" → { name: 'treino', args: 'upper B' }; texto sem "/" → null. */
@@ -23,7 +30,7 @@ export function parseCommand(text: string): { name: string; args: string } | nul
 }
 
 /** Comandos previstos no SPEC §6 que chegam em fases seguintes. */
-const LATER = new Set(['hoje', 'peso', 'relatorio', 'status', 'pausar', 'retomar']);
+const LATER = new Set(['hoje', 'peso', 'relatorio', 'pausar', 'retomar']);
 
 export function runCommand(ctx: CommandContext, name: string, args: string): CommandResult {
   switch (name) {
@@ -41,6 +48,8 @@ export function runCommand(ctx: CommandContext, name: string, args: string): Com
       return meta(ctx, args);
     case 'desfazer':
       return desfazer(ctx);
+    case 'status':
+      return status(ctx);
     default:
       return { text: LATER.has(name) ? t.notYet(name) : t.unknownCommand(name) };
   }
@@ -142,4 +151,43 @@ function desfazer(ctx: CommandContext): CommandResult {
   if (target === undefined) return { text: t.undoNothing };
   const { result, turnId } = inCommandTurn(ctx, () => undoTurn(ctx.db, target, ctx.now));
   return { text: t.undoDone(describeEntities(result.byEntity)), turnId };
+}
+
+function ago(iso: string | null | undefined, now: string): string {
+  if (!iso) return 'nunca';
+  const min = Math.round((new Date(now).getTime() - new Date(iso).getTime()) / 60000);
+  if (min < 60) return `há ${min} min`;
+  if (min < 48 * 60) return `há ${Math.round(min / 60)} h`;
+  return `há ${Math.round(min / 1440)} dias`;
+}
+
+function status(ctx: CommandContext): CommandResult {
+  const { db, now } = ctx;
+  const one = <T>(sql: string, ...a: unknown[]) => db.prepare(sql).get(...a) as T | undefined;
+  const lastTurn = one<{ status: string; started_at: string; duration_ms: number | null }>(
+    "SELECT status, started_at, duration_ms FROM turns WHERE kind IN ('chat','report') ORDER BY id DESC LIMIT 1",
+  );
+  const { start } = localDayBounds(
+    toLocalDate(now, ctx.settings.cutoffHour, ctx.settings.timeZone),
+    ctx.settings.cutoffHour,
+    ctx.settings.timeZone,
+  );
+  const today = one<{ n: number; cost: number | null }>(
+    "SELECT count(*) n, sum(cost_usd) cost FROM turns WHERE kind IN ('chat','report') AND started_at >= ?",
+    start,
+  )!;
+  const backup = one<{ finished_at: string; ok: number }>(
+    "SELECT finished_at, ok FROM job_runs WHERE job = 'backup' ORDER BY id DESC LIMIT 1",
+  );
+  const health = one<{ at: string | null }>('SELECT max(received_at) at FROM health_raw')?.at;
+  const lines = [
+    '🩺 Status',
+    `• Canal: ${ctx.channelStatus ? ctx.channelStatus() : 'terminal'}`,
+    `• Último turno: ${lastTurn ? `${lastTurn.status} ${ago(lastTurn.started_at, now)}${lastTurn.duration_ms ? ` (${(lastTurn.duration_ms / 1000).toFixed(0)} s)` : ''}` : 'nenhum'}`,
+    `• Hoje: ${today.n} turnos · custo estimado US$ ${(today.cost ?? 0).toFixed(2)}`,
+    `• Último backup: ${backup ? `${backup.ok ? 'ok' : 'FALHOU'} ${ago(backup.finished_at, now)}` : 'nunca'}`,
+    `• Último sync de saúde: ${ago(health, now)}`,
+  ];
+  if (ctx.claudeTokenExpiresAt) lines.push(`• Token Claude expira em ${ctx.claudeTokenExpiresAt}`);
+  return { text: lines.join('\n') };
 }

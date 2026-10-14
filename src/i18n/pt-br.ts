@@ -7,6 +7,7 @@ export const t = {
     '• /metas — metas atuais · /meta <chave> <valor> — define (ou "remover")',
     '  chaves: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo',
     '• /desfazer — desfaz o último registro',
+    '• /status — saúde do sistema',
     '• /ajuda — esta lista',
     '',
     'Ou escreva livremente, por exemplo:',

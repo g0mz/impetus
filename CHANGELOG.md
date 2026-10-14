@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 2 — WhatsApp (2026-10-14)
+
+#### Adicionado
+- Canal `whatsapp-baileys` (Baileys 7.0.0-rc14 fixado, D-020): reconexão com backoff (até 60 s), envio serial com
+  intervalo mínimo, reação 👀 + "digitando…", download e normalização de imagens (sharp: 1568 px, JPEG q85, sem
+  EXIF), id da mensagem citada, mensagens longas em até 3 partes.
+- `npm run wa:link` (código de pareamento ou QR); sessão em `data/wa-auth/` (modo 700).
+- Pareamento do dono (`PAREAR <código>`) e allowlist por JID + LID, com aprendizado de identificadores novos.
+- Debounce (4 s; 20 s após imagem sem legenda) e fila serial de turnos.
+- `/status`: canal, último turno, custo do dia, último backup, último sync de saúde, validade do token.
+- `docs/MANUAL_TEST_WHATSAPP.md`: roteiro de aceite pelo celular.
+
+#### Pendente (dono)
+- Rodar o roteiro manual com o chip do bot.
+
 ### Fase 1 — Cérebro, tools de treino e canal terminal (2026-10-14)
 
 #### Adicionado
