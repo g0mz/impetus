@@ -77,7 +77,7 @@ impetus/
 - [x] Tools de treino (TOOLS.md) + `get_goals`/`set_goal` + `get_day_summary` (parcial).
 - [x] Domínio: e1RM, PRs, `vs_last`, progressão (REPORTS.md §2.4), sessão aberta.
 - [x] `mcp/server.ts`: streamable HTTP em 127.0.0.1, tokens de turno (criados e invalidados pelo turn-runner), logs por tool call.
-- [x] `brain/claude-cli.ts`: spawn exatamente como ARCHITECTURE.md §5.1, cwd `data/brain/` (pasta vazia), timeout, parse do JSON, captura de stderr, retry.
+- [x] `brain/claude-cli.ts`: spawn exatamente como ARCHITECTURE.md §5.1, cwd `BRAIN_DIR` fora do repo (D-004), timeout, parse do JSON, captura de stderr, retry.
 - [x] `context-builder.ts` (§5.2) e `router.ts` (§5.3).
 - [x] `channels/terminal.ts` + `scripts/chat.ts`: REPL que simula o canal (aceita `/img caminho.jpg legenda`).
 - [x] Turn-runner com tabela `turns`.
