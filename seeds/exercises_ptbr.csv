@@ -1,0 +1,105 @@
+source_id,name_pt,aliases,category,equipment,load_kind,is_compound,increment_kg,primary_muscles,secondary_muscles
+Barbell_Bench_Press_-_Medium_Grip,Supino reto com barra,supino reto|supino|supino barra|supino reto barra,strength,barbell,total,1,2.5,chest,front_delts|triceps
+Dumbbell_Bench_Press,Supino reto com halteres,supino reto halter|supino halter|supino reto com halter|supino reto halteres,strength,dumbbell,per_hand,1,2,chest,front_delts|triceps
+Barbell_Incline_Bench_Press_-_Medium_Grip,Supino inclinado com barra,supino inclinado|sup inc|sup inclinado|supino inclinado barra,strength,barbell,total,1,2.5,chest,front_delts|triceps
+Incline_Dumbbell_Press,Supino inclinado com halteres,supino inclinado halter|sup inc halter|supino inclinado com halter|supino inclinado halteres,strength,dumbbell,per_hand,1,2,chest,front_delts|triceps
+Decline_Barbell_Bench_Press,Supino declinado com barra,supino declinado|sup dec|supino declinado barra,strength,barbell,total,1,2.5,chest,front_delts|triceps
+Decline_Dumbbell_Bench_Press,Supino declinado com halteres,supino declinado halter|sup dec halter|supino declinado halteres,strength,dumbbell,per_hand,1,2,chest,front_delts|triceps
+Machine_Bench_Press,Supino reto na máquina,supino maquina|chest press|supino reto maquina,strength,machine,stack,1,5,chest,front_delts|triceps
+Leverage_Incline_Chest_Press,Supino inclinado articulado,supino inclinado maquina|supino inclinado articulado|supino articulado,strength,machine,total,1,5,chest,front_delts|triceps
+Smith_Machine_Bench_Press,Supino reto no smith,supino smith|supino reto smith,strength,smith,total,1,2.5,chest,front_delts|triceps
+Smith_Machine_Incline_Bench_Press,Supino inclinado no smith,supino inclinado smith|sup inc smith,strength,smith,total,1,2.5,chest,front_delts|triceps
+Close-Grip_Barbell_Bench_Press,Supino fechado,supino fechado|supino pegada fechada,strength,barbell,total,1,2.5,triceps,chest|front_delts
+Dumbbell_Flyes,Crucifixo reto com halteres,crucifixo|crucifixo reto|crucifixo halter|crucifixo halteres,strength,dumbbell,per_hand,0,2,chest,front_delts
+Incline_Dumbbell_Flyes,Crucifixo inclinado com halteres,crucifixo inclinado|crucifixo inclinado halter,strength,dumbbell,per_hand,0,2,chest,front_delts
+Butterfly,Voador (crucifixo na máquina),voador|peck deck|pec deck|crucifixo maquina|fly maquina,strength,machine,stack,0,5,chest,front_delts
+Cable_Crossover,Crossover na polia alta,crossover|cross over|crucifixo polia|crossover polia alta,strength,cable,stack,0,2.5,chest,front_delts
+Low_Cable_Crossover,Crossover na polia baixa,crossover polia baixa|crossover baixo|crucifixo polia baixa,strength,cable,stack,0,2.5,chest,front_delts
+Pushups,Flexão de braço,flexao|flexao de braco|apoio|flexoes,strength,bodyweight,total,1,,chest,front_delts|triceps
+Dips_-_Chest_Version,Paralelas (peito),paralela|paralelas|mergulho|dips|paralela peito,strength,bodyweight,bodyweight_plus,1,2.5,chest,triceps|front_delts
+Straight-Arm_Dumbbell_Pullover,Pullover com halter,pullover|pull over|pullover halter,strength,dumbbell,total,1,2,chest,lats|triceps
+Wide-Grip_Lat_Pulldown,Puxada frontal aberta,puxada frontal|puxada aberta|puxada alta|pulldown|puxada pronada|puxada no pulley,strength,cable,stack,1,5,lats,upper_back|biceps|rear_delts
+V-Bar_Pulldown,Puxada com triângulo,puxada triangulo|puxada fechada|puxada com triangulo,strength,cable,stack,1,5,lats,upper_back|biceps
+Underhand_Cable_Pulldowns,Puxada supinada,puxada supinada|puxada pegada supinada,strength,cable,stack,1,5,lats,biceps|upper_back
+Wide-Grip_Pulldown_Behind_The_Neck,Puxada por trás,puxada atras|puxada nuca|puxada por tras,strength,cable,stack,1,5,lats,upper_back|biceps|rear_delts
+Pullups,Barra fixa,barra fixa|barra|pull up|pullup|barra pronada,strength,bodyweight,bodyweight_plus,1,2.5,lats,upper_back|biceps
+Chin-Up,Barra fixa supinada,barra supinada|chin up|chinup|barra fixa supinada,strength,bodyweight,bodyweight_plus,1,2.5,lats,biceps|upper_back
+Seated_Cable_Rows,Remada baixa,remada baixa|remada sentada|remada no cabo|remada baixa triangulo,strength,cable,stack,1,5,upper_back,lats|biceps|rear_delts
+Bent_Over_Barbell_Row,Remada curvada com barra,remada curvada|remada curvada barra|remada curvada pronada,strength,barbell,total,1,2.5,upper_back,lats|biceps|rear_delts|lower_back
+Reverse_Grip_Bent-Over_Rows,Remada curvada supinada,remada supinada|remada curvada supinada,strength,barbell,total,1,2.5,upper_back,lats|biceps|rear_delts
+One-Arm_Dumbbell_Row,Remada unilateral com halter,remada unilateral|serrote|remada serrote|remada halter|remada unilateral halter,strength,dumbbell,per_hand,1,2,lats,upper_back|biceps|rear_delts
+T-Bar_Row_with_Handle,Remada cavalinho,cavalinho|remada cavalinho|remada t|t bar|remada cavalo,strength,barbell,total,1,2.5,upper_back,lats|biceps|rear_delts
+Leverage_Iso_Row,Remada articulada,remada articulada|remada maquina,strength,machine,total,1,5,upper_back,lats|biceps
+Straight-Arm_Pulldown,Pulldown com braços estendidos,pulldown bracos estendidos|pullover polia|pulldown corda|pullover na polia,strength,cable,stack,0,2.5,lats,upper_back
+Barbell_Deadlift,Levantamento terra,terra|levantamento terra|deadlift|lt,strength,barbell,total,1,2.5,hamstrings|glutes|lower_back,quads|upper_back|traps|forearms
+Sumo_Deadlift,Levantamento terra sumô,terra sumo|sumo|levantamento terra sumo,strength,barbell,total,1,2.5,glutes|hamstrings|adductors,quads|lower_back|upper_back|traps
+Stiff-Legged_Barbell_Deadlift,Stiff com barra,stiff|stiff barra|stiff com barra,strength,barbell,total,1,2.5,hamstrings|glutes,lower_back
+Stiff-Legged_Dumbbell_Deadlift,Stiff com halteres,stiff halter|stiff halteres|stiff com halter,strength,dumbbell,per_hand,1,2,hamstrings|glutes,lower_back
+Romanian_Deadlift,Levantamento terra romeno,terra romeno|rdl|levantamento terra romeno,strength,barbell,total,1,2.5,hamstrings|glutes,lower_back
+Hyperextensions_Back_Extensions,Hiperextensão lombar,hiperextensao|extensao lombar|banco romano|lombar|hiperextensao lombar,strength,bodyweight,total,0,,lower_back,glutes|hamstrings
+Barbell_Shrug,Encolhimento com barra,encolhimento|encolhimento barra|shrug,strength,barbell,total,0,2.5,traps,
+Dumbbell_Shrug,Encolhimento com halteres,encolhimento halter|encolhimento halteres,strength,dumbbell,per_hand,0,2,traps,
+Dumbbell_Shoulder_Press,Desenvolvimento com halteres,desenvolvimento|desenvolvimento halter|desenvolvimento halteres|desenv halter,strength,dumbbell,per_hand,1,2,front_delts,side_delts|triceps
+Barbell_Shoulder_Press,Desenvolvimento com barra,desenvolvimento barra|desenvolvimento militar|militar|press militar,strength,barbell,total,1,2.5,front_delts,side_delts|triceps
+Machine_Shoulder_Military_Press,Desenvolvimento na máquina,desenvolvimento maquina|desenvolvimento articulado,strength,machine,stack,1,5,front_delts,side_delts|triceps
+Smith_Machine_Overhead_Shoulder_Press,Desenvolvimento no smith,desenvolvimento smith,strength,smith,total,1,2.5,front_delts,side_delts|triceps
+Arnold_Dumbbell_Press,Desenvolvimento Arnold,arnold|desenvolvimento arnold|arnold press,strength,dumbbell,per_hand,1,2,front_delts,side_delts|triceps
+Side_Lateral_Raise,Elevação lateral com halteres,elevacao lateral|lateral|elevacao lateral halter|elev lateral,strength,dumbbell,per_hand,0,1,side_delts,traps
+Cable_Seated_Lateral_Raise,Elevação lateral na polia,elevacao lateral polia|lateral polia|lateral no cabo,strength,cable,stack,0,2.5,side_delts,traps
+Front_Dumbbell_Raise,Elevação frontal com halteres,elevacao frontal|frontal|elevacao frontal halter,strength,dumbbell,per_hand,0,1,front_delts,
+Front_Cable_Raise,Elevação frontal na polia,elevacao frontal polia|frontal polia,strength,cable,stack,0,2.5,front_delts,
+Reverse_Flyes,Crucifixo invertido com halteres,crucifixo invertido|crucifixo inverso|crucifixo invertido halter,strength,dumbbell,per_hand,0,1,rear_delts,upper_back
+Reverse_Machine_Flyes,Voador invertido,voador invertido|peck deck invertido|crucifixo invertido maquina|crucifixo inverso maquina,strength,machine,stack,0,5,rear_delts,upper_back
+Face_Pull,Face pull,face pull|facepull|puxada para o rosto,strength,cable,stack,0,2.5,rear_delts,upper_back|traps
+Upright_Barbell_Row,Remada alta com barra,remada alta|remada alta barra,strength,barbell,total,1,2.5,side_delts,traps|front_delts
+Barbell_Curl,Rosca direta com barra,rosca direta|rosca barra|rosca direta barra,strength,barbell,total,0,2,biceps,forearms
+EZ-Bar_Curl,Rosca direta com barra W,rosca w|rosca barra w|rosca ez|rosca direta w,strength,barbell,total,0,2,biceps,forearms
+Dumbbell_Alternate_Bicep_Curl,Rosca alternada,rosca alternada|rosca alternada halter,strength,dumbbell,per_hand,0,2,biceps,forearms
+Hammer_Curls,Rosca martelo,rosca martelo|martelo|rosca neutra,strength,dumbbell,per_hand,0,2,biceps,forearms
+Concentration_Curls,Rosca concentrada,rosca concentrada,strength,dumbbell,per_hand,0,2,biceps,forearms
+Preacher_Curl,Rosca Scott com barra,rosca scott|scott|rosca scott barra,strength,barbell,total,0,2,biceps,forearms
+Machine_Preacher_Curls,Rosca Scott na máquina,rosca scott maquina|scott maquina,strength,machine,stack,0,5,biceps,forearms
+Incline_Dumbbell_Curl,Rosca inclinada com halteres,rosca inclinada|rosca banco inclinado,strength,dumbbell,per_hand,0,2,biceps,forearms
+Standing_Biceps_Cable_Curl,Rosca na polia,rosca polia|rosca no cabo|rosca direta polia,strength,cable,stack,0,2.5,biceps,forearms
+Triceps_Pushdown,Tríceps pulley com barra,triceps pulley|triceps barra|triceps polia|triceps pulley barra,strength,cable,stack,0,2.5,triceps,
+Triceps_Pushdown_-_Rope_Attachment,Tríceps corda,triceps corda|triceps na corda|triceps pulley corda,strength,cable,stack,0,2.5,triceps,
+Reverse_Grip_Triceps_Pushdown,Tríceps pulley inverso,triceps inverso|pulley inverso|triceps supinado,strength,cable,stack,0,2.5,triceps,
+EZ-Bar_Skullcrusher,Tríceps testa,triceps testa|testa|skull crusher,strength,barbell,total,0,2,triceps,
+Triceps_Overhead_Extension_with_Rope,Tríceps francês na polia,triceps frances polia|frances corda|triceps frances na polia,strength,cable,stack,0,2.5,triceps,
+Standing_Dumbbell_Triceps_Extension,Tríceps francês com halter,triceps frances|frances|triceps frances halter,strength,dumbbell,total,0,2,triceps,
+Tricep_Dumbbell_Kickback,Tríceps coice,triceps coice|coice|kickback,strength,dumbbell,per_hand,0,1,triceps,
+Dips_-_Triceps_Version,Paralelas (tríceps),paralela triceps|mergulho triceps|dips triceps,strength,bodyweight,bodyweight_plus,1,2.5,triceps,chest|front_delts
+Bench_Dips,Tríceps banco,triceps banco|mergulho no banco,strength,bodyweight,total,1,,triceps,chest|front_delts
+Barbell_Squat,Agachamento livre,agachamento|agachamento livre|agacho|agachamento barra|back squat,strength,barbell,total,1,2.5,quads|glutes,adductors|hamstrings|lower_back
+Front_Barbell_Squat,Agachamento frontal,agachamento frontal|front squat,strength,barbell,total,1,2.5,quads|glutes,adductors|upper_back
+Smith_Machine_Squat,Agachamento no smith,agachamento smith|smith agachamento,strength,smith,total,1,2.5,quads|glutes,adductors|hamstrings
+Hack_Squat,Agachamento hack,hack|hack machine|agachamento hack|hack squat,strength,machine,total,1,10,quads|glutes,adductors
+Leg_Press,Leg press 45°,leg press|leg|legpress|leg 45|leg press 45,strength,machine,total,1,10,quads|glutes,adductors|hamstrings
+Leg_Extensions,Cadeira extensora,extensora|cadeira extensora,strength,machine,stack,0,5,quads,
+Lying_Leg_Curls,Mesa flexora,mesa flexora|flexora deitada|flexora,strength,machine,stack,0,5,hamstrings,calves
+Seated_Leg_Curl,Cadeira flexora,cadeira flexora|flexora sentada,strength,machine,stack,0,5,hamstrings,
+Standing_Leg_Curl,Flexora em pé,flexora em pe|flexora unilateral,strength,machine,stack,0,5,hamstrings,
+Barbell_Hip_Thrust,Elevação pélvica com barra,elevacao pelvica|hip thrust|pelvica|elevacao de quadril,strength,barbell,total,1,2.5,glutes,hamstrings
+Dumbbell_Lunges,Avanço com halteres,avanco|afundo|passada|avanco halter|lunge,strength,dumbbell,per_hand,1,2,quads|glutes,adductors|hamstrings
+Split_Squat_with_Dumbbells,Agachamento búlgaro,bulgaro|agachamento bulgaro|afundo bulgaro|split squat,strength,dumbbell,per_hand,1,2,quads|glutes,adductors|hamstrings
+Dumbbell_Step_Ups,Subida no banco com halteres,step up|subida no banco|subida no caixote,strength,dumbbell,per_hand,1,2,quads|glutes,hamstrings
+Thigh_Adductor,Cadeira adutora,adutora|cadeira adutora|adutor,strength,machine,stack,0,5,adductors,
+Thigh_Abductor,Cadeira abdutora,abdutora|cadeira abdutora|abdutor,strength,machine,stack,0,5,abductors,glutes
+One-Legged_Cable_Kickback,Glúteo na polia,gluteo polia|coice polia|gluteo no cabo|kickback gluteo,strength,cable,stack,0,2.5,glutes,hamstrings
+Standing_Calf_Raises,Panturrilha em pé,panturrilha|panturrilha em pe|gemeos|elevacao de panturrilha,strength,machine,stack,0,5,calves,
+Seated_Calf_Raise,Panturrilha sentado,panturrilha sentado|solear|panturrilha sentada,strength,machine,total,0,5,calves,
+Calf_Press_On_The_Leg_Press_Machine,Panturrilha no leg press,panturrilha leg|panturrilha no leg|panturrilha leg press,strength,machine,total,0,10,calves,
+Crunches,Abdominal crunch,abdominal|abdominal crunch|abdominal supra|crunch|supra,strength,bodyweight,total,0,,abs,
+Reverse_Crunch,Abdominal infra,abdominal infra|infra|crunch invertido,strength,bodyweight,total,0,,abs,
+Hanging_Leg_Raise,Elevação de pernas na barra,elevacao de pernas|elevacao de pernas na barra|infra na barra,strength,bodyweight,total,0,,abs,obliques
+Plank,Prancha,prancha|plank|prancha abdominal,strength,bodyweight,total,0,,abs,obliques|lower_back
+Cable_Crunch,Abdominal na polia,abdominal polia|abdominal corda|crunch polia,strength,cable,stack,0,2.5,abs,
+Ab_Crunch_Machine,Abdominal na máquina,abdominal maquina,strength,machine,stack,0,5,abs,
+Russian_Twist,Abdominal russo,russian twist|giro russo|abdominal russo|rotacao russa,strength,bodyweight,total,0,,obliques,abs
+Oblique_Crunches,Abdominal oblíquo,abdominal obliquo|obliquo,strength,bodyweight,total,0,,obliques,abs
+Running_Treadmill,Corrida na esteira,esteira|corrida esteira|correr na esteira|corrida na esteira,cardio,machine,total,0,,quads,hamstrings|glutes|calves
+Walking_Treadmill,Caminhada na esteira,caminhada esteira|caminhada|caminhar na esteira,cardio,machine,total,0,,quads,hamstrings|glutes|calves
+Bicycling_Stationary,Bicicleta ergométrica,bike|bicicleta|ergometrica|bicicleta ergometrica|spinning,cardio,machine,total,0,,quads,hamstrings|glutes|calves
+Elliptical_Trainer,Elíptico,eliptico|transport|transporte,cardio,machine,total,0,,quads,hamstrings|glutes|calves
+Stairmaster,Simulador de escada,escada|escada ergometrica|simulador de escada,cardio,machine,total,0,,quads,glutes|hamstrings|calves
+Rowing_Stationary,Remo ergômetro,remo|remo ergometro|remo indoor,cardio,machine,total,0,,upper_back|quads,lats|biceps|hamstrings|glutes
