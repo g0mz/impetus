@@ -62,7 +62,7 @@ impetus/
 - [x] `config.ts` com zod; falha clara se faltar variável.
 - [x] `time.ts`: `toLocalDate(utc, cutoffHour)`, formatação pt-BR, testes cobrindo virada à meia-noite, 04:00 e horário de verão (o Brasil não tem DST desde 2019, mas não codifique esse pressuposto; use a base de fusos).
 - [x] DB: conexão, PRAGMAs, migrations de **todo** o DATA_MODEL.md.
-- [ ] Seeds:
+- [x] Seeds:
   - TACO: importer com validação (contagem e 5 alimentos conferidos contra a tabela oficial, registrados no teste).
   - free-exercise-db: download via script, mapeamento de músculos para o vocabulário fixo.
   - `seeds/exercises_ptbr.csv`: gerar uma proposta com ~80 exercícios comuns de academia brasileira e **pausar para revisão do usuário** antes de commitar.

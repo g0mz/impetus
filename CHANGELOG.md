@@ -35,7 +35,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/DEPLOY.md`, `docs/TASKS.md`, `CLAUDE.md` e
   `runtime/.env.example` atualizados conforme as decisões.
 
+- `seeds/exercises_ptbr.csv`: 104 exercícios comuns com nome PT-BR, apelidos, tipo de carga, incremento e músculos
+  (revisado e aprovado pelo dono).
+
 #### Pendente
-- `seeds/exercises_ptbr.csv` (proposta com 104 exercícios) aguardando revisão do dono antes do commit.
 - Itens em aberto para as próximas fases listados em `docs/DECISIONS.md` (retry sem duplicar, `query_sql` em
   worker, chaves de meta, confiança agregada etc.).
