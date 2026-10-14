@@ -1,0 +1,34 @@
+[Unit]
+Description=FitCoach — assistente pessoal (WhatsApp + Claude)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fitcoach
+Group=fitcoach
+WorkingDirectory=/home/fitcoach/fitcoach
+EnvironmentFile=/etc/fitcoach/env
+EnvironmentFile=/etc/fitcoach/env.app
+Environment=PATH=/home/fitcoach/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGTERM
+
+# Limites (A1 2 OCPU/12 GB; reduza para E2.1.Micro)
+MemoryMax=1500M
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/fitcoach
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
