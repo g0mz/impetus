@@ -1,0 +1,10 @@
+id: meals_hidden_fat
+description: Gordura de preparo contabilizada (item separado de óleo/manteiga ou alimento da tabela já preparado com gordura)
+now: '2026-10-13T11:00:00Z'
+steps:
+  - text: 'café da manhã: 3 ovos mexidos'
+expect:
+  meals: 1
+  items:
+    - { label: 'ovo', origin: text_estimate }
+  fat_accounted: true

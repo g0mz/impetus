@@ -1,0 +1,11 @@
+id: meals_text_units
+description: Só texto com unidades (medidas caseiras → gramas)
+now: '2026-10-13T11:00:00Z'
+steps:
+  - text: '2 ovos cozidos e 2 fatias de pão de forma'
+expect:
+  meals: 1
+  items:
+    - { label: 'ovo', grams: [80, 120], origin: text_estimate }
+    - { label: 'p[aã]o', grams: [40, 60], origin: text_estimate }
+  max_questions: 1

@@ -1,0 +1,8 @@
+id: meals_yesterday
+description: Refeição de ontem conta no dia contábil anterior
+now: '2026-10-13T12:00:00Z'
+steps:
+  - text: 'ontem à noite jantei 100g de arroz branco e 100g de frango grelhado'
+expect:
+  meals: 1
+  local_date: '2026-10-12'

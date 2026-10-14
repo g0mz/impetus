@@ -4,4 +4,6 @@ data/
 coverage/
 .env
 *.log
-evals/images/
+evals/images/*
+!evals/images/.gitkeep
+!evals/images/README.md

@@ -145,9 +145,14 @@ Falha de rede vira `found: false` com dica para pedir foto da tabela nutricional
 Para corrigir sem citação ("arroz foi 100g"), o resumo do dia lista `item_id`, rótulo e gramas de cada refeição.
 `macros_override` é guardado com a gramatura de referência (`per_grams`) e escala se a gramatura for corrigida.
 
+### D-024 — Haiku nas refeições só de texto: mantido, com protocolo reforçado (2026-10-14, Fase 3)
+Primeira rodada dos evals (haiku): o coach dividia "2 ovos" em dois itens marcados como `user_stated` e omitia a
+gordura de preparo. O system prompt passou a exigir um item com o total e `text_estimate` para unidades, e item de
+óleo/manteiga obrigatório (exceto quando o alimento da tabela já é o preparo com gordura). Após o ajuste, 9/9 casos
+de texto passam com o haiku. Fotos continuam no `MODEL_VISION`.
+
 ## Pendentes (decidir na fase indicada)
 
-- **Fase 1 — Refeição só de texto no `haiku`.** Avaliar nos evals da Fase 3 se o modelo rápido segue o protocolo.
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não
   tem *interrupt*. Proposta: rodar a query num `worker_thread` e encerrar o worker no timeout. A tool não está
   atribuída a nenhuma fase.

@@ -106,12 +106,12 @@ impetus/
 
 ## Fase 3 — Nutrição
 
-- [ ] Tools de nutrição (TOOLS.md), macros e confiança agregada no código.
-- [ ] Priors (mediana, p25 e p75 via `v_food_priors`) e calibração de viés (NUTRITION.md §5).
-- [ ] Open Food Facts (`lookup_barcode`), com timeout e User-Agent.
-- [ ] Tipo de refeição inferido pelo horário quando não informado (café < 10h30, almoço 10h30–15h, lanche 15h–18h30, jantar 18h30–22h30, ceia depois), sobrescrito pelo texto.
-- [ ] `/hoje` completo.
-- [ ] Evals: `evals/cases/meals_*.yaml` com ~12 casos (só texto, foto + legenda, foto sozinha, correção, rótulo). As asserções verificam estrutura (itens esperados presentes, item informado com as gramas exatas, origem correta) e faixas de tolerância nas estimativas. Use fotos próprias em `evals/images/` (fora do git se preferir).
+- [x] Tools de nutrição (TOOLS.md), macros e confiança agregada no código.
+- [x] Priors (mediana, p25 e p75 via `v_food_priors`) e calibração de viés (NUTRITION.md §5).
+- [x] Open Food Facts (`lookup_barcode`), com timeout e User-Agent.
+- [x] Tipo de refeição inferido pelo horário quando não informado (café < 10h30, almoço 10h30–15h, lanche 15h–18h30, jantar 18h30–22h30, ceia depois), sobrescrito pelo texto.
+- [x] `/hoje` completo.
+- [x] Evals: `evals/cases/meals_*.yaml` com ~12 casos (só texto, foto + legenda, foto sozinha, correção, rótulo). As asserções verificam estrutura (itens esperados presentes, item informado com as gramas exatas, origem correta) e faixas de tolerância nas estimativas. Use fotos próprias em `evals/images/` (fora do git se preferir).
 
 **Aceite:** cenários do SPEC §7 de nutrição passam; item informado nunca é alterado pela foto; correção por citação atualiza o item e o total do dia; nenhuma refeição gera mais de uma pergunta.
 

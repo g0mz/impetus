@@ -1,0 +1,13 @@
+id: meals_text_grams
+description: Só texto, com gramas informadas (user_stated, confiança alta)
+now: '2026-10-13T16:00:00Z'
+steps:
+  - text: 'almoço: 150g de frango grelhado, 120g de arroz branco e 100g de feijão carioca'
+expect:
+  meals: 1
+  items:
+    - { label: 'frango', grams: 150, origin: user_stated }
+    - { label: 'arroz', grams: 120, origin: user_stated }
+    - { label: 'feij', grams: 100, origin: user_stated }
+  kcal: [430, 620]
+  max_questions: 0

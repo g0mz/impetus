@@ -1,0 +1,10 @@
+id: meals_household_ibge
+description: Medidas caseiras do IBGE (concha de feijão = 140 g; colher de sopa de arroz = 25 g)
+now: '2026-10-13T16:00:00Z'
+steps:
+  - text: 'almocei 1 concha de feijão e 4 colheres de sopa de arroz'
+expect:
+  meals: 1
+  items:
+    - { label: 'feij', grams: [120, 160] }
+    - { label: 'arroz', grams: [90, 110] }

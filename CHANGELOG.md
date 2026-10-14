@@ -4,6 +4,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 3 — Nutrição (2026-10-14)
+
+#### Adicionado
+- Domínio: macros por item (tabela × gramas), soma e arredondamento, porção de rótulo → por 100 g, confiança
+  agregada ponderada por kcal (D-021), priors pessoais (mediana/p25/p75, 120 dias, n ≥ 2), detector de viés
+  (14 dias, > 60% das correções para baixo), tipo de refeição pelo horário.
+- Tools: `search_foods` e `get_portions` em lote, `get_food_priors`, `log_meal`, `update_meal_item` (grava
+  `meal_corrections`, item vira `corrected`), `add_meal_item`, `update_meal`, `create_custom_food`,
+  `lookup_barcode` (Open Food Facts via etapa `prepare` assíncrona, D-022).
+- Undo de refeições, itens, correções, alimentos e porções; `/hoje` completo.
+- Contexto do turno: refeição citada com `item_id`, pergunta pendente e calibração de viés; `get_day_summary` com
+  os itens de cada refeição (D-023).
+- Evals: 12 casos em `evals/cases/meals_*.yaml` e `npm run eval` (cérebro real, banco novo por caso).
+
+#### Verificado com o cérebro real
+- 9/9 casos de texto passam (gramas informadas, unidades, medidas do IBGE, texto vago, gordura oculta, alimento
+  personalizado, correção com e sem citação, refeição de ontem). 3 casos de foto aguardam imagens do dono.
+
+#### Alterado
+- `runtime/prompts/system.md`: unidades viram um item com o total (`text_estimate`); gordura de preparo
+  obrigatória; buscas em lote; uso de `<quoted>`, `<pending_question>` e `<calibration>` (D-024).
+
 ### Fase 2 — WhatsApp (2026-10-14)
 
 #### Adicionado

@@ -1,0 +1,9 @@
+id: meals_photo_only
+description: Só foto; registra com estimativa e no máximo uma pergunta
+now: '2026-10-13T16:00:00Z'
+steps:
+  - image: prato_sem_legenda.jpg
+expect:
+  meals: 1
+  min_items: 2
+  max_questions: 1

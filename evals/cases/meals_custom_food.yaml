@@ -1,0 +1,11 @@
+id: meals_custom_food
+description: Alimento personalizado por porção e uso posterior
+now: '2026-10-13T20:00:00Z'
+steps:
+  - text: 'meu whey: 1 scoop de 30 g tem 120 kcal, 24 g de proteína, 3 g de carboidrato e 1,5 g de gordura'
+  - text: 'tomei 1 scoop de whey'
+expect:
+  custom_food: { name: 'whey', protein_100g: [78, 82] }
+  meals: 1
+  items:
+    - { label: 'whey', grams: 30 }
