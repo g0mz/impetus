@@ -5,7 +5,7 @@ Cada fase termina **utilizável e testada**. Não avance com testes falhando. Ao
 ## Estrutura alvo do repositório
 
 ```
-fitcoach/
+impetus/
 ├─ CLAUDE.md
 ├─ package.json · tsconfig.json · vitest.config.ts · .eslintrc.cjs · .gitignore
 ├─ docs/                      (este kit)
@@ -13,7 +13,7 @@ fitcoach/
 │  ├─ prompts/system.md       (system prompt do coach)
 │  ├─ prompts/report.md       (instruções extras para turnos de relatório)
 │  ├─ .env.example
-│  └─ deploy/fitcoach.service
+│  └─ deploy/impetus.service
 ├─ seeds/
 │  ├─ exercises_ptbr.csv      (~80 exercícios comuns, aliases, load_kind, increment_kg)
 │  └─ portions_ibge.csv       (medidas caseiras conferidas na fonte)
@@ -46,7 +46,7 @@ fitcoach/
 │  ├─ reports/ build.ts · render-fallback.ts · charts.ts
 │  └─ scheduler/ jobs.ts
 ├─ tests/ unit/ · integration/ · fixtures/
-└─ data/                      (gitignored: fitcoach.db, media/, wa-auth/, backups/, brain/)
+└─ data/                      (gitignored: impetus.db, media/, wa-auth/, backups/, brain/)
 ```
 
 ---

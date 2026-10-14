@@ -45,23 +45,23 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt -y install nodejs
 
 # usuário de serviço
-sudo useradd -m -s /bin/bash fitcoach
-sudo mkdir -p /etc/fitcoach && sudo chown root:fitcoach /etc/fitcoach && sudo chmod 750 /etc/fitcoach
+sudo useradd -m -s /bin/bash impetus
+sudo mkdir -p /etc/impetus && sudo chown root:impetus /etc/impetus && sudo chmod 750 /etc/impetus
 ```
 
 ## 3. Claude Code headless
 
-1. Como `fitcoach`, instale o Claude Code pelo método atual da documentação oficial (instalador nativo ou npm). Confira com `claude --version`.
+1. Como `impetus`, instale o Claude Code pelo método atual da documentação oficial (instalador nativo ou npm). Confira com `claude --version`.
 2. **No seu PC**, com navegador: `claude setup-token`. Faça login com a conta da assinatura e copie o token `sk-ant-oat01-…`. Ele vale ~1 ano; anote a data de expiração exibida.
-3. Na VM, em `/etc/fitcoach/env` (modo 600):
+3. Na VM, em `/etc/impetus/env` (modo 600):
    ```
    CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
    CLAUDE_TOKEN_EXPIRES_AT=2027-10-13
    ```
-4. **Não** faça login interativo (`/login`) com o usuário `fitcoach`. Há relatos de credenciais salvas e expiradas tendo precedência sobre o token do ambiente. Nem defina `ANTHROPIC_API_KEY` junto, pois os dois conflitam.
+4. **Não** faça login interativo (`/login`) com o usuário `impetus`. Há relatos de credenciais salvas e expiradas tendo precedência sobre o token do ambiente. Nem defina `ANTHROPIC_API_KEY` junto, pois os dois conflitam.
 5. Teste:
    ```bash
-   sudo -u fitcoach bash -lc 'set -a; . /etc/fitcoach/env; set +a; \
+   sudo -u impetus bash -lc 'set -a; . /etc/impetus/env; set +a; \
      claude auth status && claude -p "responda só: ok" --output-format json'
    ```
    `authMethod` deve ser `oauth_token` e `result` deve ser `ok`.
@@ -70,17 +70,17 @@ sudo mkdir -p /etc/fitcoach && sudo chown root:fitcoach /etc/fitcoach && sudo ch
 ## 4. App
 
 ```bash
-sudo -iu fitcoach
-git clone <seu-repo> ~/fitcoach && cd ~/fitcoach
+sudo -iu impetus
+git clone <seu-repo> ~/impetus && cd ~/impetus
 npm ci && npm run build
-cp runtime/.env.example /etc/fitcoach/env.app   # editar valores
+cp runtime/.env.example /etc/impetus/env.app   # editar valores
 npm run db:migrate && npm run db:seed
 ```
 
-Unit do systemd: `runtime/deploy/fitcoach.service` → `/etc/systemd/system/`.
+Unit do systemd: `runtime/deploy/impetus.service` → `/etc/systemd/system/`.
 ```bash
-sudo systemctl daemon-reload && sudo systemctl enable --now fitcoach
-journalctl -u fitcoach -f
+sudo systemctl daemon-reload && sudo systemctl enable --now impetus
+journalctl -u impetus -f
 ```
 
 ## 5. WhatsApp (Baileys)
@@ -133,23 +133,23 @@ Teste: `curl -X POST <url> -H "X-Api-Key: …" -H "Content-Type: application/jso
 
 `scripts/backup.sh` (job diário 03:30):
 ```bash
-sqlite3 "$DATA_DIR/fitcoach.db" ".backup '$DATA_DIR/backups/fitcoach-$(date +%F).db'"
-gzip -f "$DATA_DIR/backups/fitcoach-$(date +%F).db"
-rclone copy "$DATA_DIR/backups/" gcrypt:fitcoach/db/ --max-age 48h
-rclone sync "$DATA_DIR/media/" gcrypt:fitcoach/media/          # semanal (domingo)
+sqlite3 "$DATA_DIR/impetus.db" ".backup '$DATA_DIR/backups/impetus-$(date +%F).db'"
+gzip -f "$DATA_DIR/backups/impetus-$(date +%F).db"
+rclone copy "$DATA_DIR/backups/" gcrypt:impetus/db/ --max-age 48h
+rclone sync "$DATA_DIR/media/" gcrypt:impetus/media/          # semanal (domingo)
 find "$DATA_DIR/backups/" -name '*.db.gz' -mtime +14 -delete  # retenção local
 ```
-- `gcrypt` é um remote **rclone crypt** sobre o Google Drive (`rclone config`: crie `gdrive` e depois `gcrypt` apontando para `gdrive:fitcoach-enc`). Guarde a senha do crypt fora da VM.
+- `gcrypt` é um remote **rclone crypt** sobre o Google Drive (`rclone config`: crie `gdrive` e depois `gcrypt` apontando para `gdrive:impetus-enc`). Guarde a senha do crypt fora da VM.
 - Retenção remota: 30 diários + 12 mensais (script de poda mensal).
-- **Restore:** VM nova → §2–4 → `rclone copy gcrypt:fitcoach/db/<arquivo> .` → `gunzip` → `data/fitcoach.db` → refazer o vínculo do WhatsApp (§5). **Teste o restore uma vez** na Fase 6.
+- **Restore:** VM nova → §2–4 → `rclone copy gcrypt:impetus/db/<arquivo> .` → `gunzip` → `data/impetus.db` → refazer o vínculo do WhatsApp (§5). **Teste o restore uma vez** na Fase 6.
 
 ## 8. Operação
 
 | Tarefa | Como |
 |---|---|
-| Logs | `journalctl -u fitcoach -f` (pino JSON; `npm run logs:pretty` formata) |
+| Logs | `journalctl -u impetus -f` (pino JSON; `npm run logs:pretty` formata) |
 | Saúde | `/status` no WhatsApp; `GET 127.0.0.1:8787/healthz` |
-| Atualizar | `git pull && npm ci && npm run build && npm run db:migrate && sudo systemctl restart fitcoach` |
-| Renovar token Claude | `claude setup-token` no PC → atualizar `/etc/fitcoach/env` → `systemctl restart fitcoach` |
-| Revincular WhatsApp | `systemctl stop fitcoach` → apagar `data/wa-auth/` → `npm run wa:link` → start |
+| Atualizar | `git pull && npm ci && npm run build && npm run db:migrate && sudo systemctl restart impetus` |
+| Renovar token Claude | `claude setup-token` no PC → atualizar `/etc/impetus/env` → `systemctl restart impetus` |
+| Revincular WhatsApp | `systemctl stop impetus` → apagar `data/wa-auth/` → `npm run wa:link` → start |
 | Recuperação de ociosidade | Instâncias Always Free ociosas podem ser recuperadas pela Oracle; PAYG fica isento. Confira a política atual |

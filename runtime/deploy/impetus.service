@@ -1,16 +1,16 @@
 [Unit]
-Description=FitCoach — assistente pessoal (WhatsApp + Claude)
+Description=Impetus — assistente pessoal (WhatsApp + Claude)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=fitcoach
-Group=fitcoach
-WorkingDirectory=/home/fitcoach/fitcoach
-EnvironmentFile=/etc/fitcoach/env
-EnvironmentFile=/etc/fitcoach/env.app
-Environment=PATH=/home/fitcoach/.local/bin:/usr/local/bin:/usr/bin:/bin
+User=impetus
+Group=impetus
+WorkingDirectory=/home/impetus/impetus
+EnvironmentFile=/etc/impetus/env
+EnvironmentFile=/etc/impetus/env.app
+Environment=PATH=/home/impetus/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/bin/node dist/main.js
 Restart=always
 RestartSec=5
@@ -25,7 +25,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/home/fitcoach
+ReadWritePaths=/home/impetus
 ProtectKernelTunables=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true

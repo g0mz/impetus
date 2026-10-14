@@ -1,4 +1,4 @@
-# DATA MODEL — FitCoach (SQLite)
+# DATA MODEL — Impetus (SQLite)
 
 ## Convenções
 

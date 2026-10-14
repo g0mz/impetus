@@ -7,7 +7,7 @@ Use no Claude Code, na raiz do repositório com este kit copiado. Sugestão: com
 ## Prompt inicial (Fase 0)
 
 ```
-Você vai construir o FitCoach do zero. Este repositório contém a especificação completa.
+Você vai construir o Impetus do zero. Este repositório contém a especificação completa.
 
 1. Leia, nesta ordem: CLAUDE.md, docs/SPEC.md, docs/ARCHITECTURE.md, docs/DATA_MODEL.md,
    docs/TOOLS.md, docs/NUTRITION.md, docs/REPORTS.md, docs/TASKS.md, docs/DEPLOY.md e

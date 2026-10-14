@@ -1,4 +1,4 @@
-# SPEC — FitCoach
+# SPEC — Impetus
 
 ## 1. Visão
 

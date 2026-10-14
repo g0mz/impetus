@@ -1,4 +1,4 @@
-# FitCoach — Spec Kit
+# Impetus — Spec Kit
 
 Assistente pessoal de treino, nutrição e saúde via WhatsApp, para **um único usuário**, com **custo zero** além da assinatura do Claude que você já paga.
 
@@ -6,7 +6,7 @@ Este kit é o pacote de especificação que você entrega ao Claude Code para de
 
 ## Como usar
 
-1. Crie um repositório vazio (`fitcoach/`) e copie **todo o conteúdo deste kit** para a raiz.
+1. Crie um repositório vazio (`impetus/`) e copie **todo o conteúdo deste kit** para a raiz.
 2. Abra o Claude Code na raiz do repositório.
 3. Cole o prompt de `KICKOFF.md`. O Claude Code vai ler as specs e executar a **Fase 0** de `docs/TASKS.md`.
 4. A cada fase, revise o resultado e use o prompt da fase seguinte (também em `KICKOFF.md`).

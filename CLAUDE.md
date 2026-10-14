@@ -1,4 +1,4 @@
-# CLAUDE.md — FitCoach (memória do projeto para desenvolvimento)
+# CLAUDE.md — Impetus (memória do projeto para desenvolvimento)
 
 Assistente pessoal de treino, nutrição e saúde via WhatsApp para **um usuário**. Roda numa VM Oracle A1 (arm64) gratuita. O "cérebro" em produção é o Claude Code headless (`claude -p`), que acessa dados apenas por tools MCP deste app.
 

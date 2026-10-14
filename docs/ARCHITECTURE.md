@@ -1,13 +1,13 @@
-# ARCHITECTURE — FitCoach
+# ARCHITECTURE — Impetus
 
 ## 1. Visão geral
 
-Um único processo Node.js (`fitcoach`) roda na VPS sob systemd. O "cérebro" é o Claude Code em modo headless (`claude -p`), chamado a cada turno, e acessa os dados **somente** por tools MCP expostas pelo próprio processo.
+Um único processo Node.js (`impetus`) roda na VPS sob systemd. O "cérebro" é o Claude Code em modo headless (`claude -p`), chamado a cada turno, e acessa os dados **somente** por tools MCP expostas pelo próprio processo.
 
 ```
  Celular (dono)                         VPS Oracle A1 (Ubuntu 24.04 arm64)
  ┌──────────────┐                 ┌────────────────────────────────────────────────────┐
- │ WhatsApp     │◄──── WA Web ───►│ fitcoach (Node 22, 1 processo)                      │
+ │ WhatsApp     │◄──── WA Web ───►│ impetus (Node 22, 1 processo)                      │
  │ (seu número) │   (Baileys)     │                                                    │
  └──────────────┘                 │  channels/whatsapp ─► gateway/inbox ─► debounce     │
                                   │                            │                       │
@@ -224,7 +224,7 @@ O Health Connect fica só no aparelho, sem API em nuvem. O app HC Webhook (open 
 - Texto dentro de imagens (rótulos, prints) é tratado como **dado**, nunca como instrução. Isso está no system prompt.
 - O servidor MCP escuta só em `127.0.0.1` e exige token de turno válido e ainda em execução (expira ao fim do turno).
 - O endpoint de ingestão exige `X-Api-Key` com 32+ bytes aleatórios e tem rate limit (60 req/min).
-- Segredos ficam em `/etc/fitcoach/env` (modo 600). O backup no Drive é criptografado (rclone crypt). A pasta `data/wa-auth/` **não** vai para o backup em nuvem.
+- Segredos ficam em `/etc/impetus/env` (modo 600). O backup no Drive é criptografado (rclone crypt). A pasta `data/wa-auth/` **não** vai para o backup em nuvem.
 - Supply chain: só o pacote oficial `baileys`. Nenhum pacote "anti-ban" de terceiros (em 2026 um deles foi pego exfiltrando sessões). Lockfile commitado, `npm audit` no CI local.
 
 ## 8. Riscos e mitigação
