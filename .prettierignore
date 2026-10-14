@@ -1,0 +1,7 @@
+dist/
+data/
+seeds/
+docs/
+runtime/prompts/
+package-lock.json
+*.md
