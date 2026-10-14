@@ -28,15 +28,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - 56 testes (unit + integração com banco em memória), incluindo 5 alimentos da TACO conferidos contra o PDF
   oficial e os aceites `search_foods("arroz cozido")` e `search_exercises("sup inc")`.
 - `docs/DECISIONS.md`.
+- `seeds/exercises_ptbr.csv`: 104 exercícios comuns com nome PT-BR, apelidos, tipo de carga, incremento e músculos
+  (revisado e aprovado pelo dono).
 
 #### Alterado
 - Projeto renomeado de FitCoach para **Impetus** (D-001); kit movido para a raiz do repositório (D-002).
 - Node 22 → 24, sem `tsx` (D-003); cwd do cérebro movido para `BRAIN_DIR`, fora do repositório (D-004).
 - `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/DEPLOY.md`, `docs/TASKS.md`, `CLAUDE.md` e
   `runtime/.env.example` atualizados conforme as decisões.
-
-- `seeds/exercises_ptbr.csv`: 104 exercícios comuns com nome PT-BR, apelidos, tipo de carga, incremento e músculos
-  (revisado e aprovado pelo dono).
 
 #### Pendente
 - Itens em aberto para as próximas fases listados em `docs/DECISIONS.md` (retry sem duplicar, `query_sql` em
