@@ -8,7 +8,8 @@ import { describeEntities } from '../brain/context-builder.ts';
 import { fmtKg, setsCompact } from '../domain/training/format.ts';
 import { bestE1rm } from '../domain/training/load.ts';
 import { GOAL_LABELS, t } from '../i18n/pt-br.ts';
-import { GOAL_ALIASES, GOAL_KEYS, getGoals, type GoalKey } from '../tools/body.ts';
+import { GOAL_ALIASES, GOAL_KEYS, daySummary, getGoals, type GoalKey } from '../tools/body.ts';
+import { MEAL_TYPE_PT, type MealType } from '../domain/nutrition/meal-type.ts';
 import { callTool, type Registry, type ToolSettings } from '../tools/registry.ts';
 import { computeTargets } from '../tools/training.ts';
 import { formatDayMonth, localDayBounds, toLocalDate } from '../time.ts';
@@ -30,7 +31,7 @@ export function parseCommand(text: string): { name: string; args: string } | nul
 }
 
 /** Comandos previstos no SPEC §6 que chegam em fases seguintes. */
-const LATER = new Set(['hoje', 'peso', 'relatorio', 'pausar', 'retomar']);
+const LATER = new Set(['peso', 'relatorio', 'pausar', 'retomar']);
 
 export function runCommand(ctx: CommandContext, name: string, args: string): CommandResult {
   switch (name) {
@@ -50,6 +51,8 @@ export function runCommand(ctx: CommandContext, name: string, args: string): Com
       return desfazer(ctx);
     case 'status':
       return status(ctx);
+    case 'hoje':
+      return hoje(ctx);
     default:
       return { text: LATER.has(name) ? t.notYet(name) : t.unknownCommand(name) };
   }
@@ -189,5 +192,43 @@ function status(ctx: CommandContext): CommandResult {
     `• Último sync de saúde: ${ago(health, now)}`,
   ];
   if (ctx.claudeTokenExpiresAt) lines.push(`• Token Claude expira em ${ctx.claudeTokenExpiresAt}`);
+  return { text: lines.join('\n') };
+}
+
+const n0 = (n: number) => Math.round(n).toLocaleString('pt-BR');
+
+function hoje(ctx: CommandContext): CommandResult {
+  const localDate = toLocalDate(ctx.now, ctx.settings.cutoffHour, ctx.settings.timeZone);
+  const d = daySummary(ctx.db, localDate);
+  const g = d.goals;
+  const prot =
+    g.protein_g !== undefined
+      ? `${n0(d.totals.protein_g)}/${n0(g.protein_g)} g proteína${d.remaining?.protein_g && d.remaining.protein_g > 0 ? ` (faltam ${n0(d.remaining.protein_g)} g)` : ''}`
+      : `${n0(d.totals.protein_g)} g proteína`;
+  const kcal = g.kcal !== undefined ? `${n0(d.totals.kcal)}/${n0(g.kcal)} kcal` : `${n0(d.totals.kcal)} kcal`;
+  const lines = [
+    `📅 Hoje (${d.date})`,
+    `🍽️ ${kcal} · ${prot} · C ${n0(d.totals.carbs_g)} g · G ${n0(d.totals.fat_g)} g`,
+  ];
+  for (const m of d.meals) {
+    lines.push(
+      `• ${m.meal_type ? MEAL_TYPE_PT[m.meal_type as MealType] : 'Refeição'}: ${n0(m.kcal)} kcal · ${n0(m.protein_g)} g P`,
+    );
+  }
+  if (!d.meals.length) lines.push('• Nenhuma refeição registrada.');
+  lines.push(
+    d.workout
+      ? `🏋️ ${d.workout.routine ?? 'Treino'}: ${d.workout.work_sets} séries`
+      : '🏋️ Sem treino registrado',
+  );
+  for (const c of d.cardio ?? [])
+    lines.push(`🏃 ${c.activity}${'duration_min' in c ? ` ${c.duration_min} min` : ''}`);
+  const h = d.health as { steps?: number | null; sleep_minutes?: number | null } | undefined;
+  const extra: string[] = [];
+  if (h?.steps != null)
+    extra.push(`🚶 ${n0(h.steps)} passos${g.steps !== undefined ? `/${n0(g.steps)}` : ''}`);
+  if (h?.sleep_minutes != null)
+    extra.push(`🛌 ${Math.floor(h.sleep_minutes / 60)}h${String(h.sleep_minutes % 60).padStart(2, '0')}`);
+  if (extra.length) lines.push(extra.join(' · '));
   return { text: lines.join('\n') };
 }

@@ -26,7 +26,12 @@ export type ToolContext = {
   turnId: number | null;
   settings: ToolSettings;
   audit: (entity: string, entityId: number, action: AuditAction, before?: unknown, after?: unknown) => void;
+  /** Resultado da etapa assíncrona `prepare` (I/O de rede antes da transação; D-022). */
+  prepared?: unknown;
 };
+
+/** Dependências de I/O das etapas `prepare` (injetáveis nos testes). */
+export type PrepareEnv = { fetch: typeof fetch; userAgent: string };
 
 export type ToolDef<S extends z.ZodType = z.ZodType> = {
   name: string;
@@ -34,6 +39,8 @@ export type ToolDef<S extends z.ZodType = z.ZodType> = {
   scope: ToolScope;
   input: S;
   handler: (ctx: ToolContext, input: z.infer<S>) => Envelope;
+  /** Etapa assíncrona opcional (rede) executada fora da transação, antes do handler. */
+  prepare?: (input: z.infer<S>, env: PrepareEnv) => Promise<unknown>;
 };
 
 /** Ajuda o TypeScript a inferir o tipo da entrada a partir do schema. */
@@ -70,12 +77,9 @@ export function formatZodError(error: z.ZodError): string {
  * Executa uma tool: escopo, validação zod, transação (erro esperado desfaz as escritas da
  * chamada) e auditoria com o `turn_id` do turno. Nunca lança: devolve sempre o envelope.
  */
-export function callTool(
-  registry: Registry,
-  name: string,
-  rawInput: unknown,
-  base: Omit<ToolContext, 'audit'> & { toolScope: 'all' | 'read'; logger?: Logger },
-): Envelope {
+type CallBase = Omit<ToolContext, 'audit'> & { toolScope: 'all' | 'read'; logger?: Logger };
+
+export function callTool(registry: Registry, name: string, rawInput: unknown, base: CallBase): Envelope {
   const def = registry.get(name);
   if (!def) return err('NOT_FOUND', `tool desconhecida: ${name}`);
   if (def.scope === 'write' && base.toolScope === 'read') {
@@ -89,6 +93,7 @@ export function callTool(
     now: base.now,
     turnId: base.turnId,
     settings: base.settings,
+    ...(base.prepared !== undefined ? { prepared: base.prepared } : {}),
     audit: (entity, entityId, action, before, after) =>
       recordAudit(base.db, { turnId: base.turnId, entity, entityId, action, before, after }),
   };
@@ -103,4 +108,26 @@ export function callTool(
     base.logger?.error({ err: e, tool: name }, 'tool falhou');
     return err('INTERNAL', 'erro interno ao executar a tool');
   }
+}
+
+/** Como `callTool`, mas executa antes a etapa `prepare` da tool (se houver), fora da transação. */
+export async function callToolAsync(
+  registry: Registry,
+  name: string,
+  rawInput: unknown,
+  base: CallBase & { env?: PrepareEnv },
+): Promise<Envelope> {
+  const def = registry.get(name);
+  if (!def?.prepare) return callTool(registry, name, rawInput, base);
+  if (def.scope === 'write' && base.toolScope === 'read') return callTool(registry, name, rawInput, base);
+  const parsed = def.input.safeParse(rawInput ?? {});
+  if (!parsed.success) return err('VALIDATION', formatZodError(parsed.error));
+  let prepared: unknown;
+  try {
+    prepared = await def.prepare(parsed.data, base.env ?? { fetch, userAgent: 'Impetus/0.1' });
+  } catch (e) {
+    base.logger?.warn({ err: e, tool: name }, 'prepare falhou');
+    prepared = { error: String(e) };
+  }
+  return callTool(registry, name, rawInput, { ...base, prepared });
 }

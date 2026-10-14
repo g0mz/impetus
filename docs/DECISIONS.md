@@ -132,13 +132,22 @@ rc14 (suporte a LID: `remoteJidAlt`/`participantAlt`) com versão exata no lockf
 Áudio é ignorado até a Fase 7 (transcrição). O pareamento grava todos os identificadores do remetente e aprende
 novos (JID ↔ LID) quando chegam junto de um já conhecido.
 
+### D-021 — Confiança agregada da refeição (2026-10-14, Fase 3)
+Média das confianças dos itens ponderada pela kcal (alta = 1, média = 0,5, baixa = 0): ≥ 0,75 → alta,
+≥ 0,4 → média, abaixo → baixa. Substitui as descrições divergentes do DATA_MODEL ("pior item") e do TOOLS.
+
+### D-022 — Etapa `prepare` assíncrona nas tools (2026-10-14, Fase 3)
+As transações do better-sqlite3 são síncronas. Tools que precisam de rede (`lookup_barcode` → Open Food Facts)
+declaram `prepare(input, env)`, executada antes e fora da transação; o resultado chega ao handler em `ctx.prepared`.
+Falha de rede vira `found: false` com dica para pedir foto da tabela nutricional. `fetch` é injetável nos testes.
+
+### D-023 — Itens da refeição no `get_day_summary` e override escalável (2026-10-14, Fase 3)
+Para corrigir sem citação ("arroz foi 100g"), o resumo do dia lista `item_id`, rótulo e gramas de cada refeição.
+`macros_override` é guardado com a gramatura de referência (`per_grams`) e escala se a gramatura for corrigida.
+
 ## Pendentes (decidir na fase indicada)
 
-- **Fase 3 — Latência e `--max-turns 15` em refeições com foto.** Aplicar a `search_foods` e `get_portions` o mesmo
-  lote do D-019.
 - **Fase 1 — Refeição só de texto no `haiku`.** Avaliar nos evals da Fase 3 se o modelo rápido segue o protocolo.
-- **Fase 3 — Confiança agregada da refeição.** O DATA_MODEL fala em "pior item ponderado por kcal" e o TOOLS em
-  "ponderada por kcal". É preciso uma fórmula única antes de implementar.
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não
   tem *interrupt*. Proposta: rodar a query num `worker_thread` e encerrar o worker no timeout. A tool não está
   atribuída a nenhuma fase.

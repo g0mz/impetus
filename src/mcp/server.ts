@@ -6,7 +6,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { Hono } from 'hono';
 import type { Db } from '../db/index.ts';
 import type { Logger } from '../logger.ts';
-import { callTool, type Registry, type ToolSettings } from '../tools/registry.ts';
+import { callToolAsync, type PrepareEnv, type Registry, type ToolSettings } from '../tools/registry.ts';
 
 export const MCP_SERVER_NAME = 'fit';
 
@@ -46,6 +46,7 @@ export type McpDeps = {
   tokens: TokenStore;
   settings: ToolSettings;
   logger: Logger;
+  env?: PrepareEnv;
 };
 
 function buildServer(deps: McpDeps, grant: TurnGrant): McpServer {
@@ -59,13 +60,14 @@ function buildServer(deps: McpDeps, grant: TurnGrant): McpServer {
   for (const def of deps.registry.values()) {
     register(def.name, { description: def.description, inputSchema: def.input }, async (args) => {
       const started = Date.now();
-      const env = callTool(deps.registry, def.name, args, {
+      const env = await callToolAsync(deps.registry, def.name, args, {
         db: deps.db,
         now: grant.now,
         turnId: grant.turnId,
         settings: deps.settings,
         toolScope: grant.toolScope,
         logger: deps.logger,
+        ...(deps.env ? { env: deps.env } : {}),
       });
       deps.logger.info(
         {

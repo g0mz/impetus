@@ -1,6 +1,7 @@
 import type { Db } from './index.ts';
 import { markUndone, pendingAuditForTurn, type AuditEntry } from './repos/audit.ts';
 import { syncExerciseFts } from './repos/exercises.ts';
+import { refreshItemMacros, refreshMealTotals } from './repos/nutrition.ts';
 import { setSetting } from './repos/settings.ts';
 import { nowUtcIso } from '../time.ts';
 
@@ -35,6 +36,29 @@ type RoutineSnapshot = {
   }[];
 };
 
+/** Restaura uma linha inteira a partir do snapshot `before` (colunas exceto id). */
+function restoreRow(db: Db, table: string, id: number, before: Record<string, unknown>) {
+  const cols = Object.keys(before).filter((k) => k !== 'id');
+  db.prepare(`UPDATE ${table} SET ${cols.map((c) => `${c} = @${c}`).join(', ')} WHERE id = @id`).run({
+    ...before,
+    id,
+  });
+}
+
+const restoreOrSoftDelete =
+  (table: string, after?: (db: Db, id: number, now: string) => void): UndoHandler =>
+  (db, e, now) => {
+    if (e.action === 'update') {
+      const before = parse<Record<string, unknown>>(e.before_json);
+      if (!before) throw new Error(`undo de ${e.entity} sem estado anterior`);
+      restoreRow(db, table, e.entity_id, before);
+    } else softDelete(table)(db, e, now);
+    after?.(db, e.entity_id, now);
+  };
+
+const mealOfItem = (db: Db, itemId: number) =>
+  db.prepare('SELECT meal_id FROM meal_items WHERE id = ?').pluck().get(itemId) as number;
+
 const HANDLERS: Record<string, UndoHandler> = {
   workout_session: softDelete('workout_sessions'),
   set: softDelete('sets'),
@@ -66,6 +90,18 @@ const HANDLERS: Record<string, UndoHandler> = {
     );
     for (const x of before.exercises)
       ins.run(e.entity_id, x.position, x.exercise_id, x.target_sets, x.rep_min, x.rep_max);
+  },
+  meal: restoreOrSoftDelete('meals'),
+  meal_item: restoreOrSoftDelete('meal_items', (db, id, now) => {
+    refreshItemMacros(db, id);
+    refreshMealTotals(db, mealOfItem(db, id), now);
+  }),
+  meal_correction: (db, e) => {
+    db.prepare('DELETE FROM meal_corrections WHERE id = ?').run(e.entity_id);
+  },
+  food: restoreOrSoftDelete('foods'),
+  food_portion: (db, e) => {
+    db.prepare('DELETE FROM food_portions WHERE id = ?').run(e.entity_id);
   },
   setting: (db, e) => {
     const before = parse<{ key: string; value?: unknown }>(e.before_json);

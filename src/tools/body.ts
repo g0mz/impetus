@@ -127,7 +127,18 @@ export function daySummary(db: Db, localDate: string) {
   return {
     local_date: localDate,
     date: formatDayMonth(localDate),
-    meals: meals.map((m) => ({ ...m, kcal: round(m.kcal), protein_g: round(m.protein_g) })),
+    meals: meals.map((m) => ({
+      ...m,
+      kcal: round(m.kcal),
+      protein_g: round(m.protein_g),
+      items: (
+        db
+          .prepare(
+            'SELECT id AS item_id, label, grams FROM meal_items WHERE meal_id = ? AND deleted_at IS NULL ORDER BY position',
+          )
+          .all(m.meal_id) as { item_id: number; label: string; grams: number }[]
+      ).map((i) => ({ ...i, grams: Math.round(i.grams) })),
+    })),
     totals: {
       kcal: round(totals.kcal),
       protein_g: round(totals.protein_g),

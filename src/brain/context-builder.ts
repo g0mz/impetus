@@ -3,7 +3,10 @@ import { lastChatSession, sessionSets } from '../db/repos/training.ts';
 import { setsCompact } from '../domain/training/format.ts';
 import { isSessionOpen } from '../domain/training/types.ts';
 import { daySummary } from '../tools/body.ts';
-import { formatLocalIso, toLocalDate, weekdayPt, wallClock } from '../time.ts';
+import { getMeal, gramsCorrections, mealItems, pendingQuestionMeal } from '../db/repos/nutrition.ts';
+import { MEAL_TYPE_PT, type MealType } from '../domain/nutrition/meal-type.ts';
+import { detectBias } from '../domain/nutrition/priors.ts';
+import { formatDayMonth, formatLocalIso, toLocalDate, weekdayPt, wallClock } from '../time.ts';
 import type { ToolSettings } from '../tools/registry.ts';
 
 export type QuotedEntity = { entity: string; entity_id: number };
@@ -75,6 +78,9 @@ const ENTITY_PT: Record<string, [string, string]> = {
   setting: ['meta', 'metas'],
   meal: ['refeição', 'refeições'],
   meal_item: ['item', 'itens'],
+  meal_correction: ['correção', 'correções'],
+  food: ['alimento', 'alimentos'],
+  food_portion: ['porção', 'porções'],
   body_metric: ['medida corporal', 'medidas corporais'],
 };
 
@@ -122,15 +128,48 @@ function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
   });
 }
 
+function mealOfItem(db: Db, itemId: number): number {
+  return db.prepare('SELECT meal_id FROM meal_items WHERE id = ?').pluck().get(itemId) as number;
+}
+
+/** Entidades da mensagem citada: refeição com os item_id (correção por citação) e sessões. */
 function quotedBlock(db: Db, quoted: QuotedEntity[]): string {
-  const lines = quoted.map((q) => {
-    if (q.entity === 'workout_session') {
-      const sets = sessionSets(db, q.entity_id);
-      return `<quoted entity="workout_session" id="${q.entity_id}">${sets.length} séries registradas</quoted>`;
-    }
-    return `<quoted entity="${q.entity}" id="${q.entity_id}"></quoted>`;
-  });
-  return lines.join('\n');
+  const out: string[] = [];
+  const meals = new Set(quoted.filter((q) => q.entity === 'meal').map((q) => q.entity_id));
+  for (const q of quoted) if (q.entity === 'meal_item') meals.add(mealOfItem(db, q.entity_id));
+  for (const id of meals) {
+    const m = getMeal(db, id);
+    if (!m || m.deleted_at) continue;
+    const items = mealItems(db, id)
+      .map((i) => `[${i.id}] ${i.label} ${Math.round(i.grams)}g`)
+      .join(', ');
+    const type = m.meal_type ? MEAL_TYPE_PT[m.meal_type as MealType] : 'Refeição';
+    out.push(
+      `<quoted entity="meal" id="${id}">${type} ${formatDayMonth(m.local_date)} — itens (item_id): ${items}</quoted>`,
+    );
+  }
+  const sessions = new Set(quoted.filter((q) => q.entity === 'workout_session').map((q) => q.entity_id));
+  for (const id of sessions) {
+    const sets = sessionSets(db, id);
+    out.push(`<quoted entity="workout_session" id="${id}">${sets.length} séries registradas</quoted>`);
+  }
+  return out.join('\n');
+}
+
+/** Pergunta pendente e calibrações de viés ativas (NUTRITION.md §3 passo 9 e §5). */
+function nutritionContext(db: Db, now: string, localDate: string): string[] {
+  const blocks: string[] = [];
+  const pq = pendingQuestionMeal(db, localDate);
+  if (pq) blocks.push(`<pending_question meal_id="${pq.id}">${pq.pending_question}</pending_question>`);
+  const bias = detectBias(gramsCorrections(db), now);
+  if (bias.length) {
+    const lines = bias.map(
+      (b) =>
+        `- ${b.label}: corrigido para baixo em ${Math.round(b.down_share * 100)}% das vezes (n=${b.n}); multiplique a estimativa visual por ~${b.median_ratio}`,
+    );
+    blocks.push(`<calibration>\n${lines.join('\n')}\n</calibration>`);
+  }
+  return blocks;
 }
 
 /** Prompt do turno (ARCHITECTURE.md §5.2). Números vêm do banco; o modelo busca mais via tools. */
@@ -145,6 +184,7 @@ export function buildTurnPrompt(db: Db, input: TurnContextInput): string {
   if (open) blocks.push(`<open_session>${open}</open_session>`);
   const recent = recentTurns(db, input.recentTurns, input.currentTurnId);
   if (recent.length) blocks.push(`<recent_turns>\n${recent.join('\n')}\n</recent_turns>`);
+  blocks.push(...nutritionContext(db, now, localDate));
   if (input.quoted?.length) blocks.push(quotedBlock(db, input.quoted));
   if (input.extraInstructions)
     blocks.push(`<instructions>\n${input.extraInstructions.trim()}\n</instructions>`);
