@@ -1,0 +1,106 @@
+import type { z } from 'zod';
+import type { Db } from '../db/index.ts';
+import { recordAudit, type AuditAction } from '../db/repos/audit.ts';
+import type { Logger } from '../logger.ts';
+
+export type ErrorCode = 'NOT_FOUND' | 'AMBIGUOUS' | 'VALIDATION' | 'CONFLICT' | 'FORBIDDEN' | 'INTERNAL';
+export type Ok<T> = { ok: true; data: T; hints?: string[] };
+export type Err = { ok: false; error: { code: ErrorCode; message: string; candidates?: unknown[] } };
+export type Envelope<T = unknown> = Ok<T> | Err;
+
+export const ok = <T>(data: T, hints?: string[]): Ok<T> =>
+  hints?.length ? { ok: true, data, hints } : { ok: true, data };
+export const err = (code: ErrorCode, message: string, candidates?: unknown[]): Err => ({
+  ok: false,
+  error: candidates?.length ? { code, message, candidates } : { code, message },
+});
+
+export type ToolScope = 'read' | 'write';
+
+export type ToolSettings = { cutoffHour: number; timeZone: string; openSessionHours: number };
+
+export type ToolContext = {
+  db: Db;
+  /** Instante "agora" do turno (UTC ISO); fixo para o turno inteiro. */
+  now: string;
+  turnId: number | null;
+  settings: ToolSettings;
+  audit: (entity: string, entityId: number, action: AuditAction, before?: unknown, after?: unknown) => void;
+};
+
+export type ToolDef<S extends z.ZodType = z.ZodType> = {
+  name: string;
+  description: string;
+  scope: ToolScope;
+  input: S;
+  handler: (ctx: ToolContext, input: z.infer<S>) => Envelope;
+};
+
+/** Ajuda o TypeScript a inferir o tipo da entrada a partir do schema. */
+export function defineTool<S extends z.ZodType>(def: ToolDef<S>): ToolDef<S> {
+  return def;
+}
+
+export type Registry = Map<string, ToolDef>;
+
+export function createRegistry(defs: ToolDef[]): Registry {
+  const reg: Registry = new Map();
+  for (const d of defs) {
+    if (reg.has(d.name)) throw new Error(`tool duplicada: ${d.name}`);
+    reg.set(d.name, d);
+  }
+  return reg;
+}
+
+class Rollback extends Error {
+  readonly envelope: Err;
+  constructor(envelope: Err) {
+    super('rollback');
+    this.envelope = envelope;
+  }
+}
+
+export function formatZodError(error: z.ZodError): string {
+  return error.issues
+    .map((i) => `${i.path.length ? i.path.join('.') : '(entrada)'}: ${i.message}`)
+    .join('; ');
+}
+
+/**
+ * Executa uma tool: escopo, validação zod, transação (erro esperado desfaz as escritas da
+ * chamada) e auditoria com o `turn_id` do turno. Nunca lança: devolve sempre o envelope.
+ */
+export function callTool(
+  registry: Registry,
+  name: string,
+  rawInput: unknown,
+  base: Omit<ToolContext, 'audit'> & { toolScope: 'all' | 'read'; logger?: Logger },
+): Envelope {
+  const def = registry.get(name);
+  if (!def) return err('NOT_FOUND', `tool desconhecida: ${name}`);
+  if (def.scope === 'write' && base.toolScope === 'read') {
+    return err('FORBIDDEN', `${name} grava dados e não está disponível neste turno (somente leitura)`);
+  }
+  const parsed = def.input.safeParse(rawInput ?? {});
+  if (!parsed.success) return err('VALIDATION', formatZodError(parsed.error));
+
+  const ctx: ToolContext = {
+    db: base.db,
+    now: base.now,
+    turnId: base.turnId,
+    settings: base.settings,
+    audit: (entity, entityId, action, before, after) =>
+      recordAudit(base.db, { turnId: base.turnId, entity, entityId, action, before, after }),
+  };
+  try {
+    return base.db.transaction(() => {
+      const res = def.handler(ctx, parsed.data);
+      if (!res.ok) throw new Rollback(res);
+      return res;
+    })();
+  } catch (e) {
+    if (e instanceof Rollback) return e.envelope;
+    base.logger?.error({ err: e, tool: name }, 'tool falhou');
+    return err('INTERNAL', 'erro interno ao executar a tool');
+  }
+}

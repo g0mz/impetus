@@ -152,3 +152,22 @@ export function formatLocalIso(input: string | Date, timeZone = DEFAULT_TIMEZONE
   const abs = Math.abs(offMin);
   return `${ymd(w.year, w.month, w.day)}T${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
 }
+
+/**
+ * Data/hora vinda de uma tool: `YYYY-MM-DD` (dia contábil, ao meio-dia local) ou ISO completo.
+ * Sem valor, usa `now`. Devolve o instante UTC e o dia contábil.
+ */
+export function resolveWhen(
+  input: string | undefined,
+  now: string,
+  cutoffHour = DEFAULT_CUTOFF_HOUR,
+  timeZone = DEFAULT_TIMEZONE,
+): { at: string; localDate: string } {
+  if (!input) return { at: toUtcIso(now), localDate: toLocalDate(now, cutoffHour, timeZone) };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    parseLocalDate(input);
+    return { at: toUtcIso(zonedTimeToUtc(input, 12, timeZone)), localDate: input };
+  }
+  const at = toUtcIso(input);
+  return { at, localDate: toLocalDate(at, cutoffHour, timeZone) };
+}

@@ -90,22 +90,36 @@ recebe o nome em inglês. O CSV PT-BR (`seeds/exercises_ptbr.csv`) sobrescreve n
 - Quando o IBGE usa a referência de outro alimento, isso fica visível na coluna `referencia` (ex.: feijão usa
   "Feijão branco cozido - concha média cheia"; o filé de frango grelhado usa "Frango frito - filé médio").
 
+### D-014 — Retry de turno sem duplicar registros (2026-10-14, Fase 1, aprovada)
+Antes de repetir um turno que falhou (retry imediato ou reprocessamento de `failed`/`deferred`), o turn-runner
+desfaz as escritas daquela tentativa pelo `audit_log` (mesmo mecanismo do `/desfazer`) e gera um token novo.
+
+### D-015 — `Read` restrito à pasta de mídia (2026-10-14, Fase 1, aprovada)
+O cérebro recebe `Read(<mediaDir>/**)` em vez de `Read` liberado, para não ler `wa-auth`, o banco ou segredos.
+
+### D-016 — Configuração MCP em arquivo temporário (2026-10-14, Fase 1, aprovada)
+O `--mcp-config` aponta para um arquivo temporário (modo 600) criado por turno e apagado ao fim, para o token não
+aparecer na linha de comando (`ps`).
+
+### D-017 — Chaves de meta canônicas (2026-10-14, Fase 1, aprovada)
+Chaves = as do `set_goal`: `kcal`, `protein_g`, `steps`, `sleep_h`, `training_days`, `weight_rate_kg_wk`,
+`weight_target_kg`; guardadas em `settings` como `goal.<chave>`. O `/meta` aceita apelidos PT-BR: `proteina`,
+`passos`, `sono`, `treinos`, `ritmo_peso`, `peso_alvo`.
+
+### D-018 — Isolamento do coach por flags (2026-10-14, Fase 1, aprovada; resultado do teste abaixo)
+A versão 2.1.224 aceita `--setting-sources ""` e `--safe-mode`. Escolher, com o CLI logado, o que bloquear
+CLAUDE.md, hooks e plugins sem quebrar o `--mcp-config`, medindo pelos tokens de entrada.
+
+### D-019 — `search_exercises` em lote (2026-10-14, Fase 1, aprovada)
+`search_exercises` aceita `queries: string[]` (até 10) além de `query`, devolvendo os resultados por consulta, para
+um treino com vários exercícios caber no `--max-turns`.
+
 ## Pendentes (decidir na fase indicada)
 
-- **Fase 1 — Retry do turno pode duplicar registros.** Se a tentativa 1 gravou e depois falhou, a tentativa 2
-  grava de novo. Proposta: antes de cada retry ou reprocessamento, desfazer as escritas do `audit_log` daquela
-  tentativa.
-- **Fase 1 — Flags do `claude -p`.** O `--max-turns` não aparece no `--help` da 2.1.224, e o `--system-prompt-file`
-  só aparece citado na descrição do `--bare`. Conferir ao implementar o `ClaudeCliBrain`.
-- **Fase 1 — `Read` sem restrição de caminho.** A regra `"Read"` libera qualquer arquivo, inclusive `data/wa-auth`.
-  Proposta: `Read(<mediaDir>/**)`.
-- **Fase 1 — Token do MCP em `ps`.** O `--mcp-config` inline expõe o token na linha de comando. Proposta: arquivo
-  temporário com permissão 600.
-- **Fase 1 — Chaves de meta.** `/meta` (`proteina`, `ritmo_peso`), `set_goal` (`protein_g`, `weight_rate_kg_wk`,
-  `weight_target_kg`) e `settings` (`goal.*`) não batem. Proposta: chaves canônicas = as do `set_goal`, com
-  `goal.<chave>` em `settings`, e os nomes do `/meta` em PT-BR como apelidos.
-- **Fase 1/3 — Latência e `--max-turns 15` em refeições com foto.** Proposta: `search_foods` e `get_portions`
-  aceitarem várias consultas numa chamada.
+- **Fase 1 — Flags do `claude -p`.** O `--max-turns` e o `--system-prompt-file` não aparecem no `--help` da 2.1.224,
+  mas foram aceitos num teste (sem "unknown option"). Confirmar o efeito com o CLI logado.
+- **Fase 3 — Latência e `--max-turns 15` em refeições com foto.** Aplicar a `search_foods` e `get_portions` o mesmo
+  lote do D-019.
 - **Fase 1 — Refeição só de texto no `haiku`.** Avaliar nos evals da Fase 3 se o modelo rápido segue o protocolo.
 - **Fase 3 — Confiança agregada da refeição.** O DATA_MODEL fala em "pior item ponderado por kcal" e o TOOLS em
   "ponderada por kcal". É preciso uma fórmula única antes de implementar.

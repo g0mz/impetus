@@ -3,9 +3,9 @@ import { ftsExactQuery, ftsPrefixQuery, normalize } from '../../text/normalize.t
 import { nowUtcIso } from '../../time.ts';
 import type { Muscle } from '../../domain/training/muscles.ts';
 
-export type ExerciseCategory = 'strength' | 'cardio' | 'mobility' | 'other';
-export type Equipment = 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'bodyweight' | 'smith' | 'other';
-export type LoadKind = 'total' | 'per_hand' | 'per_side' | 'bodyweight_plus' | 'assisted' | 'stack';
+import type { Equipment, ExerciseCategory, LoadKind } from '../../domain/training/types.ts';
+
+export type { Equipment, ExerciseCategory, LoadKind };
 
 export type ExerciseInput = {
   name_pt: string;

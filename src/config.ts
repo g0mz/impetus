@@ -25,6 +25,8 @@ const schema = z
 
     BRAIN_PROVIDER: z.enum(['claude-cli', 'anthropic-api', 'gemini', 'none']).default('claude-cli'),
     CLAUDE_BIN: z.string().default('claude'),
+    // D-018: como isolar o `claude -p` de CLAUDE.md, hooks e plugins do usuário do sistema
+    BRAIN_ISOLATION: z.enum(['setting-sources', 'safe-mode', 'none']).default('setting-sources'),
     MODEL_FAST: z.string().default('haiku'),
     MODEL_VISION: z.string().default('sonnet'),
     MODEL_REPORT: z.string().default('sonnet'),
