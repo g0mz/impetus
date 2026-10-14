@@ -210,8 +210,13 @@ describe('gateway ponta a ponta (cérebro falso via MCP)', () => {
     const p = g.prompts.at(-1)!;
     expect(p).toContain('<now>2026-10-13T18:30:00-03:00 (terça) — dia contábil 2026-10-13</now>');
     expect(p).toMatch(/<today_snapshot>\nkcal 0\/— · proteína 0\/— g · treino: Upper B \(10 séries\)/);
-    expect(p).toMatch(
-      /<open_session>Upper B \(sessão \d+\) iniciado 18:10 — 3 exercícios, 10 séries<\/open_session>/,
+    expect(p.replace(/exercise_id \d+/g, 'exercise_id N')).toContain(
+      [
+        '<open_session>Upper B (sessão 1) iniciado 18:10 — 3 exercícios, 10 séries',
+        '- Supino inclinado com halteres (exercise_id N): 30kg 3×10',
+        '- Remada curvada com barra (exercise_id N): 60kg 4×8',
+        '- Elevação lateral com halteres (exercise_id N): 10kg 3×15</open_session>',
+      ].join('\n'),
     );
     expect(p).toContain('- "upper B: …" → registrou 1 sessão de treino, 10 séries');
     expect(p).toContain('<user_message>\nsupino 32kg 10 9 8\n</user_message>');

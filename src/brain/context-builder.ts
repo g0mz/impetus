@@ -1,5 +1,6 @@
 import type { Db } from '../db/index.ts';
 import { lastChatSession, sessionSets } from '../db/repos/training.ts';
+import { setsCompact } from '../domain/training/format.ts';
 import { isSessionOpen } from '../domain/training/types.ts';
 import { daySummary } from '../tools/body.ts';
 import { formatLocalIso, toLocalDate, weekdayPt, wallClock } from '../time.ts';
@@ -54,7 +55,14 @@ function openSession(db: Db, now: string, settings: ToolSettings): string | null
     : undefined;
   const w = wallClock(s.started_at, settings.timeZone);
   const hhmm = `${String(w.hour).padStart(2, '0')}:${String(w.minute).padStart(2, '0')}`;
-  return `${routine ?? 'treino'} (sessão ${s.id}) iniciado ${hhmm} — ${new Set(sets.map((x) => x.exercise_id)).size} exercícios, ${sets.filter((x) => x.set_type !== 'warmup').length} séries`;
+  const exIds = [...new Set(sets.map((x) => x.exercise_id))];
+  const head = `${routine ?? 'treino'} (sessão ${s.id}) iniciado ${hhmm} — ${exIds.length} exercícios, ${sets.filter((x) => x.set_type !== 'warmup').length} séries`;
+  // Nomes e ids ajudam a resolver "supino 32kg 10 9 8" para o exercício já em andamento.
+  const lines = exIds.map((id) => {
+    const name = db.prepare('SELECT name_pt FROM exercises WHERE id = ?').pluck().get(id) as string;
+    return `- ${name} (exercise_id ${id}): ${setsCompact(sets.filter((x) => x.exercise_id === id))}`;
+  });
+  return [head, ...lines].join('\n');
 }
 
 const ENTITY_PT: Record<string, [string, string]> = {

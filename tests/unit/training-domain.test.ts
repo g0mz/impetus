@@ -53,7 +53,8 @@ describe('formatação', () => {
   it('sets_compact nos três formatos', () => {
     expect(setsCompact([w(30, 10), w(30, 10), w(30, 10)])).toBe('30kg 3×10');
     expect(setsCompact([w(30, 10), w(30, 10), w(30, 9)])).toBe('30kg 10/10/9');
-    expect(setsCompact([w(30, 10), w(32, 8)])).toBe('30×10, 32×8');
+    expect(setsCompact([w(30, 10), w(32, 8)])).toBe('30kg 10, 32kg 8');
+    expect(setsCompact([w(30, 10), w(30, 10), w(30, 10), w(32, 10), w(32, 9), w(32, 8)])).toBe('30kg 3×10, 32kg 10/9/8');
     expect(setsCompact([w(20, 12, 'warmup'), w(30, 10), w(30, 10)])).toBe('aq 20kg 12 · 30kg 2×10');
     expect(setsCompact([w(null, 10), w(null, 8)])).toBe('10/8');
   });

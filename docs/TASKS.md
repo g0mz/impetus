@@ -73,15 +73,15 @@ impetus/
 
 ## Fase 1 — Cérebro + tools de treino + canal terminal
 
-- [ ] `tools/registry.ts` com envelope, escopo, auditoria e `message_links`.
-- [ ] Tools de treino (TOOLS.md) + `get_goals`/`set_goal` + `get_day_summary` (parcial).
-- [ ] Domínio: e1RM, PRs, `vs_last`, progressão (REPORTS.md §2.4), sessão aberta.
-- [ ] `mcp/server.ts`: streamable HTTP em 127.0.0.1, tokens de turno (criados e invalidados pelo turn-runner), logs por tool call.
-- [ ] `brain/claude-cli.ts`: spawn exatamente como ARCHITECTURE.md §5.1, cwd `data/brain/` (pasta vazia), timeout, parse do JSON, captura de stderr, retry.
-- [ ] `context-builder.ts` (§5.2) e `router.ts` (§5.3).
-- [ ] `channels/terminal.ts` + `scripts/chat.ts`: REPL que simula o canal (aceita `/img caminho.jpg legenda`).
-- [ ] Turn-runner com tabela `turns`.
-- [ ] Comandos `/ajuda`, `/treino`, `/ultimo`, `/metas`, `/meta`, `/desfazer`.
+- [x] `tools/registry.ts` com envelope, escopo, auditoria e `message_links`.
+- [x] Tools de treino (TOOLS.md) + `get_goals`/`set_goal` + `get_day_summary` (parcial).
+- [x] Domínio: e1RM, PRs, `vs_last`, progressão (REPORTS.md §2.4), sessão aberta.
+- [x] `mcp/server.ts`: streamable HTTP em 127.0.0.1, tokens de turno (criados e invalidados pelo turn-runner), logs por tool call.
+- [x] `brain/claude-cli.ts`: spawn exatamente como ARCHITECTURE.md §5.1, cwd `data/brain/` (pasta vazia), timeout, parse do JSON, captura de stderr, retry.
+- [x] `context-builder.ts` (§5.2) e `router.ts` (§5.3).
+- [x] `channels/terminal.ts` + `scripts/chat.ts`: REPL que simula o canal (aceita `/img caminho.jpg legenda`).
+- [x] Turn-runner com tabela `turns`.
+- [x] Comandos `/ajuda`, `/treino`, `/ultimo`, `/metas`, `/meta`, `/desfazer`.
 
 **Aceite (no `npm run chat`):**
 1. "meu upper B é: supino inclinado halter 3x8-12, remada curvada 4x6-10, elevação lateral 3x12-15" cria a rotina.

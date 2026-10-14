@@ -162,7 +162,7 @@ describe('log_workout', () => {
     );
     expect(second.session_id).toBe(first.session_id);
     expect(second.appended_to_open_session).toBe(true);
-    expect(second.summary[0]?.sets_compact).toBe('30×10, 30×10, 32×10, 32×9, 32×8');
+    expect(second.summary[0]?.sets_compact).toBe('30kg 2×10, 32kg 10/9/8');
     expect(second.session_totals.work_sets).toBe(5);
 
     newTurn('2026-10-14T01:00:00Z');

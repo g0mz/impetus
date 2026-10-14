@@ -4,6 +4,33 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 1 — Cérebro, tools de treino e canal terminal (2026-10-14)
+
+#### Adicionado
+- `tools/registry.ts`: envelope `{ok, data | error}`, escopo read/write (FORBIDDEN em turno de relatório), validação
+  zod, transação por chamada (erro esperado desfaz as escritas) e `audit_log` com `turn_id`.
+- Domínio de treino (funções puras): peso efetivo por tipo de carga, e1RM (Epley), PRs (carga, e1RM, reps na
+  mesma carga), `vs_last`, progressão dupla (increase/hold/deload/first_time), estagnação, sessão aberta.
+- Tools: `search_exercises` (com lote, D-019), `create_exercise`, `add_exercise_alias`, `define_routine`,
+  `log_workout`, `get_last_sessions`, `get_next_targets`, `log_cardio`, `set_goal`, `get_goals`,
+  `get_day_summary` (parcial).
+- Servidor MCP streamable HTTP (sem estado) em 127.0.0.1, com token por turno (sha256 no banco, revogado ao fim).
+- `ClaudeCliBrain`: flags do §5.1, prompt via stdin, cwd em `BRAIN_DIR`, `Read` só na mídia (D-015), config MCP
+  em arquivo 600 (D-016), isolamento `--setting-sources ""` medido (D-018); `ContextBuilder` (§5.2) com sessão
+  aberta detalhada; roteador de modelo (§5.3); `BRAIN_PROVIDER=none`.
+- Turn-runner com retry que desfaz as escritas da tentativa falha (D-014), `deferred` no limite de uso.
+- Undo por turno (`/desfazer` e retry) para séries, sessões, cardio, rotinas, exercícios, apelidos e metas.
+- Comandos `/ajuda`, `/treino`, `/ultimo`, `/metas`, `/meta` (apelidos PT-BR, D-017), `/desfazer`.
+- Canal `terminal` + `npm run chat` (`/img caminho legenda`, `/citar n texto`); `npm run dev` com o canal do `.env`.
+- 110 testes, incluindo ponta a ponta do gateway com um "LLM falso" chamando as tools pelo MCP real.
+
+#### Verificado com o cérebro real (haiku, assinatura Pro)
+- Os 6 critérios de aceite da Fase 1 no `npm run chat`; 11–19 s por turno, 2–3 chamadas ao modelo, ~US$ 0,01
+  estimado por turno.
+
+#### Alterado
+- `runtime/prompts/system.md`: busca de exercícios em lote (D-019).
+
 ### Fase 0 — Fundação (2026-10-13/14)
 
 #### Adicionado
