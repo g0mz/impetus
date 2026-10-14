@@ -1,0 +1,85 @@
+codigo_ibge,alimento,preparo,medida,gramas,referencia,fonte_ref,fonte_pagina
+6300101,"Arroz (polido, parboilizado)",Não se aplica,Colher de sopa,25,Arroz cozido - colher de sopa cheia,1,35
+6300101,"Arroz (polido, parboilizado)",Não se aplica,Colher de arroz/servir,45,Arroz cozido - colher de arroz cheia,1,35
+6300101,"Arroz (polido, parboilizado)",Não se aplica,Escumadeira,85,Arroz cozido - escumadeira média cheia,1,35
+6300101,"Arroz (polido, parboilizado)",Não se aplica,Prato fundo,200,Arroz cozido - prato fundo cheio,1,35
+6300201,Arroz integral,Não se aplica,Colher de sopa,20,Arroz integral cozido - colher de sopa cheia,1,36
+6300201,Arroz integral,Não se aplica,Colher de arroz/servir,63,Arroz integral cozido - colher de arroz cheia,1,36
+6303102,"Feijão (preto, mulatinho, roxo, rosinha, etc.)",Não se aplica,Concha,140,Feijão branco cozido - concha média cheia,1,43
+6303102,"Feijão (preto, mulatinho, roxo, rosinha, etc.)",Não se aplica,Colher de sopa,17,Feijão branco cozido - colher de sopa cheia,1,43
+6303102,"Feijão (preto, mulatinho, roxo, rosinha, etc.)",Não se aplica,Colher de arroz/servir,35,Feijão branco cozido - colher de arroz cheia,1,43
+7109101,Carne bovina,Grelhado(a)/brasa/chur- rasco,Bife,100,Bife bovino - unidade média,1,281
+7109101,Carne bovina,Cozido(a),Pedaço,35,Carne bovina ensopada - pedaço médio,1,280
+7109101,Carne bovina,Assado(a),Fatia,90,Carne bovina assada - fatia média,1,282
+7104301,Carne moída,Não se aplica,Colher de sopa,25,Carne bovina moída - colher de sopa cheia,1,262
+7104301,Carne moída,Não se aplica,Colher de arroz/servir,60,Carne bovina moída - colher de arroz cheia,1,262
+7800302,Frango em pedaços,Assado(a),Coxa,55,Frango assado - coxa grande,1,328
+7800302,Frango em pedaços,Assado(a),Sobrecoxa,65,Frango assado - sobrecoxa média,1,329
+7800302,Frango em pedaços,Assado(a),Peito,180,Frango assado - peito médio,1,329
+7800302,Frango em pedaços,Assado(a),Asa,40,Frango assado - asa média,1,328
+7800302,Frango em pedaços,Cozido(a),Colher de sopa,20,Frango assado - colher de sopa cheia desfiado,1,327
+7800402,Filé de frango,Grelhado(a)/brasa/chur- rasco,Filé,100,Frango frito - filé médio,1,343
+7800402,Filé de frango,Empanado(a)/à milanesa,Filé,140,Frango à milanesa - filé médio,1,344
+7600101,"Peixe não especificado (inteiro, em posta, em filé, etc.)",Grelhado(a)/brasa/churrasco,Filé,120,Peixe cozido - filé médio,1,308
+7600101,"Peixe não especificado (inteiro, em posta, em filé, etc.)",Cozido(a),Posta,200,Peixe cozido - posta média,1,307
+7803301,Ovo de galinha,Cozido(a),Unidade,45,Ovo de galinha cozido - unidade média,1,362
+7803301,Ovo de galinha,Frito(a),Unidade,50,Ovo de galinha frito - unidade média,1,362
+7803301,Ovo de galinha,Frito(a),Colher de sopa,15,Ovo de galinha mexido - colher de sopa cheia,1,362
+7803501,Ovo de codorna,Cozido(a),Unidade,10,Ovo de codorna - unidade,1,364
+8000105,Pão de sal,Não se aplica,Unidade,50,Pão francês - unidade,1,393
+8000501,Pão de forma industrializado de qualquer marca,Não se aplica,Fatia,25,Pão de forma branco - unidade,1,394
+8001401,Pão integral,Não se aplica,Fatia,25,Pão de forma de aveia - unidade,1,395
+8000801,Pão de queijo,Não se aplica,Unidade,20,Pão de queijo - unidade média,1,394
+6501516,Tapioca de goma,Não se aplica,Unidade,50,Tapioca com coco - unidade,8,84
+6902901,Cuscuz,Não se aplica,Pedaço,135,Cuscuz de milho - pedaço médio,1,193
+8502201,Farofa,Não se aplica,Colher de sopa,15,Farofa - colher de sopa cheia,1,511
+6501401,Farinha de mandioca,Não se aplica,Colher de sopa,16,Farinha de mandioca - colher de sopa cheia,1,80
+6503401,Macarrão,Cozido(a),Escumadeira,110,Macarrão cozido - escumadeira média cheia,1,87
+6503401,Macarrão,Cozido(a),Pegador,110,Macarrão cozido - pegador,1,87
+6503401,Macarrão,Cozido(a),Garfada,30,Macarrão cozido - garfada,1,87
+6400101,Batata-inglesa,Cozido(a),Unidade,140,Batata-inglesa cozida - unidade média,1,46
+6400101,Batata-inglesa,Cozido(a),Colher de sopa,30,Batata-inglesa cozida - colher de sopa cheia,1,46
+6400101,Batata-inglesa,Frito(a),Escumadeira,65,Batata-inglesa frita - escumadeira média cheia,1,47
+6400401,Batata-doce,Cozido(a),Unidade,355,Batata-doce cozida - unidade média,1,51
+6400401,Batata-doce,Cozido(a),Fatia,70,Batata-doce cozida - fatia média,1,51
+6400401,Batata-doce,Cozido(a),Colher de sopa,42,Batata-doce cozida - colher de sopa cheia,1,51
+6400609,Aipim,Cozido(a),Pedaço,100,Aipim cozido - pedaço médio,1,57
+6801101,"Banana (ouro, prata, d´água, da terra, etc.)",Não se aplica,Unidade,75,Banana-prata - unidade,3,155
+6801801,"Laranja (pera, seleta, lima, da terra, etc.)",Não se aplica,Unidade,180,Laranja - unidade média,1,156
+6803001,Maçã,Não se aplica,Unidade,150,Maçã - unidade média,1,160
+6803101,Mamão,Não se aplica,Unidade,310,Mamão papaya - unidade média,1,161
+6803101,Mamão,Não se aplica,Fatia,170,Mamão - fatia média,1,160
+6802701,Abacate,Não se aplica,Colher de sopa,45,Abacate - colher de sopa cheia picado,1,159
+6803901,Uva,Não se aplica,Bago,8,Uva - unidade média,1,164
+6805201,Morango,Não se aplica,Unidade,12,Morango - unidade média,1,169
+6700101,Alface,Não se aplica,Folha,10,Alface - folha média,1,104
+6705101,Tomate,Não se aplica,Unidade,100,Tomate - unidade média,1,143
+6705101,Tomate,Não se aplica,Fatia,15,Tomate - fatia média,1,143
+6401201,Cenoura,Não se aplica,Unidade,120,Cenoura crua - unidade média,1,71
+6701704,Brócolis,Cozido(a),Colher de sopa,10,Brócolis cozido - colher de sopa cheia picada,1,121
+6500401,Aveia em flocos,Não se aplica,Colher de sopa,15,Aveia flocos - colher de sopa cheia,1,74
+6504101,Granola,Não se aplica,Colher de sopa,10,Granola - colher de sopa,14,94
+6906602,Açúcar,Não se aplica,Colher de chá,5,Açúcar refinado - colher de chá cheia,1,205
+6906602,Açúcar,Não se aplica,Colher de sopa,24,Açúcar refinado - colher de sopa cheia,1,205
+6901602,Mel,Não se aplica,Colher de sopa,15,Mel de abelha - colher de sopa,1,189
+7900101,Leite de vaca integral,Não se aplica,Copo americano,150,Copo americano,15,367
+7903601,Leite de vaca desnatado,Não se aplica,Xícara de chá,200,Xícara de chá,1,385
+8501302,Café,Não se aplica,Xícara de café,50,Xícara de café,15,505
+8500407,Suco de laranja,Não se aplica,Copo americano,150,Copo americano,15,488
+7901501,Manteiga com ou sem sal,Não se aplica,Ponta de faca,5,Manteiga - ponta de faca,7,376
+7901501,Manteiga com ou sem sal,Não se aplica,Colher de chá,8,Manteiga - colher de chá cheia,1,375
+7901602,Margarina com ou sem sal,Não se aplica,Colher de chá,8,Margarina - colher de chá cheia,1,376
+7902901,Requeijão,Não se aplica,Colher de sopa,30,Requeijão - colher de sopa cheia,1,381
+7902901,Requeijão,Não se aplica,Ponta de faca,6,Requeijão - ponta de faca,7,381
+7901801,Queijo muçarela,Não se aplica,Fatia,20,Queijo muçarela - fatia média,1,377
+7901701,Queijo prato,Não se aplica,Fatia,15,Queijo prato - fatia média,1,377
+7902001,Queijo de minas,Não se aplica,Fatia,45,Queijo minas padrão - fatia média,1,378
+7902403,Queijo ralado,Não se aplica,Colher de sopa,15,Queijo parmesão - colher de sopa cheia ralado,1,380
+8102901,Presunto,Não se aplica,Fatia,15,Presunto Sadia - fatia média,1,429
+7801801,Peito de peru,Não se aplica,Fatia,32,Peru - fatia média,1,358
+8400301,Óleo de soja,Não se aplica,Colher de sopa,8,Óleo vegetal - colher de sopa,1,474
+8400301,Óleo de soja,Não se aplica,Colher de chá,2,Óleo vegetal - colher de chá,1,474
+8102101,Salsicha no varejo,Não se aplica,Unidade,31,Salsicha hot dog - unidade média,1,422
+8102204,"Linguiça (suína, bovina, mista, etc.)",Cozido(a),Gomo,60,Linguiça - gomo,1,423
+7703002,Sardinha em conserva,Não se aplica,Unidade,41.5,Sardinha em conserva - unidade média,1,319
+6900821,Achocolatado em pó,Não se aplica,Colher de sopa,16,Achocolatado em pó - colher de sopa cheia,1,181

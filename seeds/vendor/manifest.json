@@ -1,0 +1,24 @@
+{
+  "files": {
+    "vendor/taco/food.csv": {
+      "sha256": "af5de2fbd6e09f3cae53dd6dc357db915155a19f3fac6beb864710ee4e154e65",
+      "source": "https://github.com/raulfdm/taco-api/tree/main/references/csv (TACO 4a ed., NEPA/Unicamp; conferido contra https://nepa.unicamp.br/wp-content/uploads/sites/27/2023/10/taco_4_edicao_ampliada_e_revisada.pdf sha256 2002aec5615b5b1395aaa8fa675635bbb7f712c33f278af5e332f1cac8f108c8)",
+      "license": "TACO: uso livre com citação (NEPA/Unicamp); taco-api: MIT"
+    },
+    "vendor/taco/nutrients.csv": {
+      "sha256": "f2e38e32b5efc5afa64e64a67433832195e4e81c48e24fcc8d4f145906e8b986",
+      "source": "https://github.com/raulfdm/taco-api/tree/main/references/csv (TACO 4a ed., NEPA/Unicamp; conferido contra https://nepa.unicamp.br/wp-content/uploads/sites/27/2023/10/taco_4_edicao_ampliada_e_revisada.pdf sha256 2002aec5615b5b1395aaa8fa675635bbb7f712c33f278af5e332f1cac8f108c8)",
+      "license": "TACO: uso livre com citação (NEPA/Unicamp); taco-api: MIT"
+    },
+    "vendor/taco/categories.csv": {
+      "sha256": "fc28b3f3d54b02e5c362827eae5f3e1dfaa972e7352627ca30310662de02bbec",
+      "source": "https://github.com/raulfdm/taco-api/tree/main/references/csv (TACO 4a ed., NEPA/Unicamp; conferido contra https://nepa.unicamp.br/wp-content/uploads/sites/27/2023/10/taco_4_edicao_ampliada_e_revisada.pdf sha256 2002aec5615b5b1395aaa8fa675635bbb7f712c33f278af5e332f1cac8f108c8)",
+      "license": "TACO: uso livre com citação (NEPA/Unicamp); taco-api: MIT"
+    },
+    "vendor/free-exercise-db/exercises.json": {
+      "sha256": "5bb747e3fc658f095a60dcbf6d53c96627acdcc6ffb6fffde86f7e26995d40bf",
+      "source": "https://github.com/yuhonas/free-exercise-db/blob/f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5/dist/exercises.json",
+      "license": "Unlicense (domínio público)"
+    }
+  }
+}
