@@ -106,9 +106,21 @@ Chaves = as do `set_goal`: `kcal`, `protein_g`, `steps`, `sleep_h`, `training_da
 `weight_target_kg`; guardadas em `settings` como `goal.<chave>`. O `/meta` aceita apelidos PT-BR: `proteina`,
 `passos`, `sono`, `treinos`, `ritmo_peso`, `peso_alvo`.
 
-### D-018 — Isolamento do coach por flags (2026-10-14, Fase 1, aprovada; resultado do teste abaixo)
-A versão 2.1.224 aceita `--setting-sources ""` e `--safe-mode`. Escolher, com o CLI logado, o que bloquear
-CLAUDE.md, hooks e plugins sem quebrar o `--mcp-config`, medindo pelos tokens de entrada.
+### D-018 — Isolamento do coach: `--setting-sources ""` (2026-10-14, Fase 1, aprovada e medida)
+Testado com o CLI 2.1.224 logado, com o `ClaudeCliBrain` real contra um MCP real (haiku, 2 chamadas por teste):
+| Variante | Tokens de entrada | MCP | `CLAUDE.md` no cwd |
+|---|---|---|---|
+| sem `--strict-mcp-config` nem isolamento | ~99 mil | — | — |
+| nenhum isolamento (com `--strict-mcp-config`) | 29,1 mil | funciona | **vaza** (respondeu "151 BANANA") |
+| `--setting-sources ""` | 14,3 mil | funciona | bloqueado |
+| `--safe-mode` | — | **quebra** ("a ferramenta get_goals não existe") | — |
+
+- Decisão: `--setting-sources ""` (`BRAIN_ISOLATION=setting-sources`, padrão) + cwd fora do repositório (D-004),
+  como defesa em camadas. O `--strict-mcp-config` corta os servidores MCP dos plugins do usuário (a maior parte do
+  custo sem isolamento).
+- Os ~7 mil tokens por chamada que sobram são o system prompt do coach e os schemas das tools.
+- `--system-prompt-file` e `--max-turns` são aceitos e têm efeito, embora não apareçam no `--help`.
+- D-015 conferido no Windows: `Read(//c/...)` abre imagem dentro de `data/media` e bloqueia arquivo fora dela.
 
 ### D-019 — `search_exercises` em lote (2026-10-14, Fase 1, aprovada)
 `search_exercises` aceita `queries: string[]` (até 10) além de `query`, devolvendo os resultados por consulta, para
@@ -116,8 +128,6 @@ um treino com vários exercícios caber no `--max-turns`.
 
 ## Pendentes (decidir na fase indicada)
 
-- **Fase 1 — Flags do `claude -p`.** O `--max-turns` e o `--system-prompt-file` não aparecem no `--help` da 2.1.224,
-  mas foram aceitos num teste (sem "unknown option"). Confirmar o efeito com o CLI logado.
 - **Fase 3 — Latência e `--max-turns 15` em refeições com foto.** Aplicar a `search_foods` e `get_portions` o mesmo
   lote do D-019.
 - **Fase 1 — Refeição só de texto no `haiku`.** Avaliar nos evals da Fase 3 se o modelo rápido segue o protocolo.
