@@ -8,6 +8,9 @@ export const t = {
     '  chaves: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo',
     '• /desfazer — desfaz o último registro',
     '• /status — saúde do sistema',
+    '• /hoje — resumo do dia · /peso <kg> — registra peso',
+    '• /relatorio [dia|semana|mes] — relatório na hora',
+    '• /pausar · /retomar — mensagens automáticas',
     '• /ajuda — esta lista',
     '',
     'Ou escreva livremente, por exemplo:',
@@ -33,6 +36,9 @@ export const t = {
   brainFailed: 'Não consegui processar agora, tento de novo em 10 min.',
   brainDeferred: 'Atingi o limite de uso do momento; processo sua mensagem na próxima hora cheia.',
   brainUnavailable: 'O assistente está desligado (só comandos /). Veja /ajuda.',
+  paused: '⏸️ Mensagens automáticas pausadas (relatórios e lembretes). Alertas críticos continuam. /retomar para voltar.',
+  resumed: '▶️ Mensagens automáticas retomadas.',
+  reportGenerating: '📊 Gerando o relatório…',
 } as const;
 
 export const GOAL_LABELS: Record<string, { label: string; unit: string }> = {

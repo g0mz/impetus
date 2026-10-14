@@ -28,6 +28,8 @@ export type InboxDeps = {
   debounceImageMs?: number;
   clock?: () => string;
   claudeTokenExpiresAt?: string;
+  /** /relatorio: gera na hora (usa o cérebro; fallback determinístico). */
+  report?: (kind: 'daily' | 'weekly' | 'monthly') => Promise<{ text: string; reportId: number }>;
 };
 
 type Pending = { msg: InboundMessage; id: number; imageOnly: boolean };
@@ -125,6 +127,22 @@ export function createInbox(deps: InboxDeps) {
     }
 
     const cmd = !m.imagePath && m.text ? parseCommand(m.text) : null;
+    if (cmd?.name === 'relatorio' && deps.report) {
+      const arg = cmd.args.toLowerCase();
+      const kind = /^dia|hoje/.test(arg) ? 'daily' : /^m[eê]s/.test(arg) ? 'monthly' : 'weekly';
+      deps.db.prepare("UPDATE messages SET status = 'processed' WHERE id = ?").run(id);
+      await queue.add(async () => {
+        await deps.channel.processing?.(m, true);
+        try {
+          const r = await deps.report!(kind);
+          await reply(r.text, m.chatId, undefined, []);
+          deps.db.prepare('UPDATE reports SET sent_at = ? WHERE id = ?').run(clock(), r.reportId);
+        } finally {
+          await deps.channel.processing?.(m, false);
+        }
+      });
+      return;
+    }
     if (cmd) {
       const res = runCommand(
         {
@@ -152,7 +170,32 @@ export function createInbox(deps: InboxDeps) {
     await enqueue([item]);
   }
 
+  /** Reprocessa as mensagens de um turno que falhou ou foi adiado (job do scheduler). */
+  async function retryTurn(turnId: number): Promise<boolean> {
+    const msgs = deps.db
+      .prepare(
+        "SELECT id, text, media_path, quoted_external_id, created_at FROM messages WHERE turn_id = ? AND direction = 'in' AND status = 'failed' ORDER BY id",
+      )
+      .all(turnId) as { id: number; text: string | null; media_path: string | null; quoted_external_id: string | null; created_at: string }[];
+    if (!msgs.length) return false;
+    const batch: Pending[] = msgs.map((x) => ({
+      id: x.id,
+      imageOnly: Boolean(x.media_path) && !x.text,
+      msg: {
+        externalId: `retry-${x.id}`,
+        text: x.text,
+        imagePath: x.media_path,
+        quotedExternalId: x.quoted_external_id,
+        at: x.created_at,
+        ...(deps.owner?.defaultChat() ? { chatId: deps.owner.defaultChat()! } : {}),
+      },
+    }));
+    await enqueue(batch);
+    return true;
+  }
+
   return Object.assign(handle, {
+    retryTurn,
     /** Espera a fila esvaziar (testes e desligamento). */
     async drain() {
       debouncer?.flushNow();

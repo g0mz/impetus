@@ -13,6 +13,7 @@ import { MEAL_TYPE_PT, type MealType } from '../domain/nutrition/meal-type.ts';
 import { callTool, type Registry, type ToolSettings } from '../tools/registry.ts';
 import { computeTargets } from '../tools/training.ts';
 import { formatDayMonth, localDayBounds, toLocalDate } from '../time.ts';
+import { setSetting } from '../db/repos/settings.ts';
 
 export type CommandContext = {
   db: Db;
@@ -31,7 +32,7 @@ export function parseCommand(text: string): { name: string; args: string } | nul
 }
 
 /** Comandos previstos no SPEC §6 que chegam em fases seguintes. */
-const LATER = new Set(['peso', 'relatorio', 'pausar', 'retomar']);
+const LATER = new Set<string>();
 
 export function runCommand(ctx: CommandContext, name: string, args: string): CommandResult {
   switch (name) {
@@ -53,6 +54,12 @@ export function runCommand(ctx: CommandContext, name: string, args: string): Com
       return status(ctx);
     case 'hoje':
       return hoje(ctx);
+    case 'peso':
+      return peso(ctx, args);
+    case 'pausar':
+      return pausar(ctx, true);
+    case 'retomar':
+      return pausar(ctx, false);
     default:
       return { text: LATER.has(name) ? t.notYet(name) : t.unknownCommand(name) };
   }
@@ -231,4 +238,23 @@ function hoje(ctx: CommandContext): CommandResult {
     extra.push(`🛌 ${Math.floor(h.sleep_minutes / 60)}h${String(h.sleep_minutes % 60).padStart(2, '0')}`);
   if (extra.length) lines.push(extra.join(' · '));
   return { text: lines.join('\n') };
+}
+
+function peso(ctx: CommandContext, args: string): CommandResult {
+  const v = Number(args.replace(',', '.').replace(/kg$/i, '').trim());
+  if (!args || !Number.isFinite(v)) return { text: t.usage('/peso <kg>  (ex.: /peso 74,2)') };
+  const { result: env, turnId } = inCommandTurn(ctx, (turnId) =>
+    callTool(ctx.registry, 'log_body_metric', { weight_kg: v }, { db: ctx.db, now: ctx.now, turnId, settings: ctx.settings, toolScope: 'all' }),
+  );
+  if (!env.ok) return { text: `⚠️ ${env.error.message}`, turnId };
+  const d = env.data as { weight_trend_kg: number | null; delta_7d_kg: number | null };
+  const kg = (n: number) => n.toFixed(1).replace('.', ',');
+  const trend = d.weight_trend_kg !== null ? ` · tendência ${kg(d.weight_trend_kg)} kg` : '';
+  const delta = d.delta_7d_kg !== null ? ` (${d.delta_7d_kg > 0 ? '+' : d.delta_7d_kg < 0 ? '−' : ''}${kg(Math.abs(d.delta_7d_kg))} kg em 7 dias)` : '';
+  return { text: `⚖️ ${kg(v)} kg registrado${trend}${delta}`, turnId };
+}
+
+function pausar(ctx: CommandContext, paused: boolean): CommandResult {
+  setSetting(ctx.db, 'proactive.paused', paused);
+  return { text: paused ? t.paused : t.resumed };
 }
