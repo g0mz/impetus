@@ -32,6 +32,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   escuro, números em pt-BR; enviados como imagem após o texto. Falha de gráfico não impede o relatório.
 - Dependências fixadas: `vega@6.4.0`, `vega-lite@6.4.3`, `@resvg/resvg-js@2.6.2` (binário linux-arm64-gnu).
 
+#### Evals
+- `npm run eval:report`: semana sintética → turno de relatório com o cérebro real → todo número do texto
+  precisa existir no brief (`reports/verify.ts`). ✅ após ajustar `report.md` (omitir linha inteira sem dados;
+  não rotular estagnação sem insight). PRs no brief agora em pt-BR (`62,5kg×8`).
+
 #### Pendente
 - Evals de relatório contra o cérebro real.
 

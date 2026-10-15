@@ -1,64 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import type { Db } from '../../src/db/index.ts';
 import { setSetting } from '../../src/db/repos/settings.ts';
 import type { RunTurn } from '../../src/gateway/turn-runner.ts';
 import { createLogger } from '../../src/logger.ts';
 import { reportPeriod } from '../../src/reports/build.ts';
 import { generateReport } from '../../src/reports/service.ts';
 import { buildJobs, runJob, type JobDef } from '../../src/scheduler/jobs.ts';
-import { SETTINGS, data, makeCaller, makeDb } from '../helpers.ts';
+import { seedReportWeek } from '../fixtures/report-week.ts';
+import { SETTINGS, makeDb } from '../helpers.ts';
 
 const logger = createLogger('silent');
 // Domingo 18/10/2026, 20:00 em São Paulo → semana seg 12/10 – dom 18/10.
 const NOW = '2026-10-18T23:00:00Z';
-const sets = (n: number, weight_kg: number, reps: number) =>
-  Array.from({ length: n }, () => ({ weight_kg, reps }));
-
-/** Semana sintética com números conhecidos. */
-function seedWeek(db: Db, ex: Record<string, number>) {
-  const { call, newTurn } = makeCaller(db, { now: NOW });
-  for (const [key, value] of [
-    ['kcal', 2400],
-    ['protein_g', 140],
-    ['training_days', 3],
-  ] as const)
-    data(call('set_goal', { key, value }));
-  const workouts: [string, number][] = [
-    ['2026-10-12', 60],
-    ['2026-10-14', 62.5],
-    ['2026-10-16', 65],
-  ];
-  for (const [d, w] of workouts) {
-    newTurn(NOW);
-    data(
-      call('log_workout', {
-        new_session: true,
-        performed_at: `${d}T21:00:00Z`,
-        entries: [
-          { exercise_id: ex.remada!, sets: sets(3, w, 8) },
-          { exercise_id: ex.supInc!, sets: sets(3, 24, 10) },
-        ],
-      }),
-    );
-  }
-  const meal = db.prepare(
-    `INSERT INTO meals (eaten_at, local_date, confidence, kcal, protein_g, carbs_g, fat_g, fiber_g, created_at, updated_at)
-     VALUES (?, ?, 'high', ?, ?, 0, 0, 0, ?, ?)`,
-  );
-  // 4 dias completos (3 refeições): 2400 kcal e 150 g ou 120 g de proteína.
-  for (const [d, p] of [
-    ['2026-10-12', 50],
-    ['2026-10-13', 50],
-    ['2026-10-14', 40],
-    ['2026-10-15', 40],
-  ] as const)
-    for (let k = 0; k < 3; k++) meal.run(`${d}T15:00:00Z`, d, 800, p, NOW, NOW);
-  const w = db.prepare(
-    "INSERT INTO body_metrics (measured_at, local_date, weight_kg, source, created_at) VALUES (?, ?, ?, 'chat', ?)",
-  );
-  w.run('2026-10-12T10:00:00Z', '2026-10-12', 80, NOW);
-  w.run('2026-10-15T10:00:00Z', '2026-10-15', 81, NOW);
-}
 
 describe('relatório semanal', () => {
   it('período seg–dom e mês anterior', () => {
@@ -69,7 +21,7 @@ describe('relatório semanal', () => {
 
   it('brief com números conhecidos e fallback sem cérebro (snapshot)', async () => {
     const { db, ex } = makeDb();
-    seedWeek(db, ex);
+    seedReportWeek(db, { now: NOW, remada: ex.remada!, supino: ex.supInc! });
     const r = await generateReport({
       db,
       kind: 'weekly',
@@ -105,7 +57,7 @@ describe('relatório semanal', () => {
 
   it('cérebro falhou → fallback; cérebro ok → texto do LLM', async () => {
     const { db, ex } = makeDb();
-    seedWeek(db, ex);
+    seedReportWeek(db, { now: NOW, remada: ex.remada!, supino: ex.supInc! });
     const failing = (async () => ({ status: 'failed', text: '' })) as unknown as RunTurn;
     const a = await generateReport({
       db,
@@ -337,5 +289,23 @@ describe('lembrete de recarga do chip', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ critical: true });
     expect(sent[0]!.t).toContain('25 dias');
+  });
+});
+
+describe('verificação de números do relatório', () => {
+  it('fallback só usa números do brief; número inventado é apontado', async () => {
+    const { numbersNotInBrief } = await import('../../src/reports/verify.ts');
+    const { db, ex } = makeDb();
+    seedReportWeek(db, { now: NOW, remada: ex.remada!, supino: ex.supInc! });
+    const r = await generateReport({
+      db,
+      kind: 'weekly',
+      now: NOW,
+      cutoffHour: 4,
+      timeZone: SETTINGS.timeZone,
+      logger,
+    });
+    expect(numbersNotInBrief(r.text, r.brief)).toEqual([]);
+    expect(numbersNotInBrief(`${r.text}\nVocê comeu 2.650 kcal`, r.brief)).toEqual(['2650']);
   });
 });

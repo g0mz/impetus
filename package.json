@@ -19,6 +19,7 @@
     "db:seed": "node scripts/db-seed.ts",
     "chat": "node scripts/chat.ts",
     "eval": "node scripts/eval.ts",
+    "eval:report": "node scripts/eval-report.ts",
     "wa:link": "node scripts/wa-link.ts",
     "hc:fixture": "node scripts/hc-fixture.ts",
     "logs:pretty": "pino-pretty"

@@ -18,7 +18,8 @@ export type TrainingSet = SetLike & {
 };
 
 const isHard = (s: SetLike) => s.set_type === 'work' || s.set_type === 'failure';
-const inPeriod = (s: { local_date: string }, start: string, end: string) => s.local_date >= start && s.local_date <= end;
+const inPeriod = (s: { local_date: string }, start: string, end: string) =>
+  s.local_date >= start && s.local_date <= end;
 
 /** Séries duras por músculo (§2.2): primário 1,0; secundário 0,5; sem aquecimento. */
 export function setsByMuscle(sets: TrainingSet[]): Partial<Record<Muscle, number>> {
@@ -35,7 +36,10 @@ export function tonnage(sets: TrainingSet[], bodyweightKg: number | null): numbe
   return Math.round(
     sets
       .filter((s) => s.set_type === 'work')
-      .reduce((t, s) => t + (effectiveWeight(s.weight_kg, s.load_kind, bodyweightKg) ?? 0) * (s.reps ?? 0), 0),
+      .reduce(
+        (t, s) => t + (effectiveWeight(s.weight_kg, s.load_kind, bodyweightKg) ?? 0) * (s.reps ?? 0),
+        0,
+      ),
   );
 }
 
@@ -59,7 +63,12 @@ type Session = { session_id: number; local_date: string; started_at: string; set
 function sessionsOf(sets: TrainingSet[]): Session[] {
   const by = new Map<number, Session>();
   for (const s of sets) {
-    const cur = by.get(s.session_id) ?? { session_id: s.session_id, local_date: s.local_date, started_at: s.started_at, sets: [] };
+    const cur = by.get(s.session_id) ?? {
+      session_id: s.session_id,
+      local_date: s.local_date,
+      started_at: s.started_at,
+      sets: [],
+    };
     cur.sets.push(s);
     by.set(s.session_id, cur);
   }
@@ -68,7 +77,10 @@ function sessionsOf(sets: TrainingSet[]): Session[] {
 
 /** Melhor e1RM por sessão de cada exercício (série temporal). */
 export function e1rmHistory(all: TrainingSet[], bodyweightKg: number | null) {
-  const out = new Map<number, { exercise: string; points: { local_date: string; session_id: number; e1rm: number }[] }>();
+  const out = new Map<
+    number,
+    { exercise: string; points: { local_date: string; session_id: number; e1rm: number }[] }
+  >();
   for (const sess of sessionsOf(all)) {
     const byEx = new Map<number, TrainingSet[]>();
     for (const s of sess.sets) byEx.set(s.exercise_id, [...(byEx.get(s.exercise_id) ?? []), s]);
@@ -93,17 +105,35 @@ export function prsInPeriod(all: TrainingSet[], start: string, end: string, body
     const exIds = [...new Set(sess.sets.map((s) => s.exercise_id))];
     for (const exId of exIds) {
       const cur = sess.sets.filter((s) => s.exercise_id === exId);
-      const kinds = detectPrs(before.filter((s) => s.exercise_id === exId), cur, cur[0]!.load_kind, bodyweightKg);
+      const kinds = detectPrs(
+        before.filter((s) => s.exercise_id === exId),
+        cur,
+        cur[0]!.load_kind,
+        bodyweightKg,
+      );
       if (!kinds.length) continue;
-      const top = cur.filter(isHard).sort((a, b) => (b.weight_kg ?? 0) - (a.weight_kg ?? 0) || (b.reps ?? 0) - (a.reps ?? 0))[0]!;
-      prs.push({ exercise: cur[0]!.exercise, kinds, best: `${top.weight_kg ?? 'PC'}kg×${top.reps}`, local_date: sess.local_date });
+      const top = cur
+        .filter(isHard)
+        .sort((a, b) => (b.weight_kg ?? 0) - (a.weight_kg ?? 0) || (b.reps ?? 0) - (a.reps ?? 0))[0]!;
+      prs.push({
+        exercise: cur[0]!.exercise,
+        kinds,
+        best: `${String(top.weight_kg ?? 'PC').replace('.', ',')}kg×${top.reps}`,
+        local_date: sess.local_date,
+      });
     }
   });
   return prs;
 }
 
 /** Evolução de e1RM no período para os exercícios mais frequentes (compostos primeiro). */
-export function topLifts(all: TrainingSet[], start: string, end: string, bodyweightKg: number | null, limit = 5) {
+export function topLifts(
+  all: TrainingSet[],
+  start: string,
+  end: string,
+  bodyweightKg: number | null,
+  limit = 5,
+) {
   const hist = e1rmHistory(all, bodyweightKg);
   const compound = new Map(all.map((s) => [s.exercise_id, s.is_compound]));
   return [...hist.entries()]
@@ -128,14 +158,21 @@ export function topLifts(all: TrainingSet[], start: string, end: string, bodywei
 /** Exercícios estagnados (§2.1): sem novo melhor e1RM nas últimas 4 sessões, ≥ 4 sessões em 21+ dias. */
 export function stagnantExercises(all: TrainingSet[], end: string, bodyweightKg: number | null) {
   const out: { exercise: string; sessions: number; best_e1rm: number }[] = [];
-  for (const [, h] of e1rmHistory(all.filter((s) => s.local_date <= end), bodyweightKg)) {
+  for (const [, h] of e1rmHistory(
+    all.filter((s) => s.local_date <= end),
+    bodyweightKg,
+  )) {
     const pts = h.points;
     if (pts.length < 5) continue;
     const recent = pts.slice(-4);
     const span = (Date.parse(recent.at(-1)!.local_date) - Date.parse(recent[0]!.local_date)) / 86400_000;
     if (span < 21) continue;
     if (isStagnant(pts.map((p) => p.e1rm).reverse())) {
-      out.push({ exercise: h.exercise, sessions: pts.length, best_e1rm: round(Math.max(...pts.map((p) => p.e1rm)), 1)! });
+      out.push({
+        exercise: h.exercise,
+        sessions: pts.length,
+        best_e1rm: round(Math.max(...pts.map((p) => p.e1rm)), 1)!,
+      });
     }
   }
   return out;
@@ -146,7 +183,10 @@ export function stagnantExercises(all: TrainingSet[], end: string, bodyweightKg:
  * 4 sessões anteriores do exercício − 1.
  */
 export function sessionPerformance(all: TrainingSet[], bodyweightKg: number | null) {
-  const hist = e1rmHistory(all.filter((s) => s.is_compound), bodyweightKg);
+  const hist = e1rmHistory(
+    all.filter((s) => s.is_compound),
+    bodyweightKg,
+  );
   const bySession = new Map<number, { local_date: string; ratios: number[] }>();
   for (const [, h] of hist) {
     h.points.forEach((p, i) => {
@@ -157,7 +197,11 @@ export function sessionPerformance(all: TrainingSet[], bodyweightKg: number | nu
       bySession.set(p.session_id, cur);
     });
   }
-  return [...bySession.entries()].map(([session_id, v]) => ({ session_id, local_date: v.local_date, index: mean(v.ratios)! }));
+  return [...bySession.entries()].map(([session_id, v]) => ({
+    session_id,
+    local_date: v.local_date,
+    index: mean(v.ratios)!,
+  }));
 }
 
 /**
@@ -169,7 +213,9 @@ export function sleepVsPerformance(
   sleepByDate: Map<string, number>,
   goalMin: number,
 ) {
-  const pairs = perf.filter((p) => sleepByDate.has(p.local_date)).map((p) => ({ sleep: sleepByDate.get(p.local_date)!, idx: p.index }));
+  const pairs = perf
+    .filter((p) => sleepByDate.has(p.local_date))
+    .map((p) => ({ sleep: sleepByDate.get(p.local_date)!, idx: p.index }));
   if (pairs.length < 8) return { insufficient_data: true as const, n: pairs.length };
   const short = pairs.filter((p) => p.sleep < goalMin).map((p) => p.idx);
   const ok = pairs.filter((p) => p.sleep >= goalMin).map((p) => p.idx);
@@ -178,7 +224,13 @@ export function sleepVsPerformance(
   return {
     insufficient_data: false as const,
     n: pairs.length,
-    rho: round(spearman(pairs.map((p) => p.sleep), pairs.map((p) => p.idx)), 2),
+    rho: round(
+      spearman(
+        pairs.map((p) => p.sleep),
+        pairs.map((p) => p.idx),
+      ),
+      2,
+    ),
     n_short: short.length,
     n_ok: ok.length,
     diff_pct: ms !== null && mo !== null ? round((ms - mo) * 100, 1) : null,
@@ -193,7 +245,9 @@ export function periodTraining(all: TrainingSet[], start: string, end: string, b
     training_days: new Set(sets.map((s) => s.local_date)).size,
     work_sets: sets.filter(isHard).length,
     tonnage_kg: tonnage(sets, bodyweightKg),
-    sets_by_muscle: Object.fromEntries(Object.entries(byMuscle).map(([k, v]) => [k, round(v, 1)])) as Partial<Record<Muscle, number>>,
+    sets_by_muscle: Object.fromEntries(Object.entries(byMuscle).map(([k, v]) => [k, round(v, 1)])) as Partial<
+      Record<Muscle, number>
+    >,
     ...balance(byMuscle),
   };
 }
