@@ -44,7 +44,7 @@ const conf = (n: number) => Math.min(1, 0.4 + n / 14);
 const clamp = (x: number) => Math.max(0, Math.min(1, x));
 const score = (sev: InsightCandidate['severity'], magnitude: number, n = 14) => Math.round(SEV[sev] * clamp(magnitude) * conf(n) * 100) / 100;
 
-const MUSCLE_PT: Record<string, string> = {
+export const MUSCLE_PT: Record<string, string> = {
   chest: 'peito', front_delts: 'deltoide anterior', side_delts: 'deltoide lateral', rear_delts: 'deltoide posterior',
   lats: 'dorsais', upper_back: 'costas (meio)', traps: 'trapézio', biceps: 'bíceps', triceps: 'tríceps', forearms: 'antebraço',
   quads: 'quadríceps', hamstrings: 'posteriores', glutes: 'glúteos', calves: 'panturrilhas', adductors: 'adutores',

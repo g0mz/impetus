@@ -5,7 +5,7 @@ import { noneBrain, type Brain } from './brain/types.ts';
 import { createTelegramChannel } from './channels/telegram.ts';
 import { createTerminalChannel } from './channels/terminal.ts';
 import { createWhatsAppChannel } from './channels/whatsapp-baileys.ts';
-import type { Channel } from './channels/types.ts';
+import { waitChannelOpen, type Channel } from './channels/types.ts';
 import { REPO_ROOT, type Config } from './config.ts';
 import { openDb } from './db/index.ts';
 import { migrate } from './db/migrate.ts';
@@ -54,20 +54,6 @@ export function createBrain(config: Config, mcpUrl: string, logger: Logger): Bra
     default:
       throw new Error(`BRAIN_PROVIDER=${config.BRAIN_PROVIDER} ainda não implementado (Fase 7)`);
   }
-}
-
-/** Espera o canal conectar (até `timeoutMs`); canais sem status (terminal) estão sempre prontos. */
-export async function waitChannelOpen(
-  channel: Channel,
-  timeoutMs = 30 * 60_000,
-  stepMs = 30_000,
-): Promise<boolean> {
-  const open = () => !channel.status || channel.status().startsWith('open');
-  for (let waited = 0; !open(); waited += stepMs) {
-    if (waited >= timeoutMs) return false;
-    await new Promise((r) => setTimeout(r, stepMs));
-  }
-  return true;
 }
 
 /** Sobe banco, MCP, cérebro e canal. Devolve uma função de parada. */
@@ -143,6 +129,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       cutoffHour: config.DAY_CUTOFF_HOUR,
       timeZone: config.TZ,
       ...(brain.name === 'none' ? {} : { runTurn }),
+      ...(config.REPORT_CHARTS ? { chartsDir: path.join(config.mediaDir, 'charts') } : {}),
       logger: reportLogger,
     });
   const handle = createInbox({
@@ -177,6 +164,10 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       cutoffHour: config.DAY_CUTOFF_HOUR,
       notify,
       report,
+      notifyImages: async (paths) => {
+        if (getSetting<boolean>(db, 'proactive.paused') || !channel.sendImage) return;
+        for (const p of paths) await channel.sendImage(p, null);
+      },
       retryTurn: handle.retryTurn,
       waitChannel: () => waitChannelOpen(channel),
       config,

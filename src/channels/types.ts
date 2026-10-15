@@ -47,3 +47,17 @@ export function splitMessage(text: string, maxLen = 3500, maxParts = 3): string[
   parts.push(rest);
   return parts;
 }
+
+/** Espera o canal conectar (até `timeoutMs`); canais sem status (terminal) estão sempre prontos. */
+export async function waitChannelOpen(
+  channel: Channel,
+  timeoutMs = 30 * 60_000,
+  stepMs = 30_000,
+): Promise<boolean> {
+  const open = () => !channel.status || channel.status().startsWith('open');
+  for (let waited = 0; !open(); waited += stepMs) {
+    if (waited >= timeoutMs) return false;
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+  return true;
+}

@@ -29,7 +29,9 @@ export type InboxDeps = {
   clock?: () => string;
   claudeTokenExpiresAt?: string;
   /** /relatorio: gera na hora (usa o cérebro; fallback determinístico). */
-  report?: (kind: 'daily' | 'weekly' | 'monthly') => Promise<{ text: string; reportId: number }>;
+  report?: (
+    kind: 'daily' | 'weekly' | 'monthly',
+  ) => Promise<{ text: string; reportId: number; charts?: string[] }>;
 };
 
 type Pending = { msg: InboundMessage; id: number; imageOnly: boolean };
@@ -136,6 +138,9 @@ export function createInbox(deps: InboxDeps) {
         try {
           const r = await deps.report!(kind);
           await reply(r.text, m.chatId, undefined, []);
+          if (deps.channel.sendImage)
+            for (const c of r.charts ?? [])
+              await deps.channel.sendImage(c, null, m.chatId ? { to: m.chatId } : undefined);
           deps.db.prepare('UPDATE reports SET sent_at = ? WHERE id = ?').run(clock(), r.reportId);
         } finally {
           await deps.channel.processing?.(m, false);
@@ -176,7 +181,13 @@ export function createInbox(deps: InboxDeps) {
       .prepare(
         "SELECT id, text, media_path, quoted_external_id, created_at FROM messages WHERE turn_id = ? AND direction = 'in' AND status = 'failed' ORDER BY id",
       )
-      .all(turnId) as { id: number; text: string | null; media_path: string | null; quoted_external_id: string | null; created_at: string }[];
+      .all(turnId) as {
+      id: number;
+      text: string | null;
+      media_path: string | null;
+      quoted_external_id: string | null;
+      created_at: string;
+    }[];
     if (!msgs.length) return false;
     const batch: Pending[] = msgs.map((x) => ({
       id: x.id,

@@ -1,12 +1,13 @@
 import type { Db } from '../db/index.ts';
 import { getSetting, setSetting } from '../db/repos/settings.ts';
 import { gramsCorrections } from '../db/repos/nutrition.ts';
-import { runDetectors, type InsightCandidate } from '../domain/insights/detectors.ts';
+import { MUSCLE_PT, runDetectors, type InsightCandidate } from '../domain/insights/detectors.ts';
 import { restingHrTrend, sleepStats, stepsStats, type HealthDay } from '../domain/metrics/activity.ts';
 import { maintenanceEstimate, trendAt, weeklyRate, weightTrend } from '../domain/metrics/body.ts';
 import { loggingQuality, nutritionSummary, type DayNutrition } from '../domain/metrics/nutrition.ts';
 import { pctChange, round } from '../domain/metrics/stats.ts';
 import {
+  e1rmHistory,
   periodTraining,
   prsInPeriod,
   sessionPerformance,
@@ -34,7 +35,9 @@ export function reportPeriod(kind: ReportKind, localToday: string): Period {
     const start = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, '0')}-01`;
     return { start, end: addDays(`${y}-${String(m).padStart(2, '0')}-01`, -1) };
   }
-  const wd = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'].indexOf(weekdayPt(localToday));
+  const wd = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'].indexOf(
+    weekdayPt(localToday),
+  );
   const start = addDays(localToday, -((wd + 6) % 7));
   return { start, end: addDays(start, 6) };
 }
@@ -44,7 +47,9 @@ export function periodLabel(kind: ReportKind, p: Period): string {
   const [, em, ed] = p.end.split('-');
   if (kind === 'monthly') return `${MONTHS[Number(sm) - 1]}/${p.start.slice(0, 4)}`;
   if (kind === 'daily') return formatDayMonth(p.start);
-  return sm === em ? `${sd}–${ed}/${MONTHS[Number(em) - 1]}` : `${sd}/${MONTHS[Number(sm) - 1]}–${ed}/${MONTHS[Number(em) - 1]}`;
+  return sm === em
+    ? `${sd}–${ed}/${MONTHS[Number(em) - 1]}`
+    : `${sd}/${MONTHS[Number(sm) - 1]}–${ed}/${MONTHS[Number(em) - 1]}`;
 }
 
 const days = (p: Period) => Math.round((Date.parse(p.end) - Date.parse(p.start)) / 86400_000) + 1;
@@ -114,7 +119,10 @@ export type ReportBrief = {
     prs: ReturnType<typeof prsInPeriod>;
     top_lifts: ReturnType<typeof topLifts>;
   };
-  nutrition: ReturnType<typeof nutritionSummary> & { logging_quality_pct: number | null; days_in_period: number };
+  nutrition: ReturnType<typeof nutritionSummary> & {
+    logging_quality_pct: number | null;
+    days_in_period: number;
+  };
   body: {
     weight_trend_start: number | null;
     weight_trend_end: number | null;
@@ -125,7 +133,13 @@ export type ReportBrief = {
   };
   activity: ReturnType<typeof stepsStats> & { cardio_min: number };
   sleep: ReturnType<typeof sleepStats>;
-  today?: { kcal: number; protein_g: number; remaining_protein_g: number | null; trained: string | null; steps: number | null };
+  today?: {
+    kcal: number;
+    protein_g: number;
+    remaining_protein_g: number | null;
+    trained: string | null;
+    steps: number | null;
+  };
   insights: InsightCandidate[];
   comparisons: { vs_previous_period: Record<string, string> };
 };
@@ -155,7 +169,9 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
 
   const rate = weeklyRate(trend, period.end, Math.min(28, Math.max(14, n)));
   const tdeeWindow = { start: addDays(period.end, -27), end: period.end };
-  const tdeeDays = loadNutrition(db, tdeeWindow).filter((d) => d.meals >= 3 || (goals.kcal !== undefined && d.kcal >= 0.7 * goals.kcal));
+  const tdeeDays = loadNutrition(db, tdeeWindow).filter(
+    (d) => d.meals >= 3 || (goals.kcal !== undefined && d.kcal >= 0.7 * goals.kcal),
+  );
   const maintenance = maintenanceEstimate({
     days: 28,
     completeDaysKcal: tdeeDays.map((d) => d.kcal),
@@ -167,14 +183,12 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
   const health = loadHealth(db, period.start, period.end);
   const health28 = loadHealth(db, addDays(period.end, -27), period.end);
   const cardioMin = Math.round(
-    ((
-      db
-        .prepare(
-          "SELECT coalesce(sum(duration_s),0) FROM cardio_sessions WHERE deleted_at IS NULL AND local_date BETWEEN ? AND ? AND activity NOT LIKE '%(relógio)'",
-        )
-        .pluck()
-        .get(period.start, period.end) as number
-    ) ?? 0) / 60,
+    ((db
+      .prepare(
+        "SELECT coalesce(sum(duration_s),0) FROM cardio_sessions WHERE deleted_at IS NULL AND local_date BETWEEN ? AND ? AND activity NOT LIKE '%(relógio)'",
+      )
+      .pluck()
+      .get(period.start, period.end) as number) ?? 0) / 60,
   );
   const steps = stepsStats(health, goals.steps);
   const sleep = sleepStats(health, goals.sleep_h);
@@ -185,7 +199,9 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     const s = addDays(period.start, -7 * w);
     weekly4.push(periodTraining(allSets, s, addDays(s, 6), bw).work_sets);
   }
-  const hist4 = allSets.filter((s) => s.local_date >= addDays(period.start, -28) && s.local_date < period.start);
+  const hist4 = allSets.filter(
+    (s) => s.local_date >= addDays(period.start, -28) && s.local_date < period.start,
+  );
   const perf = sessionPerformance(allSets, bw);
   const sleepByDate = new Map(
     loadHealth(db, lookback, period.end)
@@ -216,7 +232,8 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     ),
     steps,
     rhr: restingHrTrend(health28),
-    hcLastSync: (db.prepare('SELECT max(received_at) FROM health_raw').pluck().get() as string | null) ?? null,
+    hcLastSync:
+      (db.prepare('SELECT max(received_at) FROM health_raw').pluck().get() as string | null) ?? null,
     now,
     periodDays: n,
   });
@@ -239,7 +256,12 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     training: { ...training, prs, top_lifts: topLifts(allSets, period.start, period.end, bw) },
     nutrition: { ...nutrition, logging_quality_pct: loggingQuality(items), days_in_period: n },
     body: {
-      weight_trend_start: round(trendAt(trend, addDays(period.start, -1)) ?? trend.find((t) => t.local_date >= period.start)?.trend_kg ?? null, 1),
+      weight_trend_start: round(
+        trendAt(trend, addDays(period.start, -1)) ??
+          trend.find((t) => t.local_date >= period.start)?.trend_kg ??
+          null,
+        1,
+      ),
       weight_trend_end: round(bw, 1),
       rate_kg_wk: rate?.kg_wk ?? null,
       rate_pct_bw_wk: rate?.pct_wk ?? null,
@@ -256,7 +278,10 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     brief.today = {
       kcal: Math.round(today?.kcal ?? 0),
       protein_g: Math.round(today?.protein_g ?? 0),
-      remaining_protein_g: goals.protein_g !== undefined ? Math.max(0, Math.round(goals.protein_g - (today?.protein_g ?? 0))) : null,
+      remaining_protein_g:
+        goals.protein_g !== undefined
+          ? Math.max(0, Math.round(goals.protein_g - (today?.protein_g ?? 0)))
+          : null,
       trained:
         training.sessions > 0
           ? ((db
@@ -271,4 +296,39 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     };
   }
   return brief;
+}
+
+// ── dados dos gráficos (Fase 5b) ─────────────────────────────────────────────────────────────
+
+export type ChartData = {
+  weight?: { local_date: string; weight_kg: number; trend_kg: number }[];
+  sets_by_muscle?: { muscle: string; sets: number }[];
+  e1rm?: { local_date: string; exercise: string; e1rm: number }[];
+};
+
+/** Séries para os gráficos (REPORTS.md §7). Só inclui um gráfico se houver dados suficientes. */
+export function buildChartData(db: Db, brief: ReportBrief): ChartData {
+  const out: ChartData = {};
+  const { start, end } = brief.period;
+  if (brief.kind === 'weekly') {
+    const from = addDays(end, -55);
+    const weight = weightTrend(loadWeights(db, end)).filter((p) => p.local_date >= from);
+    if (weight.length >= 3) out.weight = weight.map((p) => ({ ...p, trend_kg: round(p.trend_kg, 2)! }));
+    const sets = Object.entries(brief.training.sets_by_muscle)
+      .filter(([, v]) => (v ?? 0) > 0)
+      .map(([m, v]) => ({ muscle: MUSCLE_PT[m] ?? m, sets: v! }));
+    if (sets.length) out.sets_by_muscle = sets;
+  }
+  if (brief.kind === 'monthly') {
+    const top = new Set(brief.training.top_lifts.map((l) => l.exercise));
+    const weights = weightTrend(loadWeights(db, end));
+    const hist = e1rmHistory(loadSets(db, start, end), trendAt(weights, end));
+    const pts = [...hist.values()]
+      .filter((h) => top.has(h.exercise))
+      .flatMap((h) =>
+        h.points.map((p) => ({ local_date: p.local_date, exercise: h.exercise, e1rm: round(p.e1rm, 1)! })),
+      );
+    if (pts.length >= 2) out.e1rm = pts;
+  }
+  return out;
 }

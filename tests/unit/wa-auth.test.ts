@@ -31,7 +31,7 @@ describe('sessão do WhatsApp em disco', () => {
 
 describe('waitChannelOpen', () => {
   it('pronto sem status; espera até abrir; desiste no timeout', async () => {
-    const { waitChannelOpen } = await import('../../src/app.ts');
+    const { waitChannelOpen } = await import('../../src/channels/types.ts');
     const ch = (s: () => string) => ({ status: s }) as unknown as Parameters<typeof waitChannelOpen>[0];
     expect(await waitChannelOpen({} as Parameters<typeof waitChannelOpen>[0], 10, 1)).toBe(true);
     let n = 0;

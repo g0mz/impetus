@@ -131,7 +131,7 @@ impetus/
 - [x] `reports/build.ts` → `ReportBrief` → turno de relatório (`toolScope='read'`, `runtime/prompts/report.md`) → envio.
 - [x] Fallback determinístico com testes de snapshot.
 - [x] Scheduler (croner, fuso) com `job_runs`; `/relatorio`, `/pausar`, `/retomar`.
-- [ ] **5b:** gráficos (Vega-Lite → PNG) atrás de `REPORT_CHARTS`.
+- [x] **5b:** gráficos (Vega-Lite → PNG) atrás de `REPORT_CHARTS`.
 
 **Aceite:** `/relatorio semana` com dados de fixture produz texto com números idênticos ao brief; com o cérebro desligado (`BRAIN_PROVIDER=none`), o fallback é enviado; jobs não disparam em duplicidade após reinício.
 

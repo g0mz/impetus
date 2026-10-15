@@ -5,14 +5,33 @@ import type { Db } from '../db/index.ts';
 import type { RunTurn } from '../gateway/turn-runner.ts';
 import type { Logger } from '../logger.ts';
 import { toLocalDate } from '../time.ts';
-import { buildReportBrief, reportPeriod, type ReportBrief, type ReportKind } from './build.ts';
+import { e1rmSpec, setsByMuscleSpec, weightTrendSpec } from '../charts/specs.ts';
+import { renderChart } from '../charts/render.ts';
+import {
+  buildChartData,
+  buildReportBrief,
+  reportPeriod,
+  type ReportBrief,
+  type ReportKind,
+} from './build.ts';
 import { renderReportFallback } from './render-fallback.ts';
 
 export const REPORT_PROMPT_FILE = path.join(REPO_ROOT, 'runtime', 'prompts', 'report.md');
 
-export type ReportResult = { reportId: number; text: string; usedLlm: boolean; brief: ReportBrief };
+export type ReportResult = {
+  reportId: number;
+  text: string;
+  usedLlm: boolean;
+  brief: ReportBrief;
+  charts: string[];
+};
 
-const KIND_PT: Record<ReportKind, string> = { daily: 'diário', weekly: 'semanal', monthly: 'mensal', adhoc: 'sob demanda' };
+const KIND_PT: Record<ReportKind, string> = {
+  daily: 'diário',
+  weekly: 'semanal',
+  monthly: 'mensal',
+  adhoc: 'sob demanda',
+};
 
 /**
  * Gera um relatório (ARCHITECTURE.md §4.6): métricas e insights no código → ReportBrief salvo em `reports`
@@ -27,9 +46,14 @@ export async function generateReport(deps: {
   timeZone: string;
   runTurn?: RunTurn;
   logger: Logger;
+  /** Fase 5b: gera PNGs neste diretório (REPORT_CHARTS). */
+  chartsDir?: string;
 }): Promise<ReportResult> {
   const { db, kind, now } = deps;
-  const period = reportPeriod(kind === 'adhoc' ? 'weekly' : kind, toLocalDate(now, deps.cutoffHour, deps.timeZone));
+  const period = reportPeriod(
+    kind === 'adhoc' ? 'weekly' : kind,
+    toLocalDate(now, deps.cutoffHour, deps.timeZone),
+  );
   const brief = buildReportBrief(db, kind, period, now);
   const reportId = Number(
     db
@@ -37,7 +61,8 @@ export async function generateReport(deps: {
         `INSERT INTO reports (kind, period_start, period_end, metrics_json, insights_json, used_llm, created_at)
          VALUES (?, ?, ?, ?, ?, 0, ?)`,
       )
-      .run(kind, period.start, period.end, JSON.stringify(brief), JSON.stringify(brief.insights), now).lastInsertRowid,
+      .run(kind, period.start, period.end, JSON.stringify(brief), JSON.stringify(brief.insights), now)
+      .lastInsertRowid,
   );
 
   let text = '';
@@ -54,11 +79,37 @@ export async function generateReport(deps: {
     if (outcome.status === 'done' && outcome.text.trim()) {
       text = outcome.text.trim();
       usedLlm = true;
-    } else deps.logger.warn({ reportId, status: outcome.status }, 'relatório: cérebro falhou, usando fallback');
+    } else
+      deps.logger.warn({ reportId, status: outcome.status }, 'relatório: cérebro falhou, usando fallback');
   }
   if (!text) text = renderReportFallback(brief);
-  db.prepare('UPDATE reports SET text = ?, used_llm = ? WHERE id = ?').run(text, usedLlm ? 1 : 0, reportId);
-  return { reportId, text, usedLlm, brief };
+  const charts = deps.chartsDir ? await renderCharts(db, brief, deps.chartsDir, deps.logger) : [];
+  db.prepare('UPDATE reports SET text = ?, used_llm = ?, chart_paths = ? WHERE id = ?').run(
+    text,
+    usedLlm ? 1 : 0,
+    JSON.stringify(charts),
+    reportId,
+  );
+  return { reportId, text, usedLlm, brief, charts };
+}
+
+/** Gráficos do relatório; falha de um gráfico nunca impede o relatório. */
+async function renderCharts(db: Db, brief: ReportBrief, dir: string, logger: Logger): Promise<string[]> {
+  const data = buildChartData(db, brief);
+  const specs = [
+    data.weight && weightTrendSpec(data.weight),
+    data.sets_by_muscle && setsByMuscleSpec(data.sets_by_muscle),
+    data.e1rm && e1rmSpec(data.e1rm),
+  ].filter((x) => x !== undefined);
+  const out: string[] = [];
+  for (const spec of specs) {
+    try {
+      out.push(await renderChart(spec, dir));
+    } catch (e) {
+      logger.warn({ err: e }, 'relatório: falha ao gerar gráfico');
+    }
+  }
+  return out;
 }
 
 export function markReportSent(db: Db, reportId: number, now: string): void {

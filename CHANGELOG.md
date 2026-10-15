@@ -26,8 +26,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `/retomar` oferece os relatórios pulados durante a pausa.
 - `/recarga` + job `alert.sim_recharge`: lembrete crítico a partir de 25 dias sem recarga do chip pré-pago.
 
+#### Adicionado (5b)
+- Gráficos dos relatórios (`REPORT_CHARTS`): semanal = tendência de peso de 8 semanas + séries por grupo
+  muscular; mensal = e1RM dos principais exercícios. Vega-Lite → SVG (vega) → PNG 1080 px (resvg), tema
+  escuro, números em pt-BR; enviados como imagem após o texto. Falha de gráfico não impede o relatório.
+- Dependências fixadas: `vega@6.4.0`, `vega-lite@6.4.3`, `@resvg/resvg-js@2.6.2` (binário linux-arm64-gnu).
+
 #### Pendente
-- 5b (gráficos Vega-Lite → PNG atrás de `REPORT_CHARTS`) e evals de relatório contra o cérebro real.
+- Evals de relatório contra o cérebro real.
 
 ### Canal Telegram (2026-10-14, D-026/D-027)
 

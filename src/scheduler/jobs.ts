@@ -70,7 +70,9 @@ export function startScheduler(deps: SchedulerDeps, jobs: JobDef[]) {
 
 export type JobsInput = SchedulerDeps & {
   notify: Notify;
-  report: (kind: ReportKind) => Promise<{ text: string; reportId: number }>;
+  report: (kind: ReportKind) => Promise<{ text: string; reportId: number; charts?: string[] }>;
+  /** Envia os gráficos depois do texto (opcional por canal). */
+  notifyImages?: (paths: string[]) => Promise<void>;
   retryTurn: (turnId: number) => Promise<boolean>;
   /** Espera o canal ficar pronto para enviar; false = desistiu (não gera o relatório, não gasta cota). */
   waitChannel?: () => Promise<boolean>;
@@ -94,6 +96,7 @@ export function buildJobs(i: JobsInput): JobDef[] {
       throw new Error('canal indisponível; relatório não gerado');
     const r = await i.report(kind);
     await i.notify(r.text);
+    if (r.charts?.length && i.notifyImages) await i.notifyImages(r.charts);
     i.db.prepare('UPDATE reports SET sent_at = ? WHERE id = ?').run(nowUtcIso(), r.reportId);
     return `report ${r.reportId}`;
   };
