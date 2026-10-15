@@ -4,6 +4,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Robustez após o primeiro uso real (2026-10-15, D-031)
+
+#### Corrigido
+- Contexto: histórico com a resposta do coach e mensagens recentes inteiras (o treino longo era cortado).
+- Trava contra "✅ registrado" sem gravação (nova checagem no modelo forte; aviso explícito se persistir).
+- Hora local sem fuso era interpretada no fuso do servidor (bug latente na VM).
+- Duplicatas de exercício: busca tolerante + CONFLICT com candidatos em `create_exercise`.
+- Markdown `**`/`#` no WhatsApp; prompt citava tools inexistentes.
+- Dados do dono: duplicatas mescladas em Panturrilha em pé / Cadeira extensora, sessão de 14/10 às 18:15–20:30,
+  cardio com 3 km (backup antes em `data/backups/impetus-pre-fix-2026-10-15.db.gz`).
+
+#### Adicionado
+- Tool `edit_workout`; `log_cardio` com `speed_kmh`; registros longos vão ao Sonnet.
+- Backup/restauração automática de `creds.json`; trava de instância única; mídia de desconhecidos ignorada antes
+  do download; entrada serial; `.env` local carregado por `npm run dev/chat/eval/wa:link`.
+- Eval `workout_conversation` (conversa real de 14/10).
+
 ### Fase 7 — Mensagens de voz (2026-10-14, D-030)
 
 #### Adicionado

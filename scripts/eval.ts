@@ -19,6 +19,7 @@ import { saveNormalizedImage } from '../src/media/images.ts';
 import { createTokenStore, startMcpServer } from '../src/mcp/server.ts';
 import { runSeeds } from '../src/seeds/index.ts';
 import { normalize } from '../src/text/normalize.ts';
+import { formatLocalIso } from '../src/time.ts';
 import { buildRegistry } from '../src/tools/index.ts';
 
 type Range = number | [number, number];
@@ -39,6 +40,19 @@ type Case = {
     custom_food?: { name: string; protein_100g?: [number, number] };
     /** Óleo/manteiga como item, ou alimento da tabela já preparado com gordura (frito, refogado). */
     fat_accounted?: boolean;
+    // ── treino ──
+    /** Séries de trabalho (não aquecimento) registradas. */
+    work_sets?: Range;
+    warmup_sets?: Range;
+    /** Regex de nomes de exercícios que precisam ter séries. */
+    exercises?: string[];
+    /** Exercícios criados (source = custom); 0 = nenhuma duplicata. */
+    new_exercises?: number;
+    /** Hora local de início da sessão (HH:MM). */
+    session_start?: string;
+    cardio_km?: Range;
+    /** A última resposta não pode afirmar registro sem escrita (aviso da trava D-031). */
+    no_unconfirmed_write?: boolean;
   };
 };
 
@@ -130,6 +144,60 @@ function check(db: Db, c: Case): string[] {
     else if (e.custom_food.protein_100g && !inRange(f.protein_100g, e.custom_food.protein_100g)) {
       fails.push(`proteína/100 g ${f.protein_100g} fora de ${fmtRange(e.custom_food.protein_100g)}`);
     }
+  }
+  fails.push(...checkTraining(db, c));
+  return fails;
+}
+
+function checkTraining(db: Db, c: Case): string[] {
+  const e = c.expect;
+  const fails: string[] = [];
+  const sets = db
+    .prepare(
+      `SELECT e.name_pt, s.set_type FROM sets s JOIN exercises e ON e.id = s.exercise_id
+        JOIN workout_sessions ws ON ws.id = s.session_id WHERE s.deleted_at IS NULL AND ws.deleted_at IS NULL`,
+    )
+    .all() as { name_pt: string; set_type: string }[];
+  const work = sets.filter((x) => x.set_type !== 'warmup').length;
+  const warm = sets.length - work;
+  if (e.work_sets !== undefined && !inRange(work, e.work_sets))
+    fails.push(`séries de trabalho: ${work} (esperado ${fmtRange(e.work_sets)})`);
+  if (e.warmup_sets !== undefined && !inRange(warm, e.warmup_sets))
+    fails.push(`aquecimento: ${warm} (esperado ${fmtRange(e.warmup_sets)})`);
+  for (const name of e.exercises ?? [])
+    if (!sets.some((x) => new RegExp(name, 'i').test(normalize(x.name_pt))))
+      fails.push(
+        `exercício /${name}/ sem séries (tem: ${[...new Set(sets.map((x) => x.name_pt))].join(', ')})`,
+      );
+  if (e.new_exercises !== undefined) {
+    const n = db
+      .prepare("SELECT count(*) FROM exercises WHERE source = 'custom' AND deleted_at IS NULL")
+      .pluck()
+      .get() as number;
+    if (n !== e.new_exercises) fails.push(`exercícios criados: ${n} (esperado ${e.new_exercises})`);
+  }
+  if (e.session_start) {
+    const at = db
+      .prepare('SELECT started_at FROM workout_sessions WHERE deleted_at IS NULL ORDER BY id LIMIT 1')
+      .pluck()
+      .get() as string | undefined;
+    const local = at ? formatLocalIso(at, 'America/Sao_Paulo').slice(11, 16) : 'nenhuma';
+    if (local !== e.session_start) fails.push(`início da sessão ${local} (esperado ${e.session_start})`);
+  }
+  if (e.cardio_km !== undefined) {
+    const m = db
+      .prepare('SELECT sum(distance_m) FROM cardio_sessions WHERE deleted_at IS NULL')
+      .pluck()
+      .get() as number | null;
+    if (m === null || !inRange(m / 1000, e.cardio_km))
+      fails.push(
+        `cardio ${m === null ? 'sem distância' : `${m / 1000} km`} (esperado ${fmtRange(e.cardio_km)})`,
+      );
+  }
+  if (e.no_unconfirmed_write) {
+    const out = db.prepare("SELECT text FROM messages WHERE direction = 'out'").pluck().all() as string[];
+    if (out.some((t) => t.includes('nada foi gravado nesta mensagem')))
+      fails.push('trava D-031 disparou (afirmou registro sem gravar)');
   }
   return fails;
 }

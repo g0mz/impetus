@@ -51,3 +51,20 @@ describe('waitChannelOpen', () => {
     ).toBe(false);
   });
 });
+
+describe('cópia de segurança do creds.json', () => {
+  it('copia só quando válido; restaura creds vazio a partir da cópia', async () => {
+    const { backupCreds, recoverCreds } = await import('../../src/channels/wa-auth.ts');
+    const dir = tmp();
+    const creds = path.join(dir, 'creds.json');
+    fs.writeFileSync(creds, JSON.stringify({ registered: false }));
+    expect(backupCreds(dir)).toBe(false);
+    const good = JSON.stringify({ registered: true, me: { id: 'x' } });
+    fs.writeFileSync(creds, good);
+    expect(backupCreds(dir)).toBe(true);
+    fs.writeFileSync(creds, '');
+    expect(recoverCreds(dir)).toBe(true);
+    expect(fs.readFileSync(creds, 'utf8')).toBe(good);
+    expect(recoverCreds(dir)).toBe(false); // já válido
+  });
+});

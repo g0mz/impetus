@@ -11,6 +11,8 @@ import makeWASocket, {
 import PQueue from 'p-queue';
 import type { Logger } from '../logger.ts';
 import { saveAudio } from '../media/audio.ts';
+import { backupCreds, recoverCreds } from './wa-auth.ts';
+import { toChatFormat } from '../text/chat-format.ts';
 import { saveNormalizedImage } from '../media/images.ts';
 import {
   splitMessage,
@@ -28,12 +30,24 @@ export type WhatsAppOptions = {
   logger: Logger;
   /** Chat padrão para mensagens proativas (do settings owner.chat_jid). */
   defaultTo: () => string | undefined;
+  /** Allowlist barata: mídia de quem não é o dono nem é baixada (disco e banda). */
+  mayHandle?: (senderIds: string[]) => boolean;
 };
 
 /** Cria o socket do Baileys com a sessão em `authDir` (credencial: modo 700, fora do backup). */
 export async function createSocket(authDir: string, logger: Logger) {
   fs.mkdirSync(authDir, { recursive: true, mode: 0o700 });
-  const { state, saveCreds } = await useMultiFileAuthState(authDir);
+  if (recoverCreds(authDir))
+    logger.warn('whatsapp: creds.json corrompido; restaurado da cópia creds.json.bak');
+  const { state, saveCreds: save } = await useMultiFileAuthState(authDir);
+  const saveCreds = async () => {
+    await save();
+    try {
+      backupCreds(authDir);
+    } catch (e) {
+      logger.warn({ err: e }, 'whatsapp: falha ao copiar creds.json');
+    }
+  };
   let version: [number, number, number] | undefined;
   try {
     version = (await fetchLatestBaileysVersion()).version;
@@ -108,6 +122,7 @@ export function createWhatsAppChannel(opts: WhatsAppOptions): Channel {
   async function handleRaw(m: WAMessage) {
     const p = parseWaMessage(m as unknown as WaLike);
     if (!p) return;
+    if (opts.mayHandle && !opts.mayHandle(p.senderIds)) return;
     try {
       let imagePath: string | null = null;
       let audioPath: string | null = null;
@@ -172,7 +187,7 @@ export function createWhatsAppChannel(opts: WhatsAppOptions): Channel {
     async send(text, o) {
       const to = target(o);
       if (!sock || !to) throw new Error('whatsapp: sem conexão ou sem destinatário');
-      return { externalIds: await sendParts(to, splitMessage(text)) };
+      return { externalIds: await sendParts(to, splitMessage(toChatFormat(text, 'whatsapp'))) };
     },
     async sendImage(path, caption, o) {
       const to = target(o);

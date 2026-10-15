@@ -214,6 +214,28 @@ O adaptador previsto na Fase 7 foi antecipado. Implementação sem dependência 
 - Retry de turno falho reenvia a transcrição gravada, não o arquivo.
 - `TRANSCRIBE=none` (padrão) responde pedindo texto.
 
+### D-031 — Robustez da conversa após o primeiro uso real (2026-10-15)
+Problemas vistos no treino de 14/10 e correções:
+- **Contexto perdido:** `<recent_turns>` cortava a mensagem do usuário em 200 caracteres e omitia a resposta do
+  coach. Agora os 2 turnos mais recentes vão quase inteiros (1.200/600 caracteres), com a resposta do coach e o
+  que foi gravado; orçamento do contexto 12.000 caracteres.
+- **"✅ registrado" sem gravar:** trava no turn-runner. Se a resposta afirma registro e o turno não tem escrita no
+  `audit_log`, roda de novo (modelo forte) com `<system_check>`; se insistir, o usuário recebe um aviso explícito.
+- **Registro longo no modelo rápido:** ≥ 3 linhas ou ≥ 8 números → `MODEL_VISION` (Sonnet).
+- **Sem como corrigir treino:** tool `edit_workout` (horário, notas, carga/reps/tipo/exercício de séries, apagar),
+  com `/desfazer`. `<open_session>` e `get_last_sessions` expõem `set_id`.
+- **Hora sem fuso** ("2026-10-14T18:15") era lida no fuso do servidor (na VM, UTC): agora é hora local do usuário.
+- **Exercícios duplicados** ("Extensora de perna" com "Cadeira extensora" no catálogo): busca relaxada (palavras
+  significativas, sinônimos de academia como gêmeos → panturrilha) e `create_exercise` devolve CONFLICT com
+  candidatos, salvo `confirm_new`.
+- **Markdown de chat** (`**negrito**`, `#`) convertido para o formato do WhatsApp / texto puro no Telegram.
+- **Cardio "velocidade 6":** `speed_kmh` na tool; distância calculada no código (regra 1).
+- **Prompt:** não citar conta/e-mail/sistema; não pedir o que já foi dito; faixa de reps → menor valor; rampa
+  ≤ 60% da maior carga → aquecimento; resumo com 📋; tools inexistentes (`get_metrics`, `query_sql`) removidas.
+- **Operação:** cópia automática de `creds.json` (restaura se corromper), mídia de desconhecidos nem é baixada,
+  entrada serial (ordem preservada com áudio), trava de instância única por `DATA_DIR`.
+- Eval `workout_conversation` reproduz a conversa real; suíte 11/11 (3 pulados por falta de foto).
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

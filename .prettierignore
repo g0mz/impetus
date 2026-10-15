@@ -5,3 +5,4 @@ docs/
 runtime/prompts/
 package-lock.json
 *.md
+tools/

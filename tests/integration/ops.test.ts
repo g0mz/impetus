@@ -76,3 +76,17 @@ describe('alerta de turnos falhando', () => {
     expect(sent[0]).toContain('3 mensagens falharam');
   });
 });
+
+describe('trava de instância única', () => {
+  it('recusa segunda instância viva; aceita trava órfã; libera ao parar', async () => {
+    const { acquireInstanceLock } = await import('../../src/ops/lock.ts');
+    const dir = tmp();
+    const release = acquireInstanceLock(dir);
+    expect(() => acquireInstanceLock(dir, process.pid + 1)).toThrow(/já existe um Impetus rodando/);
+    release();
+    fs.writeFileSync(path.join(dir, 'impetus.lock'), '999999'); // pid morto
+    const r2 = acquireInstanceLock(dir);
+    r2();
+    expect(fs.existsSync(path.join(dir, 'impetus.lock'))).toBe(false);
+  });
+});

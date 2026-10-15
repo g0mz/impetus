@@ -75,7 +75,9 @@ export const createExerciseTool = defineTool({
   scope: 'write',
   description:
     'Cria um exercício novo. Só use quando search_exercises não trouxer correspondência razoável. ' +
-    'Inclua o termo que o usuário usou em `aliases`. Halteres: load_kind "per_hand".',
+    'Inclua o termo que o usuário usou em `aliases`. Halteres: load_kind "per_hand". Se existir exercício parecido, ' +
+    'a tool devolve CONFLICT com candidatos: prefira usar um deles (e add_exercise_alias com o termo do usuário); ' +
+    'só passe confirm_new: true se for mesmo outro movimento.',
   input: z.object({
     name_pt: z.string().trim().min(2).max(80),
     aliases: z.array(z.string().trim().min(2).max(60)).max(10).default([]),
@@ -85,8 +87,21 @@ export const createExerciseTool = defineTool({
     secondary_muscles: z.array(muscle).default([]),
     is_compound: z.boolean().default(false),
     increment_kg: z.number().positive().max(50).optional(),
+    confirm_new: z.boolean().optional(),
   }),
   handler: (ctx, input) => {
+    if (!input.confirm_new) {
+      // evita duplicatas como "Extensora de perna" quando já existe "Cadeira extensora"
+      const similar = new Map<number, { id: number; name_pt: string }>();
+      for (const q of [input.name_pt, ...input.aliases])
+        for (const m of searchExercises(ctx.db, q, 3)) if (m.score >= 0.5) similar.set(m.id, { id: m.id, name_pt: m.name_pt });
+      if (similar.size)
+        return err(
+          'CONFLICT',
+          `já existem exercícios parecidos: ${[...similar.values()].map((x) => `${x.name_pt} (${x.id})`).join(', ')}. Use um deles ou confirm_new: true`,
+          [...similar.values()],
+        );
+    }
     const clash = ctx.db
       .prepare(
         `SELECT e.id, e.name_pt FROM exercise_aliases a JOIN exercises e ON e.id = a.exercise_id
@@ -355,7 +370,9 @@ function summarizeSession(ctx: ToolContext, sets: StoredSet[]) {
     const ex = getExercise(ctx.db, exId);
     return {
       name: ex?.name_pt ?? `#${exId}`,
+      exercise_id: exId,
       sets_compact: setsCompact(xs),
+      set_ids: xs.map((x) => x.id),
       best_e1rm: ex ? round1(bestE1rm(xs, ex.load_kind, bw)) : null,
     };
   });
@@ -456,13 +473,108 @@ export const getNextTargetsTool = defineTool({
   },
 });
 
+// ── edit_workout ─────────────────────────────────────────────────────────────────────────
+
+const row = (ctx: ToolContext, table: 'workout_sessions' | 'sets', id: number) =>
+  ctx.db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(id) as Record<string, unknown> | undefined;
+
+export const editWorkoutTool = defineTool({
+  name: 'edit_workout',
+  scope: 'write',
+  description:
+    'Corrige uma sessão já registrada: horário ("treinei das 18h15 às 20h30" → started_at "2026-10-14T18:15", ended_at ' +
+    '"2026-10-14T20:30", hora local), notas, e séries (set_id do <open_session> ou de get_last_sessions): mudar carga, reps, ' +
+    'tipo (ex.: aquecimento → set_type "warmup"), trocar o exercício (exercise_id) ou apagar (delete: true). Tudo entra no /desfazer.',
+  input: z
+    .object({
+      session_id: z.number().int().positive(),
+      started_at: when,
+      ended_at: when,
+      notes: z.string().max(300).optional(),
+      set_changes: z
+        .array(
+          z.object({
+            set_id: z.number().int().positive(),
+            weight_kg: z.number().min(0).max(1000).nullable().optional(),
+            reps: z.number().int().min(0).max(1000).nullable().optional(),
+            set_type: z.enum(['work', 'warmup', 'drop', 'failure']).optional(),
+            exercise_id: z.number().int().positive().optional(),
+            delete: z.boolean().optional(),
+          }),
+        )
+        .max(60)
+        .default([]),
+    })
+    .refine(
+      (v) => v.started_at || v.ended_at || v.notes !== undefined || v.set_changes.length,
+      'nada para alterar',
+    ),
+  handler: (ctx, input) => {
+    const session = getSession(ctx.db, input.session_id);
+    if (!session) return err('NOT_FOUND', `sessão ${input.session_id} não existe`);
+
+    if (input.started_at || input.ended_at || input.notes !== undefined) {
+      const before = row(ctx, 'workout_sessions', session.id)!;
+      const start = input.started_at ? resolve(ctx, input.started_at) : undefined;
+      const end = input.ended_at ? resolve(ctx, input.ended_at).at : (before.ended_at as string | null);
+      const startAt = start?.at ?? (before.started_at as string);
+      if (end && end <= startAt) return err('VALIDATION', 'ended_at precisa ser depois de started_at');
+      ctx.db
+        .prepare('UPDATE workout_sessions SET started_at = ?, local_date = ?, ended_at = ?, notes = ? WHERE id = ?')
+        .run(
+          startAt,
+          start?.localDate ?? before.local_date,
+          end ?? null,
+          input.notes ?? before.notes ?? null,
+          session.id,
+        );
+      ctx.audit('workout_session', session.id, 'update', before, row(ctx, 'workout_sessions', session.id));
+    }
+
+    for (const c of input.set_changes) {
+      const before = row(ctx, 'sets', c.set_id);
+      if (!before || before.deleted_at || before.session_id !== session.id)
+        return err('NOT_FOUND', `série ${c.set_id} não pertence à sessão ${session.id}`);
+      if (c.delete) {
+        ctx.db.prepare('UPDATE sets SET deleted_at = ? WHERE id = ?').run(ctx.now, c.set_id);
+        ctx.audit('set', c.set_id, 'delete', before);
+        continue;
+      }
+      if (c.exercise_id && !getExercise(ctx.db, c.exercise_id))
+        return err('NOT_FOUND', `exercício ${c.exercise_id} não existe`);
+      ctx.db
+        .prepare('UPDATE sets SET weight_kg = ?, reps = ?, set_type = ?, exercise_id = ? WHERE id = ?')
+        .run(
+          c.weight_kg !== undefined ? c.weight_kg : before.weight_kg,
+          c.reps !== undefined ? c.reps : before.reps,
+          c.set_type ?? before.set_type,
+          c.exercise_id ?? before.exercise_id,
+          c.set_id,
+        );
+      ctx.audit('set', c.set_id, 'update', before, row(ctx, 'sets', c.set_id));
+    }
+
+    const after = row(ctx, 'workout_sessions', session.id)!;
+    const sets = sessionSets(ctx.db, session.id);
+    return ok({
+      session_id: session.id,
+      local_date: after.local_date,
+      started_at: after.started_at,
+      ended_at: after.ended_at,
+      summary: summarizeSession(ctx, sets),
+      work_sets: sets.filter((x) => x.set_type !== 'warmup').length,
+    });
+  },
+});
+
 // ── log_cardio ───────────────────────────────────────────────────────────────────────────
 
 export const logCardioTool = defineTool({
   name: 'log_cardio',
   scope: 'write',
   description:
-    'Registra cardio: "30 min esteira" → { activity: "esteira", duration_min: 30 }; "corri 5 km em 28 min" → distance_km 5, duration_min 28.',
+    'Registra cardio: "30 min esteira" → { activity: "esteira", duration_min: 30 }; "corri 5 km em 28 min" → distance_km 5, duration_min 28; ' +
+    '"30 min na velocidade 6" → duration_min 30, speed_kmh 6 (a distância é calculada aqui; não calcule).',
   input: z
     .object({
       activity: z.string().trim().min(2).max(40),
@@ -472,6 +584,7 @@ export const logCardioTool = defineTool({
         .max(24 * 60)
         .optional(),
       distance_km: z.number().positive().max(500).optional(),
+      speed_kmh: z.number().positive().max(60).optional(),
       avg_hr: z.number().int().min(30).max(240).optional(),
       kcal: z.number().positive().max(10000).optional(),
       performed_at: when,
@@ -482,18 +595,23 @@ export const logCardioTool = defineTool({
     ),
   handler: (ctx, input) => {
     const { at, localDate } = resolve(ctx, input.performed_at);
+    const distanceKm =
+      input.distance_km ??
+      (input.speed_kmh !== undefined && input.duration_min !== undefined
+        ? Math.round(((input.speed_kmh * input.duration_min) / 60) * 100) / 100
+        : undefined);
     const id = insertCardio(ctx.db, {
       local_date: localDate,
       started_at: at,
       activity: input.activity.toLowerCase(),
       duration_s: input.duration_min === undefined ? null : Math.round(input.duration_min * 60),
-      distance_m: input.distance_km === undefined ? null : Math.round(input.distance_km * 1000),
+      distance_m: distanceKm === undefined ? null : Math.round(distanceKm * 1000),
       avg_hr: input.avg_hr ?? null,
       kcal: input.kcal ?? null,
       created_at: ctx.now,
     });
     ctx.audit('cardio_session', id, 'create');
-    return ok({ id, local_date: localDate });
+    return ok({ id, local_date: localDate, ...(distanceKm !== undefined ? { distance_km: distanceKm } : {}) });
   },
 });
 
@@ -506,4 +624,5 @@ export const trainingTools = [
   getLastSessionsTool,
   getNextTargetsTool,
   logCardioTool,
+  editWorkoutTool,
 ];

@@ -45,6 +45,30 @@ export type TurnOutcome = {
 
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/** A resposta afirma que algo foi gravado? (✅, "registrado", "anotei", "salvo", "corrigido"…) */
+export function claimsWrite(text: string): boolean {
+  return /✅|\b(registr|anot|salv|atualiz|corrig|lanç|adicion|alter)(ad[oa]s?|ei|amos)\b/i.test(text);
+}
+
+const writesInTurn = (db: Db, turnId: number) =>
+  db
+    .prepare('SELECT count(*) FROM audit_log WHERE turn_id = ? AND undone_at IS NULL')
+    .pluck()
+    .get(turnId) as number;
+
+/** Checagem anexada quando o modelo afirma ter gravado sem ter chamado tool de escrita (D-031). */
+export function writeCheckNote(previous: string): string {
+  return [
+    '<system_check>',
+    'Sua resposta anterior afirmava que algo foi registrado/alterado, mas NENHUMA tool de escrita foi chamada neste turno.',
+    '- Se o usuário mandou dados para registrar (ou corrigir), chame as tools agora e responda com o resultado real.',
+    '- Se era só um resumo de algo registrado em turnos anteriores, responda de novo deixando isso claro (sem ✅, use 📋).',
+    '- Se faltam dados para registrar, pergunte só o que falta, citando o que você já entendeu.',
+    `Resposta anterior: "${previous.slice(0, 1500)}"`,
+    '</system_check>',
+  ].join('\n');
+}
+
 /**
  * Executa um turno no cérebro (ARCHITECTURE.md §4.3): token por tentativa, 1 retry após falha
  * transitória, desfazendo antes as escritas da tentativa que falhou (D-014).
@@ -109,7 +133,37 @@ export function createTurnRunner(deps: TurnRunnerDeps) {
       if (!retryable || attempt === 2) break;
       await sleep(deps.retryDelayMs);
     }
-    const r = result!;
+    let r = result!;
+    // Trava (D-031): resposta diz "✅ registrado" mas o turno não gravou nada → nova tentativa com aviso,
+    // no modelo mais forte. Se ainda assim nada for gravado, o usuário é avisado explicitamente.
+    if (r.ok && mode === 'turn' && claimsWrite(r.text) && writesInTurn(deps.db, turnId) === 0) {
+      log.warn({ text: r.text.slice(0, 200) }, 'resposta afirma registro sem escrita; checando de novo');
+      const fixPrompt = `${prompt}\n${writeCheckNote(r.text)}`;
+      const { token, hash } = deps.tokens.issue({ turnId, toolScope, now });
+      startAttempt(deps.db, turnId, {
+        tokenHash: hash,
+        model: deps.models.vision,
+        promptChars: fixPrompt.length,
+      });
+      let second: BrainResult;
+      try {
+        second = await deps.brain.run({
+          prompt: fixPrompt,
+          images: req.images,
+          mode,
+          toolScope,
+          turnToken: token,
+          model: deps.models.vision,
+        });
+      } catch (e) {
+        second = { ok: false, text: '', errorKind: 'error', errorMessage: String(e), durationMs: 0 };
+      } finally {
+        deps.tokens.revoke(hash);
+      }
+      if (second.ok) r = { ...second, costUsd: (r.costUsd ?? 0) + (second.costUsd ?? 0) };
+      if (claimsWrite(r.text) && !r.text.includes('📋') && writesInTurn(deps.db, turnId) === 0)
+        r = { ...r, text: `${r.text}\n\n${t.unconfirmedWrite}` };
+    }
     const status = r.ok ? 'done' : r.errorKind === 'usage_limit' ? 'deferred' : 'failed';
     finishTurn(
       deps.db,

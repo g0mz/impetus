@@ -420,6 +420,7 @@ describe('undo de turno (/desfazer e D-014)', () => {
         equipment: 'machine',
         load_kind: 'total',
         primary_muscles: ['upper_back'],
+        confirm_new: true,
       }),
     ).id;
     expect(
@@ -437,8 +438,133 @@ describe('undo de turno (/desfazer e D-014)', () => {
       error: { code: 'CONFLICT' },
     });
     undoTurn(db, state.turnId);
-    expect(data(call<{ matches: unknown[] }>('search_exercises', { query: 'remada tbar' })).matches).toEqual(
-      [],
+    expect(
+      data(call<{ matches: { id: number }[] }>('search_exercises', { query: 'remada tbar' })).matches.map(
+        (m) => m.id,
+      ),
+    ).not.toContain(id);
+  });
+
+  it('create_exercise recusa duplicata parecida e devolve candidatos; confirm_new força', () => {
+    const { db, ex } = makeDb();
+    const { call } = makeCaller(db);
+    const dup = call('create_exercise', {
+      name_pt: 'Remada curvada barra livre',
+      equipment: 'barbell',
+      load_kind: 'total',
+      primary_muscles: ['upper_back'],
+    });
+    expect(dup).toMatchObject({ ok: false, error: { code: 'CONFLICT' } });
+    expect(JSON.stringify(dup)).toContain(String(ex.remada));
+    expect(
+      call('create_exercise', {
+        name_pt: 'Remada curvada barra livre',
+        equipment: 'barbell',
+        load_kind: 'total',
+        primary_muscles: ['upper_back'],
+        confirm_new: true,
+      }),
+    ).toMatchObject({ ok: true });
+  });
+});
+
+describe('edit_workout', () => {
+  it('ajusta horário (hora local), muda série para aquecimento, troca exercício, apaga; /desfazer volta tudo', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn, state } = makeCaller(db, { now: '2026-10-15T05:02:00Z' });
+    const logged = data(
+      call<{ session_id: number }>('log_workout', {
+        entries: [
+          {
+            exercise_id: ex.remada!,
+            sets: [
+              { weight_kg: 30, reps: 10 },
+              { weight_kg: 60, reps: 8 },
+              { weight_kg: 60, reps: 8 },
+            ],
+          },
+        ],
+      }),
     );
+    const ids = db.prepare('SELECT id FROM sets ORDER BY id').pluck().all() as number[];
+    const editTurn = newTurn();
+    const r = data(
+      call<{ started_at: string; ended_at: string; local_date: string; work_sets: number }>('edit_workout', {
+        session_id: logged.session_id,
+        started_at: '2026-10-14T18:15',
+        ended_at: '2026-10-14T20:30',
+        set_changes: [
+          { set_id: ids[0], set_type: 'warmup' },
+          { set_id: ids[1], exercise_id: ex.supInc, reps: 9 },
+          { set_id: ids[2], delete: true },
+        ],
+      }),
+    );
+    expect(r).toMatchObject({
+      started_at: '2026-10-14T21:15:00Z',
+      ended_at: '2026-10-14T23:30:00Z',
+      local_date: '2026-10-14',
+      work_sets: 1,
+    });
+    expect(db.prepare('SELECT exercise_id, reps FROM sets WHERE id = ?').get(ids[1])).toEqual({
+      exercise_id: ex.supInc,
+      reps: 9,
+    });
+
+    undoTurn(db, editTurn);
+    expect(state.turnId).toBe(editTurn);
+    expect(db.prepare('SELECT started_at, ended_at FROM workout_sessions').get()).toEqual({
+      started_at: '2026-10-15T05:02:00Z',
+      ended_at: null,
+    });
+    expect(db.prepare('SELECT set_type, exercise_id, reps, deleted_at FROM sets ORDER BY id').all()).toEqual([
+      { set_type: 'work', exercise_id: ex.remada, reps: 10, deleted_at: null },
+      { set_type: 'work', exercise_id: ex.remada, reps: 8, deleted_at: null },
+      { set_type: 'work', exercise_id: ex.remada, reps: 8, deleted_at: null },
+    ]);
+  });
+
+  it('valida: série de outra sessão e fim antes do início', () => {
+    const { db, ex } = makeDb();
+    const { call } = makeCaller(db);
+    const s1 = data(
+      call<{ session_id: number }>('log_workout', {
+        entries: [{ exercise_id: ex.remada!, sets: [{ weight_kg: 60, reps: 8 }] }],
+      }),
+    );
+    const s2 = data(
+      call<{ session_id: number }>('log_workout', {
+        new_session: true,
+        entries: [{ exercise_id: ex.remada!, sets: [{ weight_kg: 60, reps: 8 }] }],
+      }),
+    );
+    const otherSet = db
+      .prepare('SELECT id FROM sets WHERE session_id = ?')
+      .pluck()
+      .get(s2.session_id) as number;
+    expect(
+      call('edit_workout', { session_id: s1.session_id, set_changes: [{ set_id: otherSet, reps: 1 }] }),
+    ).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } });
+    expect(
+      call('edit_workout', {
+        session_id: s1.session_id,
+        started_at: '2026-10-13T20:00',
+        ended_at: '2026-10-13T19:00',
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+  });
+});
+
+describe('log_cardio com velocidade', () => {
+  it('distância calculada no código a partir de speed_kmh × duração', () => {
+    const { db } = makeDb();
+    const { call } = makeCaller(db);
+    expect(data(call('log_cardio', { activity: 'esteira', duration_min: 30, speed_kmh: 6 }))).toMatchObject({
+      distance_km: 3,
+    });
+    expect(db.prepare('SELECT distance_m, duration_s FROM cardio_sessions').get()).toEqual({
+      distance_m: 3000,
+      duration_s: 1800,
+    });
   });
 });

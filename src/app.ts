@@ -18,6 +18,7 @@ import { createTurnRunner } from './gateway/turn-runner.ts';
 import type { Logger } from './logger.ts';
 import type { ReportKind } from './reports/build.ts';
 import { createWhisperCppTranscriber } from './media/transcribe.ts';
+import { acquireInstanceLock } from './ops/lock.ts';
 import { generateReport } from './reports/service.ts';
 import { buildJobs, startScheduler, type Notify } from './scheduler/jobs.ts';
 import { nowUtcIso } from './time.ts';
@@ -59,6 +60,10 @@ export function createBrain(config: Config, mcpUrl: string, logger: Logger): Bra
 
 /** Sobe banco, MCP, cérebro e canal. Devolve uma função de parada. */
 export async function startApp(config: Config, logger: Logger, channelOverride?: Channel) {
+  const releaseLock =
+    !channelOverride && config.CHANNEL !== 'terminal'
+      ? acquireInstanceLock(config.DATA_DIR)
+      : () => undefined;
   const db = openDb(config.dbPath);
   migrate(db);
   if (countExercises(db) === 0) {
@@ -101,6 +106,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       sendMinIntervalMs: config.WA_SEND_MIN_INTERVAL_MS,
       logger: logger.child({ mod: 'whatsapp' }),
       defaultTo: () => owner.defaultChat(),
+      mayHandle: owner.mayHandle,
     });
   else
     channel = createTelegramChannel({
@@ -108,6 +114,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       mediaDir: config.mediaDir,
       logger: logger.child({ mod: 'telegram' }),
       defaultTo: () => owner.defaultChat(),
+      mayHandle: owner.mayHandle,
     });
   const isTerminal = channel.name === 'terminal';
 
@@ -209,6 +216,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       await mcp.close();
       await ingest.close();
       db.close();
+      releaseLock();
     },
   };
 }

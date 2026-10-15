@@ -50,6 +50,8 @@ export const t = {
   audioTooLong: (max: number) =>
     `🎤 Áudio longo demais (máx. ${Math.round(max / 60)} min). Mande em partes ou por texto.`,
   audioFailed: '🎤 Não consegui entender o áudio. Pode repetir ou mandar por texto?',
+  unconfirmedWrite:
+    '⚠️ Atenção: nada foi gravado nesta mensagem. Confira com /hoje ou /ultimo e me mande de novo o que faltou.',
   skippedReports: (cmds: string) => `Durante a pausa pulei relatório(s); para ver agora: ${cmds}`,
   reportGenerating: '📊 Gerando o relatório…',
 } as const;

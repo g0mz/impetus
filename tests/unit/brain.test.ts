@@ -100,6 +100,9 @@ describe('roteamento de modelo (§5.3)', () => {
       'sonnet-r',
     );
     expect(chooseModel({ hasImage: false, mode: 'turn', text: 'supino 32kg 10 9 8' }, m)).toBe('haiku');
+    // treino inteiro (várias linhas / muitos números) → modelo forte
+    const treino = 'leg press 50kg 8, 100kg 8, 140kg 2x8\nhack 3x6 60kg\nflexora 15kg 10, 20kg 10, 25kg 2x10';
+    expect(chooseModel({ hasImage: false, mode: 'turn', text: treino }, m)).toBe('sonnet');
   });
 });
 

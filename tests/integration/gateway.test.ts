@@ -212,13 +212,15 @@ describe('gateway ponta a ponta (cérebro falso via MCP)', () => {
     expect(p).toMatch(/<today_snapshot>\nkcal 0\/— · proteína 0\/— g · treino: Upper B \(10 séries\)/);
     expect(p.replace(/exercise_id \d+/g, 'exercise_id N')).toContain(
       [
-        '<open_session>Upper B (sessão 1) iniciado 18:10 — 3 exercícios, 10 séries',
-        '- Supino inclinado com halteres (exercise_id N): 30kg 3×10',
-        '- Remada curvada com barra (exercise_id N): 60kg 4×8',
-        '- Elevação lateral com halteres (exercise_id N): 10kg 3×15</open_session>',
+        '<open_session>Upper B (session_id 1) iniciado 18:10 — 3 exercícios, 10 séries',
+        '- Supino inclinado com halteres (exercise_id N): 30kg 3×10 · set_id 1,2,3',
+        '- Remada curvada com barra (exercise_id N): 60kg 4×8 · set_id 4,5,6,7',
+        '- Elevação lateral com halteres (exercise_id N): 10kg 3×15 · set_id 8,9,10</open_session>',
       ].join('\n'),
     );
-    expect(p).toContain('- "upper B: …" → registrou 1 sessão de treino, 10 séries');
+    expect(p).toContain(
+      '- usuário: "upper B: …" → [registrou 1 sessão de treino, 10 séries] → coach: "✅ registrado (10 séries)"',
+    );
     expect(p).toContain('<user_message>\nsupino 32kg 10 9 8\n</user_message>');
   });
 
@@ -234,6 +236,43 @@ describe('gateway ponta a ponta (cérebro falso via MCP)', () => {
     expect(g.getAttempts()).toBe(2);
     expect(count(g.db, 'SELECT count(*) FROM sets WHERE deleted_at IS NULL')).toBe(1);
     expect(count(g.db, 'SELECT attempts FROM turns ORDER BY id DESC LIMIT 1')).toBe(2);
+  });
+
+  it('trava D-031: "✅ registrado" sem escrita → checa de novo e registra de verdade', async () => {
+    const g = await setup((ex) => async (input, call) => {
+      if (!input.prompt.includes('<system_check>')) return { text: '✅ Gêmeos e extensora registrados!' };
+      await call('log_workout', {
+        entries: [{ exercise_id: ex.remada, sets: [{ weight_kg: 60, reps: 8 }] }],
+      });
+      return { text: '✅ Remada 60kg 8 registrada' };
+    });
+    expect(await g.say('já mandei')).toBe('✅ Remada 60kg 8 registrada');
+    expect(g.getAttempts()).toBe(2);
+    expect(count(g.db, 'SELECT count(*) FROM sets WHERE deleted_at IS NULL')).toBe(1);
+  });
+
+  it('trava D-031: se insistir sem gravar, o usuário é avisado; resumo com 📋 passa', async () => {
+    const g = await setup(
+      () => async (input) =>
+        input.prompt.includes('<system_check>') ? { text: '✅ tudo registrado' } : { text: '✅ registrado' },
+    );
+    expect(await g.say('já mandei')).toBe(`✅ tudo registrado
+
+${t.unconfirmedWrite}`);
+
+    await running?.close();
+    const h = await setup(
+      () => async (input) =>
+        input.prompt.includes('<system_check>')
+          ? { text: '📋 Resumo: 18 séries registradas antes' }
+          : { text: '✅ Treino registrado' },
+    );
+    expect(await h.say('me dá o resumo')).toBe('📋 Resumo: 18 séries registradas antes');
+
+    await running?.close();
+    const q = await setup(() => async () => ({ text: 'Quantas reps?' }));
+    expect(await q.say('supino 30kg')).toBe('Quantas reps?');
+    expect(q.getAttempts()).toBe(1);
   });
 
   it('limite de uso vira deferred, sem retry; falha dupla vira failed', async () => {

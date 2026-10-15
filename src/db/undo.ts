@@ -60,8 +60,8 @@ const mealOfItem = (db: Db, itemId: number) =>
   db.prepare('SELECT meal_id FROM meal_items WHERE id = ?').pluck().get(itemId) as number;
 
 const HANDLERS: Record<string, UndoHandler> = {
-  workout_session: softDelete('workout_sessions'),
-  set: softDelete('sets'),
+  workout_session: restoreOrSoftDelete('workout_sessions'),
+  set: restoreOrSoftDelete('sets'),
   cardio_session: softDelete('cardio_sessions'),
   exercise: softDelete('exercises', syncExerciseFts),
   exercise_alias: (db, e) => {

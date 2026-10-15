@@ -24,8 +24,8 @@ export type TurnContextInput = {
   currentTurnId?: number;
 };
 
-/** Orçamento aproximado do contexto (~2.000 tokens ≈ 8.000 caracteres). */
-const MAX_CONTEXT_CHARS = 8000;
+/** Orçamento aproximado do contexto (~3.000 tokens ≈ 12.000 caracteres). */
+const MAX_CONTEXT_CHARS = 12000;
 
 const fmtInt = (n: number) => Math.round(n).toLocaleString('pt-BR');
 
@@ -59,11 +59,12 @@ function openSession(db: Db, now: string, settings: ToolSettings): string | null
   const w = wallClock(s.started_at, settings.timeZone);
   const hhmm = `${String(w.hour).padStart(2, '0')}:${String(w.minute).padStart(2, '0')}`;
   const exIds = [...new Set(sets.map((x) => x.exercise_id))];
-  const head = `${routine ?? 'treino'} (sessão ${s.id}) iniciado ${hhmm} — ${exIds.length} exercícios, ${sets.filter((x) => x.set_type !== 'warmup').length} séries`;
+  const head = `${routine ?? 'treino'} (session_id ${s.id}) iniciado ${hhmm} — ${exIds.length} exercícios, ${sets.filter((x) => x.set_type !== 'warmup').length} séries`;
   // Nomes e ids ajudam a resolver "supino 32kg 10 9 8" para o exercício já em andamento.
   const lines = exIds.map((id) => {
     const name = db.prepare('SELECT name_pt FROM exercises WHERE id = ?').pluck().get(id) as string;
-    return `- ${name} (exercise_id ${id}): ${setsCompact(sets.filter((x) => x.exercise_id === id))}`;
+    const xs = sets.filter((x) => x.exercise_id === id);
+    return `- ${name} (exercise_id ${id}): ${setsCompact(xs)} · set_id ${xs.map((x) => x.id).join(',')}`;
   });
   return [head, ...lines].join('\n');
 }
@@ -94,6 +95,12 @@ export function describeEntities(counts: Record<string, number>): string {
     .join(', ');
 }
 
+const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+
+/**
+ * Últimos turnos com a mensagem do usuário, o que foi gravado e a resposta do coach. Os 2 mais recentes
+ * vão quase inteiros (é onde mora a pergunta pendente e os dados que o usuário "já mandou").
+ */
 function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
   const turns = db
     .prepare(
@@ -101,30 +108,38 @@ function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
     )
     .pluck()
     .all(excludeTurnId ?? -1, limit) as number[];
-  return turns.reverse().map((id) => {
-    const text = (
-      db
+  return turns.reverse().map((id, i, all) => {
+    const fresh = i >= all.length - 2;
+    const msg = (dir: 'in' | 'out') =>
+      (db
         .prepare(
-          "SELECT group_concat(coalesce(text, '[imagem]'), ' / ') FROM messages WHERE turn_id = ? AND direction = 'in'",
+          `SELECT group_concat(coalesce(text, '[imagem]'), ' / ') FROM messages WHERE turn_id = ? AND direction = ?`,
         )
         .pluck()
-        .get(id) as string | null
-    )?.slice(0, 200);
+        .get(id, dir) as string | null) ?? '';
     const counts = db
       .prepare(
         "SELECT entity, count(*) n FROM audit_log WHERE turn_id = ? AND undone_at IS NULL AND action = 'create' GROUP BY entity ORDER BY min(id)",
       )
       .all(id) as { entity: string; n: number }[];
+    const updates = db
+      .prepare(
+        "SELECT count(*) FROM audit_log WHERE turn_id = ? AND undone_at IS NULL AND action != 'create'",
+      )
+      .pluck()
+      .get(id) as number;
     const undone = db
       .prepare('SELECT count(*) FROM audit_log WHERE turn_id = ? AND undone_at IS NOT NULL')
       .pluck()
       .get(id) as number;
-    const what = counts.length
-      ? `registrou ${describeEntities(Object.fromEntries(counts.map((c) => [c.entity, c.n])))}`
-      : undone
-        ? 'desfeito'
-        : 'consulta';
-    return `- "${text ?? ''}" → ${what}`;
+    const parts: string[] = [];
+    if (counts.length)
+      parts.push(`registrou ${describeEntities(Object.fromEntries(counts.map((c) => [c.entity, c.n])))}`);
+    if (updates) parts.push(`alterou ${updates} registro(s)`);
+    const what = parts.length ? parts.join('; ') : undone ? 'desfeito' : 'nada gravado';
+    const user = clip(msg('in').replace(/\s+/g, ' '), fresh ? 1200 : 240);
+    const bot = clip(msg('out').replace(/\s+/g, ' '), fresh ? 600 : 160);
+    return `- usuário: "${user}" → [${what}]${bot ? ` → coach: "${bot}"` : ''}`;
   });
 }
 

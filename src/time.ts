@@ -168,6 +168,14 @@ export function resolveWhen(
     parseLocalDate(input);
     return { at: toUtcIso(zonedTimeToUtc(input, 12, timeZone)), localDate: input };
   }
+  // data/hora sem fuso ("2026-10-14T18:15") é hora local do usuário, não do servidor (na VM o TZ é UTC)
+  const naive = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/.exec(input);
+  if (naive) {
+    const [, d, hh, mm, ss] = naive;
+    const base = zonedTimeToUtc(d!, Number(hh), timeZone).getTime();
+    const at = toUtcIso(new Date(base + Number(mm) * 60_000 + Number(ss ?? 0) * 1000));
+    return { at, localDate: toLocalDate(at, cutoffHour, timeZone) };
+  }
   const at = toUtcIso(input);
   return { at, localDate: toLocalDate(at, cutoffHour, timeZone) };
 }

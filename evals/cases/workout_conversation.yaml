@@ -1,0 +1,29 @@
+id: workout_conversation
+description: >
+  Conversa real de 14/10 (treino de perna digitado tarde da noite): faltam reps, usuário responde com faixas,
+  depois informa horário e cardio. Nada pode ser perdido, sem duplicar exercícios, rampa como aquecimento,
+  horário corrigido, distância do cardio calculada pela tool, sem "✅" falso.
+now: '2026-10-15T05:02:00Z'
+steps:
+  - text: 'hoje treinei perna'
+  - text: |-
+      fiz 1 série de leg press com 50kg, 1 série com 100kg e 2 séries com 140kg
+      3 séries de agachamento hack com 60kg
+      1 série de flexora deitada com 15kg e 1 série com 20kg e 2 séries com 25kg
+      1 série de gêmeos em pé na máquina com 20kg e 3 séries com 50kg
+      3 séries de extensora com 50kg
+  - text: |-
+      leg uma média de 8
+      hack 6
+      flexora umas 10
+      gêmeos umas 10-12
+      extensora umas 8-10
+  - text: 'treinei das 18h15 às 20h30, também fiz 30min de cardio na esteira na velocidade 6'
+expect:
+  exercises: ['leg press', 'hack', 'flexora', 'panturrilha', 'extensora']
+  work_sets: [14, 18]
+  warmup_sets: [0, 4]
+  new_exercises: 0
+  session_start: '18:15'
+  cardio_km: 3
+  no_unconfirmed_write: true

@@ -105,8 +105,19 @@ export function createInbox(deps: InboxDeps) {
       : null;
 
   let transcribeChain: Promise<void> = Promise.resolve();
+  let inboundChain: Promise<void> = Promise.resolve();
 
-  async function handle(m: InboundMessage): Promise<void> {
+  /** Entrada serial: preserva a ordem (ex.: áudio sendo transcrito seguido de texto). */
+  function handle(m: InboundMessage): Promise<void> {
+    const run = inboundChain.then(() => handleOne(m));
+    inboundChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  async function handleOne(m: InboundMessage): Promise<void> {
     if (deps.owner && m.senderIds) {
       const verdict = deps.owner.check(m.senderIds, m.text, m.chatId);
       if (verdict === 'ignore') return;
@@ -154,7 +165,7 @@ export function createInbox(deps: InboxDeps) {
       const arg = cmd.args.toLowerCase();
       const kind = /^dia|hoje/.test(arg) ? 'daily' : /^m[eê]s/.test(arg) ? 'monthly' : 'weekly';
       deps.db.prepare("UPDATE messages SET status = 'processed' WHERE id = ?").run(id);
-      await queue.add(async () => {
+      void queue.add(async () => {
         await deps.channel.processing?.(m, true);
         try {
           const r = await deps.report!(kind);
@@ -163,6 +174,9 @@ export function createInbox(deps: InboxDeps) {
             for (const c of r.charts ?? [])
               await deps.channel.sendImage(c, null, m.chatId ? { to: m.chatId } : undefined);
           deps.db.prepare('UPDATE reports SET sent_at = ? WHERE id = ?').run(clock(), r.reportId);
+        } catch (e) {
+          deps.logger.error({ err: e }, '/relatorio falhou');
+          await reply(t.brainFailed, m.chatId, undefined, []).catch(() => undefined);
         } finally {
           await deps.channel.processing?.(m, false);
         }
@@ -267,6 +281,7 @@ export function createInbox(deps: InboxDeps) {
     retryTurn,
     /** Espera a fila esvaziar (testes e desligamento). */
     async drain() {
+      await inboundChain;
       debouncer?.flushNow();
       await queue.onIdle();
     },

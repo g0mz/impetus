@@ -154,7 +154,47 @@ export function searchExercises(db: Db, query: string, limit = 5): ExerciseMatch
       out.push({ ...r, score: Math.max(0.1, Math.round((0.9 - 0.1 * rank++) * 100) / 100) });
     }
   }
+  // Frase longa do jeito que se fala ("gêmeos em pé na máquina") não casa com AND de todas as palavras:
+  // tenta de novo só com as palavras significativas (OR, sinônimos de academia), com score menor.
+  if (out.length < lim) {
+    const relaxed = relaxedTerms(query);
+    if (relaxed.length) {
+      const or = relaxed.map((t) => `"${t}"*`).join(' OR ');
+      let r2 = 0;
+      for (const r of stmt.all(or, lim + 1) as ExerciseRow[]) {
+        if (seen.has(r.id) || out.length >= lim) continue;
+        seen.add(r.id);
+        out.push({ ...r, score: Math.max(0.1, Math.round((0.6 - 0.1 * r2++) * 100) / 100) });
+      }
+    }
+  }
   return out;
+}
+
+const FILLER = new Set(
+  'de da do das dos na no nas nos em com sem a o e para por um uma maquina aparelho barra livre serie series'.split(
+    ' ',
+  ),
+);
+/** Sinônimos de academia (fala → nome no catálogo). */
+const GYM_SYNONYMS: Record<string, string> = {
+  gemeos: 'panturrilha',
+  gemeo: 'panturrilha',
+  panturrilhas: 'panturrilha',
+  puxador: 'puxada',
+  agacho: 'agachamento',
+};
+
+export function relaxedTerms(query: string): string[] {
+  return [
+    ...new Set(
+      normalize(query)
+        .split(' ')
+        .filter((t) => t.length >= 3 && !FILLER.has(t))
+        .map((t) => GYM_SYNONYMS[t] ?? t)
+        .map((t) => (t.length >= 6 ? t.replace(/(os|as|o|a)$/, '') : t)),
+    ),
+  ];
 }
 
 export function countExercises(db: Db): number {

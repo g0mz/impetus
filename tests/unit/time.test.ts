@@ -108,3 +108,17 @@ describe('formatação pt-BR', () => {
     expect(toUtcIso('2026-10-13T20:41:00.123-03:00')).toBe('2026-10-13T23:41:00Z');
   });
 });
+
+describe('resolveWhen: hora sem fuso é hora local do usuário', () => {
+  it('2026-10-14T18:15 em São Paulo = 21:15Z, independente do fuso do servidor', async () => {
+    const { resolveWhen } = await import('../../src/time.ts');
+    expect(resolveWhen('2026-10-14T18:15', '2026-10-15T05:00:00Z', 4, 'America/Sao_Paulo')).toEqual({
+      at: '2026-10-14T21:15:00Z',
+      localDate: '2026-10-14',
+    });
+    expect(resolveWhen('2026-10-15T01:30:00', '2026-10-15T05:00:00Z', 4, 'America/Sao_Paulo').localDate).toBe(
+      '2026-10-14',
+    );
+    expect(resolveWhen('2026-10-14T18:15:00Z', '2026-10-15T05:00:00Z').at).toBe('2026-10-14T18:15:00Z');
+  });
+});

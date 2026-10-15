@@ -26,6 +26,11 @@ export function createOwnerGuard(db: Db, logger: Logger) {
 
   return {
     hasOwner: () => ownerIds().length > 0,
+    /** Sem efeitos: o remetente pode ser atendido? (antes do dono parear, todos podem tentar PAREAR). */
+    mayHandle: (senderIds: string[]) => {
+      const ids = ownerIds();
+      return !ids.length || senderIds.some((s) => ids.includes(s));
+    },
     defaultChat: () => getSetting<string>(db, 'owner.chat_jid'),
     /** 'owner' = atender; 'paired' = acabou de parear (responder confirmação); 'ignore' = descartar. */
     check(senderIds: string[], text: string | null, chatId?: string): 'owner' | 'paired' | 'ignore' {

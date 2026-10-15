@@ -3,6 +3,7 @@ import path from 'node:path';
 import PQueue from 'p-queue';
 import type { Logger } from '../logger.ts';
 import { saveAudio } from '../media/audio.ts';
+import { toChatFormat } from '../text/chat-format.ts';
 import { saveNormalizedImage } from '../media/images.ts';
 import { splitMessage, type Channel, type InboundHandler, type SendOptions } from './types.ts';
 import { parseTgUpdate, tgMessageId, type TgUpdate } from './tg-parse.ts';
@@ -13,6 +14,8 @@ export type TelegramOptions = {
   logger: Logger;
   /** Chat padrão para mensagens proativas (do settings owner.chat_jid). */
   defaultTo: () => string | undefined;
+  /** Allowlist barata: mídia de quem não é o dono nem é baixada. */
+  mayHandle?: (senderIds: string[]) => boolean;
   /** Para testes. */
   fetchImpl?: typeof fetch;
   apiBase?: string;
@@ -72,6 +75,7 @@ export function createTelegramChannel(opts: TelegramOptions): Channel {
   async function handle(u: TgUpdate, onMessage: InboundHandler) {
     const p = parseTgUpdate(u);
     if (!p) return;
+    if (opts.mayHandle && !opts.mayHandle(p.senderIds)) return;
     const imagePath = p.imageFileId
       ? await saveNormalizedImage(await downloadFile(p.imageFileId), opts.mediaDir)
       : null;
@@ -168,7 +172,7 @@ export function createTelegramChannel(opts: TelegramOptions): Channel {
       const to = target(o);
       if (!to) throw new Error('telegram: sem destinatário');
       const ids: string[] = [];
-      for (const part of splitMessage(text, 4000)) ids.push(await sendText(to, part));
+      for (const part of splitMessage(toChatFormat(text, 'plain'), 4000)) ids.push(await sendText(to, part));
       return { externalIds: ids };
     },
     async sendImage(file, caption, o) {
