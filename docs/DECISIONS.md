@@ -164,6 +164,35 @@ Sem payload real ainda, o mapeamento seguiu `docs/webhook.md` e o código do app
 - Dia contábil: intervalos pelo ponto médio; sono pelo fim da sessão.
 - Risco a validar com o payload real: passos agregados por dia somados a intervalos finos (contagem dupla).
 
+### D-026 — Canal WhatsApp Cloud API (oficial) em vez de chip + Baileys (2026-10-14, antes de fechar a Fase 5)
+O dono não quer manter um chip pré-pago só para o bot. Escolha: canal `whatsapp-cloud` (API oficial da Meta),
+com Telegram como plano B se não der certo. O canal Baileys continua no código (`CHANNEL=whatsapp`).
+Consequências e riscos:
+- **Exige webhook HTTPS público**, o que contraria a regra "só 127.0.0.1". Mitigação: o servidor continua ouvindo em
+  127.0.0.1 e é exposto **só** a rota do webhook via Cloudflare Tunnel; a assinatura `X-Hub-Signature-256` (HMAC com
+  o app secret) é verificada antes de qualquer processamento; MCP e ingest seguem inacessíveis de fora.
+- **Custo (a partir de 2026-10-01, a confirmar na tabela oficial da Meta):** mensagens de serviço (dentro da janela
+  de 24 h) têm franquia mensal grátis (~1.000/número); fora da janela só com template pago (utility). Relatórios e
+  alertas agendados fora da janela precisam de template + forma de pagamento.
+- **Decisão do dono:** sem templates e sem forma de pagamento. O bot só fala dentro da janela de 24 h. Envios
+  proativos (relatórios, alertas) fora da janela ficam pendentes e são entregues junto da próxima resposta; o dono
+  pode pedir sob demanda (`/relatorio`).
+- **Resultado (descartada no mesmo dia):** o envio do número de teste (+1 555) para o número brasileiro do dono
+  falhou com `130497` ("Business account is restricted from messaging users in this country"). Remetente
+  brasileiro exigiria um chip de novo, que é o que se queria evitar. Substituída pela D-027.
+
+### D-027 — Telegram como canal principal (2026-10-14, antes de fechar a Fase 5)
+Sem custo, sem chip, API oficial e sem exposição de rede: Bot API por *long polling* (`getUpdates`), sem webhook.
+O adaptador previsto na Fase 7 foi antecipado. Implementação sem dependência nova (`fetch` nativo):
+- Id externo = `<chat_id>:<message_id>` (o `message_id` só é único no chat); remetente = `tg:<user_id>`; o
+  pareamento `PAREAR <código>` e a allowlist do gateway funcionam sem mudança.
+- O offset só avança depois de processar cada update: após reinício o Telegram reentrega e o inbox deduplica.
+- O token vai na URL da API; erros são reescritos sem a URL e sem `cause` para não vazar o token nos logs.
+- Reação 👀 + "digitando…"; mensagens divididas em partes de até 4000 caracteres (limite 4096); fotos e
+  documentos `image/*` passam pela mesma normalização de imagem.
+- O Baileys continua disponível com `CHANNEL=whatsapp`.
+- Número de teste da Meta (até 5 destinatários) é suficiente para um usuário; token permanente via *system user*.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

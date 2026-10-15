@@ -126,11 +126,11 @@ impetus/
 
 ## Fase 5 — Relatórios e insights
 
-- [ ] Métricas (REPORTS.md §2) com testes por fixture: semana sintética com números conhecidos.
-- [ ] Detectores (§3) com testes de disparo e não disparo.
-- [ ] `reports/build.ts` → `ReportBrief` → turno de relatório (`toolScope='read'`, `runtime/prompts/report.md`) → envio.
-- [ ] Fallback determinístico com testes de snapshot.
-- [ ] Scheduler (croner, fuso) com `job_runs`; `/relatorio`, `/pausar`, `/retomar`.
+- [x] Métricas (REPORTS.md §2) com testes por fixture: semana sintética com números conhecidos.
+- [x] Detectores (§3) com testes de disparo e não disparo.
+- [x] `reports/build.ts` → `ReportBrief` → turno de relatório (`toolScope='read'`, `runtime/prompts/report.md`) → envio.
+- [x] Fallback determinístico com testes de snapshot.
+- [x] Scheduler (croner, fuso) com `job_runs`; `/relatorio`, `/pausar`, `/retomar`.
 - [ ] **5b:** gráficos (Vega-Lite → PNG) atrás de `REPORT_CHARTS`.
 
 **Aceite:** `/relatorio semana` com dados de fixture produz texto com números idênticos ao brief; com o cérebro desligado (`BRAIN_PROVIDER=none`), o fallback é enviado; jobs não disparam em duplicidade após reinício.

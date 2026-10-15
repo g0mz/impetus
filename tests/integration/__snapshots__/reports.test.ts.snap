@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`relatório semanal > brief com números conhecidos e fallback sem cérebro (snapshot) 1`] = `
+"📊 Semana 12–18/out
+
+🏋️ Treino: 3 sessões (meta 3) · 18 séries · 2 PRs (Remada curvada com barra 62,5kg×8, Remada curvada com barra 65kg×8)
+🍽️ Nutrição: 4/7 dias completos · 2.400 kcal/dia · proteína 135 g/dia (1,7 g/kg) · meta em 2/4
+⚖️ Peso (tendência): 80,0 → 80,1 kg
+
+💡 Destaques
+1. Meta de proteína batida em 50% dos dias completos. Inclua uma fonte prática de proteína na refeição mais fraca (ex.: iogurte, ovos, whey).
+
+➡️ Foco da semana: Inclua uma fonte prática de proteína na refeição mais fraca (ex.: iogurte, ovos, whey)."
+`;

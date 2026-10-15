@@ -22,6 +22,7 @@ const schema = z
 
     CHANNEL: z.enum(['whatsapp', 'terminal', 'telegram']).default('terminal'),
     WA_SEND_MIN_INTERVAL_MS: int(1000),
+    TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
 
     BRAIN_PROVIDER: z.enum(['claude-cli', 'anthropic-api', 'gemini', 'none']).default('claude-cli'),
     CLAUDE_BIN: z.string().default('claude'),
@@ -68,6 +69,13 @@ const schema = z
         code: 'custom',
         path: ['GEMINI_API_KEY'],
         message: 'obrigatória com BRAIN_PROVIDER=gemini',
+      });
+    }
+    if (c.CHANNEL === 'telegram' && !c.TELEGRAM_BOT_TOKEN) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TELEGRAM_BOT_TOKEN'],
+        message: 'obrigatório com CHANNEL=telegram',
       });
     }
     if (c.NODE_ENV === 'production' && !c.INGEST_API_KEY) {

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClaudeCliBrain } from './brain/claude-cli.ts';
 import { noneBrain, type Brain } from './brain/types.ts';
+import { createTelegramChannel } from './channels/telegram.ts';
 import { createTerminalChannel } from './channels/terminal.ts';
 import { createWhatsAppChannel } from './channels/whatsapp-baileys.ts';
 import type { Channel } from './channels/types.ts';
@@ -9,11 +10,16 @@ import { REPO_ROOT, type Config } from './config.ts';
 import { openDb } from './db/index.ts';
 import { migrate } from './db/migrate.ts';
 import { countExercises } from './db/repos/exercises.ts';
+import { getSetting } from './db/repos/settings.ts';
 import { createInbox } from './gateway/inbox.ts';
 import { createIngestApp, startIngestServer } from './ingest/http.ts';
 import { createOwnerGuard } from './gateway/owner-pairing.ts';
 import { createTurnRunner } from './gateway/turn-runner.ts';
 import type { Logger } from './logger.ts';
+import type { ReportKind } from './reports/build.ts';
+import { generateReport } from './reports/service.ts';
+import { buildJobs, startScheduler, type Notify } from './scheduler/jobs.ts';
+import { nowUtcIso } from './time.ts';
 import { MCP_SERVER_NAME, createTokenStore, startMcpServer } from './mcp/server.ts';
 import { runSeeds } from './seeds/index.ts';
 import { buildRegistry } from './tools/index.ts';
@@ -95,7 +101,13 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       logger: logger.child({ mod: 'whatsapp' }),
       defaultTo: () => owner.defaultChat(),
     });
-  else throw new Error(`CHANNEL=${config.CHANNEL} ainda não implementado (Fase 7)`);
+  else
+    channel = createTelegramChannel({
+      token: config.TELEGRAM_BOT_TOKEN!,
+      mediaDir: config.mediaDir,
+      logger: logger.child({ mod: 'telegram' }),
+      defaultTo: () => owner.defaultChat(),
+    });
   const isTerminal = channel.name === 'terminal';
 
   const runTurn = createTurnRunner({
@@ -108,7 +120,19 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     retryDelayMs: config.BRAIN_RETRY_DELAY_MS,
     logger: logger.child({ mod: 'turn' }),
   });
+  const reportLogger = logger.child({ mod: 'report' });
+  const report = (kind: ReportKind) =>
+    generateReport({
+      db,
+      kind,
+      now: nowUtcIso(),
+      cutoffHour: config.DAY_CUTOFF_HOUR,
+      timeZone: config.TZ,
+      ...(brain.name === 'none' ? {} : { runTurn }),
+      logger: reportLogger,
+    });
   const handle = createInbox({
+    report,
     db,
     channel,
     registry,
@@ -120,6 +144,30 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       : { owner, debounceMs: config.DEBOUNCE_MS, debounceImageMs: config.DEBOUNCE_IMAGE_MS }),
     ...(config.CLAUDE_TOKEN_EXPIRES_AT ? { claudeTokenExpiresAt: config.CLAUDE_TOKEN_EXPIRES_AT } : {}),
   });
+  /** Mensagem proativa: respeita /pausar, exceto alertas críticos. */
+  const notify: Notify = async (text, opts) => {
+    if (!opts?.critical && getSetting<boolean>(db, 'proactive.paused')) return;
+    await channel.send(text);
+  };
+  const scheduler = startScheduler(
+    {
+      db,
+      logger: logger.child({ mod: 'scheduler' }),
+      timeZone: config.TZ,
+      cutoffHour: config.DAY_CUTOFF_HOUR,
+    },
+    buildJobs({
+      db,
+      logger: logger.child({ mod: 'jobs' }),
+      timeZone: config.TZ,
+      cutoffHour: config.DAY_CUTOFF_HOUR,
+      notify,
+      report,
+      retryTurn: handle.retryTurn,
+      config,
+    }),
+  );
+
   logger.info(
     { channel: channel.name, brain: brain.name, mcp: mcp.url, ingest: ingest.url },
     'impetus iniciado',
@@ -137,6 +185,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     db,
     done,
     async stop() {
+      scheduler.stop();
       await channel.stop();
       await handle.drain();
       await mcp.close();

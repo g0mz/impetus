@@ -75,6 +75,7 @@ export type JobsInput = SchedulerDeps & {
 export function buildJobs(i: JobsInput): JobDef[] {
   const local = (now: string) => toLocalDate(now, i.cutoffHour, i.timeZone);
   const sendReport = (kind: ReportKind) => async () => {
+    if (getSetting<boolean>(i.db, 'proactive.paused')) return 'pulado (pausado)';
     const r = await i.report(kind);
     await i.notify(r.text);
     i.db.prepare('UPDATE reports SET sent_at = ? WHERE id = ?').run(nowUtcIso(), r.reportId);

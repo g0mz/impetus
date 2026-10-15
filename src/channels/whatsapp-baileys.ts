@@ -41,14 +41,15 @@ export async function createSocket(authDir: string, logger: Logger) {
   }
   const sock = makeWASocket({
     auth: state,
-    browser: Browsers.ubuntu('Impetus'),
+    browser: Browsers.macOS('Chrome'),
     logger: logger.child({ mod: 'baileys' }, { level: 'warn' }) as never,
     markOnlineOnConnect: false,
     syncFullHistory: false,
     ...(version ? { version } : {}),
   });
   sock.ev.on('creds.update', saveCreds);
-  return sock;
+  /** Grava as credenciais atuais no disco (use antes de encerrar o processo). */
+  return Object.assign(sock, { flushCreds: saveCreds });
 }
 
 /**

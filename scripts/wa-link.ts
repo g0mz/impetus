@@ -38,8 +38,12 @@ await runCli(async () => {
           }
         }
         if (u.connection === 'open') {
-          console.log('✅ Bot vinculado. Sessão salva em', config.waAuthDir);
+          // deixa terminar as gravações pendentes de creds/chaves antes de sair (no Windows o
+          // process.exit no meio da escrita deixou creds.json com 0 bytes)
+          await new Promise((r) => setTimeout(r, 5000));
+          await sock.flushCreds();
           sock.end(undefined);
+          console.log('✅ Bot vinculado. Sessão salva em', config.waAuthDir);
           resolve();
         }
         if (u.connection === 'close') {
@@ -48,6 +52,12 @@ await runCli(async () => {
           if (code === DisconnectReason.restartRequired) {
             // fluxo normal após o pareamento: reabrir com as credenciais novas
             attempt().then(resolve, reject);
+          } else if (code === DisconnectReason.loggedOut) {
+            reject(
+              new Error(
+                `sessão inválida (401): pareamento anterior incompleto ou desvinculado. Apague ${config.waAuthDir} e rode de novo.`,
+              ),
+            );
           } else reject(new Error(`conexão encerrada (código ${code ?? '?'})`));
         }
       });

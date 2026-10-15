@@ -4,6 +4,36 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 5 — Relatórios e insights (2026-10-14)
+
+#### Adicionado
+- Scheduler ligado no app (croner, fuso `TZ`, `job_runs` com chave de período: não repete após reinício):
+  relatórios diário/semanal/mensal, alertas `hc_stale` e token Claude, reprocesso de turnos, backup.
+- `/relatorio [dia|semana|mes]` gera na hora; com `BRAIN_PROVIDER=none` ou falha do cérebro sai o fallback.
+- Mensagens proativas respeitam `/pausar` (alertas críticos continuam); relatório agendado pausado é pulado.
+- Testes: métricas por fixture, disparo/não disparo de cada detector, semana sintética → brief e snapshot do
+  fallback, idempotência do scheduler.
+
+#### Corrigido
+- `wa:link`: espera e grava as credenciais antes de sair (no Windows `creds.json` ficava com 0 bytes) e
+  explica o erro 401; navegador `Browsers.macOS('Chrome')` (nome customizado falhava no pareamento por código).
+
+#### Pendente
+- 5b (gráficos Vega-Lite → PNG atrás de `REPORT_CHARTS`) e evals de relatório contra o cérebro real.
+
+### Canal Telegram (2026-10-14, D-026/D-027)
+
+#### Adicionado
+- Canal `telegram` (Bot API por long polling, sem dependência nova): texto, fotos, citação, reação 👀 e
+  "digitando…", offset confirmado só após processar, erros sem o token. `TELEGRAM_BOT_TOKEN` obrigatório com
+  `CHANNEL=telegram`.
+
+#### Alterado
+- `runtime/.env.example`: volta a `CHANNEL=whatsapp` (Baileys no chip secundário do dono); Telegram fica como alternativa. WhatsApp Cloud API avaliada e descartada (erro 130497).
+
+#### Pendente (dono)
+- Criar o bot no @BotFather, pôr o token no `.env` e parear com `PAREAR <código>`.
+
 ### Fase 4 — Saúde (Health Connect via HC Webhook) (2026-10-14)
 
 #### Adicionado
