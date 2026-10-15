@@ -18,6 +18,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `wa:link`: espera e grava as credenciais antes de sair (no Windows `creds.json` ficava com 0 bytes) e
   explica o erro 401; navegador `Browsers.macOS('Chrome')` (nome customizado falhava no pareamento por código).
 
+#### Adicionado (robustez)
+- `wa:link` detecta sessão já vinculada (exige `--force`) ou incompleta (move para `.bak-*`) e confere o
+  `creds.json` antes do ✅.
+- Relatório agendado espera o canal conectar (até 30 min) antes de gerar; se não conectar, não gasta cota e o
+  job `report.catchup` (de hora em hora) reenvia quando o canal volta.
+- `/retomar` oferece os relatórios pulados durante a pausa.
+- `/recarga` + job `alert.sim_recharge`: lembrete crítico a partir de 25 dias sem recarga do chip pré-pago.
+
 #### Pendente
 - 5b (gráficos Vega-Lite → PNG atrás de `REPORT_CHARTS`) e evals de relatório contra o cérebro real.
 

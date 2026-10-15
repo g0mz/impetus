@@ -5,6 +5,7 @@ import { execa } from 'execa';
 import { REPO_ROOT } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { getSetting } from '../db/repos/settings.ts';
+import { t } from '../i18n/pt-br.ts';
 import { hcStaleAlert } from '../ingest/process.ts';
 import type { Logger } from '../logger.ts';
 import { reportPeriod, type ReportKind } from '../reports/build.ts';
@@ -29,19 +30,29 @@ export type SchedulerDeps = {
 };
 
 /** Executa um job com registro em job_runs; com periodKey, não repete um período já concluído. */
-export async function runJob(deps: SchedulerDeps, job: JobDef, now = (deps.clock ?? nowUtcIso)()): Promise<'ran' | 'skipped' | 'failed'> {
+export async function runJob(
+  deps: SchedulerDeps,
+  job: JobDef,
+  now = (deps.clock ?? nowUtcIso)(),
+): Promise<'ran' | 'skipped' | 'failed'> {
   const key = job.periodKey ? `${job.name}:${job.periodKey(now)}` : job.name;
   if (job.periodKey) {
     const done = deps.db.prepare('SELECT 1 FROM job_runs WHERE job = ? AND ok = 1 LIMIT 1').get(key);
     if (done) return 'skipped';
   }
-  const id = Number(deps.db.prepare('INSERT INTO job_runs (job, started_at) VALUES (?, ?)').run(key, now).lastInsertRowid);
+  const id = Number(
+    deps.db.prepare('INSERT INTO job_runs (job, started_at) VALUES (?, ?)').run(key, now).lastInsertRowid,
+  );
   try {
     const detail = await job.run(now);
-    deps.db.prepare('UPDATE job_runs SET finished_at = ?, ok = 1, detail = ? WHERE id = ?').run(nowUtcIso(), detail ?? null, id);
+    deps.db
+      .prepare('UPDATE job_runs SET finished_at = ?, ok = 1, detail = ? WHERE id = ?')
+      .run(nowUtcIso(), detail ?? null, id);
     return 'ran';
   } catch (e) {
-    deps.db.prepare('UPDATE job_runs SET finished_at = ?, ok = 0, detail = ? WHERE id = ?').run(nowUtcIso(), String(e).slice(0, 500), id);
+    deps.db
+      .prepare('UPDATE job_runs SET finished_at = ?, ok = 0, detail = ? WHERE id = ?')
+      .run(nowUtcIso(), String(e).slice(0, 500), id);
     deps.logger.error({ err: e, job: key }, 'job falhou');
     return 'failed';
   }
@@ -50,7 +61,8 @@ export async function runJob(deps: SchedulerDeps, job: JobDef, now = (deps.clock
 /** Liga os jobs no croner (fuso do usuário). `protect` evita sobreposição do mesmo job. */
 export function startScheduler(deps: SchedulerDeps, jobs: JobDef[]) {
   const crons = jobs.map(
-    (j) => new Cron(j.cron, { timezone: deps.timeZone, protect: true, name: j.name }, () => void runJob(deps, j)),
+    (j) =>
+      new Cron(j.cron, { timezone: deps.timeZone, protect: true, name: j.name }, () => void runJob(deps, j)),
   );
   deps.logger.info({ jobs: jobs.map((j) => `${j.name} (${j.cron})`) }, 'scheduler iniciado');
   return { stop: () => crons.forEach((c) => c.stop()) };
@@ -60,6 +72,8 @@ export type JobsInput = SchedulerDeps & {
   notify: Notify;
   report: (kind: ReportKind) => Promise<{ text: string; reportId: number }>;
   retryTurn: (turnId: number) => Promise<boolean>;
+  /** Espera o canal ficar pronto para enviar; false = desistiu (não gera o relatório, não gasta cota). */
+  waitChannel?: () => Promise<boolean>;
   config: {
     REPORT_DAILY: boolean;
     REPORT_DAILY_TIME: string;
@@ -76,6 +90,8 @@ export function buildJobs(i: JobsInput): JobDef[] {
   const local = (now: string) => toLocalDate(now, i.cutoffHour, i.timeZone);
   const sendReport = (kind: ReportKind) => async () => {
     if (getSetting<boolean>(i.db, 'proactive.paused')) return 'pulado (pausado)';
+    if (i.waitChannel && !(await i.waitChannel()))
+      throw new Error('canal indisponível; relatório não gerado');
     const r = await i.report(kind);
     await i.notify(r.text);
     i.db.prepare('UPDATE reports SET sent_at = ? WHERE id = ?').run(nowUtcIso(), r.reportId);
@@ -94,13 +110,15 @@ export function buildJobs(i: JobsInput): JobDef[] {
       .pluck()
       .all(status, since, until) as number[];
     for (const id of turns) {
-      i.db.prepare('INSERT INTO job_runs (job, started_at, finished_at, ok) VALUES (?, ?, ?, 1)').run(`turn.retry:${id}`, now, now);
+      i.db
+        .prepare('INSERT INTO job_runs (job, started_at, finished_at, ok) VALUES (?, ?, ?, 1)')
+        .run(`turn.retry:${id}`, now, now);
       await i.retryTurn(id);
     }
     return `${turns.length} turno(s)`;
   };
 
-  return [
+  const jobs: JobDef[] = [
     {
       name: 'report.weekly',
       cron: i.config.REPORT_WEEKLY_CRON,
@@ -147,7 +165,9 @@ export function buildJobs(i: JobsInput): JobDef[] {
       run: async (now) => {
         const exp = i.config.CLAUDE_TOKEN_EXPIRES_AT;
         if (!exp) return 'sem data de expiração';
-        const daysLeft = Math.round((Date.parse(`${exp}T00:00:00Z`) - Date.parse(`${local(now)}T00:00:00Z`)) / 86400_000);
+        const daysLeft = Math.round(
+          (Date.parse(`${exp}T00:00:00Z`) - Date.parse(`${local(now)}T00:00:00Z`)) / 86400_000,
+        );
         if ([30, 7, 1].includes(daysLeft) || daysLeft <= 0) {
           await i.notify(
             daysLeft <= 0
@@ -160,6 +180,39 @@ export function buildJobs(i: JobsInput): JobDef[] {
         return `${daysLeft} dias restantes`;
       },
     },
+    {
+      // chip pré-pago do bot vence em 30 dias sem recarga: avisa a partir do dia 25 (crítico, ignora /pausar)
+      name: 'alert.sim_recharge',
+      cron: '0 11 * * *',
+      periodKey: local,
+      run: async (now) => {
+        const last = getSetting<string>(i.db, 'sim.last_recharge');
+        if (!last) return 'sem recarga anotada';
+        const days = Math.round(
+          (Date.parse(`${local(now)}T00:00:00Z`) - Date.parse(`${last}T00:00:00Z`)) / 86400_000,
+        );
+        if (days < 25) return `${days} dias`;
+        await i.notify(t.rechargeDue(days), { critical: true });
+        return `avisado (${days} dias)`;
+      },
+    },
+    {
+      // relatório semanal/mensal que falhou (canal fora, cérebro e fallback com erro): tenta de novo a cada hora
+      name: 'report.catchup',
+      cron: '15 * * * *',
+      run: async (now) => {
+        const done: string[] = [];
+        for (const kind of ['weekly', 'monthly'] as const) {
+          const key = `report.${kind}:${reportPeriod(kind, local(now)).start}`;
+          const failed = i.db.prepare('SELECT 1 FROM job_runs WHERE job = ? AND ok = 0 LIMIT 1').get(key);
+          const ok = i.db.prepare('SELECT 1 FROM job_runs WHERE job = ? AND ok = 1 LIMIT 1').get(key);
+          if (!failed || ok) continue;
+          const job = jobs.find((j) => j.name === `report.${kind}`)!;
+          done.push(`${kind}: ${await runJob(i, job, now)}`);
+        }
+        return done.join(', ') || 'nada a recuperar';
+      },
+    },
     { name: 'turns.retry_failed', cron: '*/10 * * * *', run: retry('failed', 10) },
     { name: 'turns.retry_deferred', cron: '0 * * * *', run: retry('deferred', 1) },
     {
@@ -168,14 +221,22 @@ export function buildJobs(i: JobsInput): JobDef[] {
       periodKey: local,
       run: async () => {
         const script = path.join(REPO_ROOT, 'scripts', 'backup.sh');
-        if (!fs.existsSync(script) || process.platform === 'win32') return 'sem backup configurado neste ambiente';
-        const r = await execa('bash', [script], { reject: false, env: { ...process.env, DATA_DIR: i.config.DATA_DIR }, timeout: 30 * 60_000 });
+        if (!fs.existsSync(script) || process.platform === 'win32')
+          return 'sem backup configurado neste ambiente';
+        const r = await execa('bash', [script], {
+          reject: false,
+          env: { ...process.env, DATA_DIR: i.config.DATA_DIR },
+          timeout: 30 * 60_000,
+        });
         if (r.exitCode !== 0) {
-          await i.notify(`🚨 Backup falhou (código ${r.exitCode}). Veja \`journalctl -u impetus\`.`, { critical: true });
+          await i.notify(`🚨 Backup falhou (código ${r.exitCode}). Veja \`journalctl -u impetus\`.`, {
+            critical: true,
+          });
           throw new Error(`backup.sh saiu com ${r.exitCode}: ${String(r.stderr).slice(-300)}`);
         }
         return String(r.stdout).split('\n').filter(Boolean).at(-1) ?? 'ok';
       },
     },
   ];
+  return jobs;
 }

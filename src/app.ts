@@ -56,6 +56,20 @@ export function createBrain(config: Config, mcpUrl: string, logger: Logger): Bra
   }
 }
 
+/** Espera o canal conectar (até `timeoutMs`); canais sem status (terminal) estão sempre prontos. */
+export async function waitChannelOpen(
+  channel: Channel,
+  timeoutMs = 30 * 60_000,
+  stepMs = 30_000,
+): Promise<boolean> {
+  const open = () => !channel.status || channel.status().startsWith('open');
+  for (let waited = 0; !open(); waited += stepMs) {
+    if (waited >= timeoutMs) return false;
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+  return true;
+}
+
 /** Sobe banco, MCP, cérebro e canal. Devolve uma função de parada. */
 export async function startApp(config: Config, logger: Logger, channelOverride?: Channel) {
   const db = openDb(config.dbPath);
@@ -164,6 +178,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       notify,
       report,
       retryTurn: handle.retryTurn,
+      waitChannel: () => waitChannelOpen(channel),
       config,
     }),
   );

@@ -196,3 +196,146 @@ describe('scheduler', () => {
     expect(sent).toHaveLength(1);
   });
 });
+
+describe('relatório com canal fora do ar', () => {
+  it('não gera o relatório (não gasta cota) e o job fica como falho para nova tentativa', async () => {
+    const { db } = makeDb();
+    let generated = 0;
+    const jobs = buildJobs({
+      db,
+      logger,
+      timeZone: SETTINGS.timeZone,
+      cutoffHour: 4,
+      notify: async () => {},
+      report: async () => ({ text: 'x', reportId: ++generated }),
+      retryTurn: async () => false,
+      waitChannel: async () => false,
+      config: {
+        REPORT_DAILY: false,
+        REPORT_DAILY_TIME: '21:30',
+        REPORT_WEEKLY_CRON: '0 20 * * 0',
+        REPORT_MONTHLY_CRON: '0 9 1 * *',
+        HC_STALE_HOURS: 48,
+        DATA_DIR: '.',
+      },
+    });
+    const deps = { db, logger, timeZone: SETTINGS.timeZone, cutoffHour: 4 };
+    expect(
+      await runJob(
+        deps,
+        jobs.find((j) => j.name === 'report.weekly')!,
+        NOW,
+      ),
+    ).toBe('failed');
+    expect(generated).toBe(0);
+  });
+});
+
+describe('report.catchup', () => {
+  it('reenvia o semanal que falhou quando o canal volta', async () => {
+    const { db } = makeDb();
+    let up = false;
+    const sent: string[] = [];
+    const jobs = buildJobs({
+      db,
+      logger,
+      timeZone: SETTINGS.timeZone,
+      cutoffHour: 4,
+      notify: async (t) => void sent.push(t),
+      report: async () => ({ text: 'semana!', reportId: 1 }),
+      retryTurn: async () => false,
+      waitChannel: async () => up,
+      config: {
+        REPORT_DAILY: false,
+        REPORT_DAILY_TIME: '21:30',
+        REPORT_WEEKLY_CRON: '0 20 * * 0',
+        REPORT_MONTHLY_CRON: '0 9 1 * *',
+        HC_STALE_HOURS: 48,
+        DATA_DIR: '.',
+      },
+    });
+    const deps = { db, logger, timeZone: SETTINGS.timeZone, cutoffHour: 4 };
+    const catchup = jobs.find((j) => j.name === 'report.catchup')!;
+    await runJob(
+      deps,
+      jobs.find((j) => j.name === 'report.weekly')!,
+      NOW,
+    );
+    up = true;
+    await runJob(deps, catchup, '2026-10-19T00:15:00Z');
+    await runJob(deps, catchup, '2026-10-19T01:15:00Z');
+    expect(sent).toEqual(['semana!']);
+  });
+});
+
+describe('/pausar e /retomar', () => {
+  it('ao retomar, oferece os relatórios pulados durante a pausa', async () => {
+    const { runCommand } = await import('../../src/gateway/commands.ts');
+    const { buildRegistry } = await import('../../src/tools/index.ts');
+    const { db } = makeDb();
+    const ctx = { db, registry: buildRegistry(), settings: SETTINGS, now: NOW };
+    expect(runCommand(ctx, 'pausar', '').text).toMatch(/pausadas/);
+    const jobs = buildJobs({
+      db,
+      logger,
+      timeZone: SETTINGS.timeZone,
+      cutoffHour: 4,
+      notify: async () => {},
+      report: async () => ({ text: 'x', reportId: 1 }),
+      retryTurn: async () => false,
+      config: {
+        REPORT_DAILY: false,
+        REPORT_DAILY_TIME: '21:30',
+        REPORT_WEEKLY_CRON: '0 20 * * 0',
+        REPORT_MONTHLY_CRON: '0 9 1 * *',
+        HC_STALE_HOURS: 48,
+        DATA_DIR: '.',
+      },
+    });
+    await runJob(
+      { db, logger, timeZone: SETTINGS.timeZone, cutoffHour: 4 },
+      jobs.find((j) => j.name === 'report.weekly')!,
+      NOW,
+    );
+    expect(runCommand(ctx, 'retomar', '').text).toContain('/relatorio semana');
+    expect(runCommand({ ...ctx, now: '2026-11-01T12:00:00Z' }, 'retomar', '').text).not.toContain(
+      '/relatorio',
+    );
+  });
+});
+
+describe('lembrete de recarga do chip', () => {
+  it('/recarga anota; avisa a partir de 25 dias, mesmo pausado', async () => {
+    const { runCommand } = await import('../../src/gateway/commands.ts');
+    const { buildRegistry } = await import('../../src/tools/index.ts');
+    const { db } = makeDb();
+    const ctx = { db, registry: buildRegistry(), settings: SETTINGS, now: NOW };
+    expect(runCommand(ctx, 'recarga', '').text).toContain('18/10');
+    const sent: { t: string; critical?: boolean }[] = [];
+    const jobs = buildJobs({
+      db,
+      logger,
+      timeZone: SETTINGS.timeZone,
+      cutoffHour: 4,
+      notify: async (t, o) => void sent.push({ t, ...(o?.critical ? { critical: true } : {}) }),
+      report: async () => ({ text: 'x', reportId: 1 }),
+      retryTurn: async () => false,
+      config: {
+        REPORT_DAILY: false,
+        REPORT_DAILY_TIME: '21:30',
+        REPORT_WEEKLY_CRON: '0 20 * * 0',
+        REPORT_MONTHLY_CRON: '0 9 1 * *',
+        HC_STALE_HOURS: 48,
+        DATA_DIR: '.',
+      },
+    });
+    const job = jobs.find((j) => j.name === 'alert.sim_recharge')!;
+    const deps = { db, logger, timeZone: SETTINGS.timeZone, cutoffHour: 4 };
+    await runJob(deps, job, '2026-11-11T14:00:00Z'); // 24 dias
+    expect(sent).toEqual([]);
+    await runJob(deps, job, '2026-11-12T14:00:00Z'); // 25 dias
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ critical: true });
+    expect(sent[0]!.t).toContain('25 dias');
+  });
+});

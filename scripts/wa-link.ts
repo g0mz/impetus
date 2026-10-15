@@ -2,6 +2,7 @@
 // ou `npm run wa:link -- --qr`. A sessão fica em data/wa-auth/ (credencial: fora do backup em nuvem).
 import { DisconnectReason } from 'baileys';
 import QRCode from 'qrcode';
+import { inspectAuthDir, setAsideAuthDir } from '../src/channels/wa-auth.ts';
 import { createSocket } from '../src/channels/whatsapp-baileys.ts';
 import { runCli } from '../src/cli.ts';
 import { loadConfig } from '../src/config.ts';
@@ -10,6 +11,7 @@ import { createLogger } from '../src/logger.ts';
 const args = process.argv.slice(2);
 const phone = args.includes('--phone') ? args[args.indexOf('--phone') + 1]?.replace(/\D/g, '') : undefined;
 const useQr = args.includes('--qr');
+const force = args.includes('--force');
 
 await runCli(async () => {
   if (!phone && !useQr) {
@@ -19,6 +21,13 @@ await runCli(async () => {
   }
   const config = loadConfig();
   const logger = createLogger('warn');
+  const before = inspectAuthDir(config.waAuthDir);
+  if (before === 'registered' && !force) {
+    console.error(`Já existe uma sessão vinculada em ${config.waAuthDir}. Use --force para parear de novo.`);
+    process.exitCode = 1;
+    return;
+  }
+  if (before !== 'none') console.log(`Sessão anterior movida para ${setAsideAuthDir(config.waAuthDir)}`);
   const attempt = async (): Promise<void> => {
     const sock = await createSocket(config.waAuthDir, logger);
     let asked = false;
@@ -43,6 +52,10 @@ await runCli(async () => {
           await new Promise((r) => setTimeout(r, 5000));
           await sock.flushCreds();
           sock.end(undefined);
+          if (inspectAuthDir(config.waAuthDir) !== 'registered') {
+            reject(new Error('o vínculo abriu, mas creds.json não foi gravado corretamente; rode de novo'));
+            return;
+          }
           console.log('✅ Bot vinculado. Sessão salva em', config.waAuthDir);
           resolve();
         }

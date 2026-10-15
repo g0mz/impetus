@@ -11,6 +11,7 @@ export const t = {
     '• /hoje — resumo do dia · /peso <kg> — registra peso',
     '• /relatorio [dia|semana|mes] — relatório na hora',
     '• /pausar · /retomar — mensagens automáticas',
+    '• /recarga — anota a recarga do chip do bot (lembrete mensal)',
     '• /ajuda — esta lista',
     '',
     'Ou escreva livremente, por exemplo:',
@@ -36,8 +37,13 @@ export const t = {
   brainFailed: 'Não consegui processar agora, tento de novo em 10 min.',
   brainDeferred: 'Atingi o limite de uso do momento; processo sua mensagem na próxima hora cheia.',
   brainUnavailable: 'O assistente está desligado (só comandos /). Veja /ajuda.',
-  paused: '⏸️ Mensagens automáticas pausadas (relatórios e lembretes). Alertas críticos continuam. /retomar para voltar.',
+  paused:
+    '⏸️ Mensagens automáticas pausadas (relatórios e lembretes). Alertas críticos continuam. /retomar para voltar.',
   resumed: '▶️ Mensagens automáticas retomadas.',
+  rechargeSaved: (d: string) => `📶 Recarga do chip anotada (${d}). Te lembro antes de vencer.`,
+  rechargeDue: (days: number) =>
+    `📶 Faz ${days} dias da última recarga do chip do bot. Recarregue (mín. R$ 15) para a linha não ser cancelada e mande /recarga.`,
+  skippedReports: (cmds: string) => `Durante a pausa pulei relatório(s); para ver agora: ${cmds}`,
   reportGenerating: '📊 Gerando o relatório…',
 } as const;
 

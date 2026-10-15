@@ -56,6 +56,8 @@ export function runCommand(ctx: CommandContext, name: string, args: string): Com
       return hoje(ctx);
     case 'peso':
       return peso(ctx, args);
+    case 'recarga':
+      return recarga(ctx);
     case 'pausar':
       return pausar(ctx, true);
     case 'retomar':
@@ -244,17 +246,47 @@ function peso(ctx: CommandContext, args: string): CommandResult {
   const v = Number(args.replace(',', '.').replace(/kg$/i, '').trim());
   if (!args || !Number.isFinite(v)) return { text: t.usage('/peso <kg>  (ex.: /peso 74,2)') };
   const { result: env, turnId } = inCommandTurn(ctx, (turnId) =>
-    callTool(ctx.registry, 'log_body_metric', { weight_kg: v }, { db: ctx.db, now: ctx.now, turnId, settings: ctx.settings, toolScope: 'all' }),
+    callTool(
+      ctx.registry,
+      'log_body_metric',
+      { weight_kg: v },
+      { db: ctx.db, now: ctx.now, turnId, settings: ctx.settings, toolScope: 'all' },
+    ),
   );
   if (!env.ok) return { text: `⚠️ ${env.error.message}`, turnId };
   const d = env.data as { weight_trend_kg: number | null; delta_7d_kg: number | null };
   const kg = (n: number) => n.toFixed(1).replace('.', ',');
   const trend = d.weight_trend_kg !== null ? ` · tendência ${kg(d.weight_trend_kg)} kg` : '';
-  const delta = d.delta_7d_kg !== null ? ` (${d.delta_7d_kg > 0 ? '+' : d.delta_7d_kg < 0 ? '−' : ''}${kg(Math.abs(d.delta_7d_kg))} kg em 7 dias)` : '';
+  const delta =
+    d.delta_7d_kg !== null
+      ? ` (${d.delta_7d_kg > 0 ? '+' : d.delta_7d_kg < 0 ? '−' : ''}${kg(Math.abs(d.delta_7d_kg))} kg em 7 dias)`
+      : '';
   return { text: `⚖️ ${kg(v)} kg registrado${trend}${delta}`, turnId };
 }
 
 function pausar(ctx: CommandContext, paused: boolean): CommandResult {
   setSetting(ctx.db, 'proactive.paused', paused);
-  return { text: paused ? t.paused : t.resumed };
+  if (paused) return { text: t.paused };
+  // relatórios pulados durante a pausa nos últimos 7 dias: oferece gerar na hora
+  const since = new Date(Date.parse(ctx.now) - 7 * 86400_000).toISOString();
+  const skipped = ctx.db
+    .prepare(
+      "SELECT DISTINCT substr(job, 8, instr(job, ':') - 8) FROM job_runs WHERE job LIKE 'report.%:%' AND detail = 'pulado (pausado)' AND started_at >= ?",
+    )
+    .pluck()
+    .all(since) as string[];
+  const arg: Record<string, string> = { weekly: 'semana', monthly: 'mes', daily: 'dia' };
+  const hints = skipped.filter((k) => arg[k]).map((k) => `/relatorio ${arg[k]}`);
+  return {
+    text: hints.length
+      ? `${t.resumed}
+${t.skippedReports(hints.join(' · '))}`
+      : t.resumed,
+  };
+}
+
+function recarga(ctx: CommandContext): CommandResult {
+  const d = toLocalDate(ctx.now, ctx.settings.cutoffHour, ctx.settings.timeZone);
+  setSetting(ctx.db, 'sim.last_recharge', d);
+  return { text: t.rechargeSaved(formatDayMonth(d)) };
 }

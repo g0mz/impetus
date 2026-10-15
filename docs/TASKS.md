@@ -147,7 +147,7 @@ impetus/
 
 ## Fase 7 — Opcionais
 
-- [ ] Adaptador Telegram (plano B do canal).
+- [x] Adaptador Telegram (plano B do canal).
 - [ ] `AnthropicApiBrain` e/ou `GeminiBrain` reutilizando `tools/registry` (plano B da cobrança).
 - [ ] Transcrição de áudio (Whisper local `whisper.cpp` em ARM, modelo pequeno) para registrar treino por voz.
 - [ ] Dashboard web somente leitura, servido via Tailscale.
