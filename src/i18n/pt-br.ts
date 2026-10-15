@@ -43,6 +43,8 @@ export const t = {
   rechargeSaved: (d: string) => `📶 Recarga do chip anotada (${d}). Te lembro antes de vencer.`,
   rechargeDue: (days: number) =>
     `📶 Faz ${days} dias da última recarga do chip do bot. Recarregue (mín. R$ 15) para a linha não ser cancelada e mande /recarga.`,
+  turnsFailing: (n: number) =>
+    `🚨 ${n} mensagens falharam no cérebro nas últimas 2 h. Veja /status e \`journalctl -u impetus\` (token, cota ou CLI).`,
   skippedReports: (cmds: string) => `Durante a pausa pulei relatório(s); para ver agora: ${cmds}`,
   reportGenerating: '📊 Gerando o relatório…',
 } as const;

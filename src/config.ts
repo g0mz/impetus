@@ -55,6 +55,9 @@ const schema = z
 
     OFF_USER_AGENT: z.string().default('Impetus/0.1 (uso pessoal)'),
     HC_STALE_HOURS: int(48),
+    /** Remote rclone para o backup (ex.: gcrypt:impetus). Vazio = só backup local. */
+    BACKUP_REMOTE: z.string().min(1).optional(),
+    BACKUP_KEEP_DAYS: int(14),
   })
   .superRefine((c, ctx) => {
     if (c.BRAIN_PROVIDER === 'anthropic-api' && !c.IMPETUS_ANTHROPIC_API_KEY) {

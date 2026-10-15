@@ -138,10 +138,10 @@ impetus/
 ## Fase 6 — Deploy e operação
 
 - [ ] Build e teste em linux-arm64 (`better-sqlite3`, `sharp`, `@resvg/resvg-js`).
-- [ ] `deploy/setup-vm.sh` idempotente (DEPLOY.md §2–4) e unit do systemd.
-- [ ] Backup (`scripts/backup.sh` + job) e **teste de restore documentado**.
-- [ ] Alertas: token Claude expirando, backup falho, `hc_stale`, turnos falhos repetidos.
-- [ ] Medição: RSS do processo após 24 h, latência p50/p90 por tipo de turno.
+- [x] `deploy/setup-vm.sh` idempotente (DEPLOY.md §2–4) e unit do systemd. *(escrito; rodar na VM)*
+- [x] Backup (`src/ops/backup.ts` + job) e **teste de restore documentado** (automatizado em `ops.test.ts`).
+- [x] Alertas: token Claude expirando, backup falho, `hc_stale`, turnos falhos repetidos.
+- [ ] Medição: RSS do processo após 24 h, latência p50/p90 por tipo de turno. *(no `/status`; falta a leitura de 24 h na VM)*
 
 **Aceite:** VM reiniciada → serviço volta sozinho e o WhatsApp reconecta; restore completo em menos de 30 min seguindo o runbook; RSS < 400 MB.
 

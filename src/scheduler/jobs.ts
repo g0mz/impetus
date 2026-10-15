@@ -1,15 +1,13 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { Cron } from 'croner';
-import { execa } from 'execa';
-import { REPO_ROOT } from '../config.ts';
 import type { Db } from '../db/index.ts';
-import { getSetting } from '../db/repos/settings.ts';
+import { getSetting, setSetting } from '../db/repos/settings.ts';
 import { t } from '../i18n/pt-br.ts';
 import { hcStaleAlert } from '../ingest/process.ts';
 import type { Logger } from '../logger.ts';
 import { reportPeriod, type ReportKind } from '../reports/build.ts';
-import { toLocalDate, nowUtcIso } from '../time.ts';
+import { runBackup } from '../ops/backup.ts';
+import { toLocalDate, nowUtcIso, weekdayPt } from '../time.ts';
 
 export type Notify = (text: string, opts?: { critical?: boolean }) => Promise<void>;
 
@@ -84,6 +82,8 @@ export type JobsInput = SchedulerDeps & {
     HC_STALE_HOURS: number;
     CLAUDE_TOKEN_EXPIRES_AT?: string | undefined;
     DATA_DIR: string;
+    BACKUP_REMOTE?: string | undefined;
+    BACKUP_KEEP_DAYS?: number;
   };
 };
 
@@ -184,6 +184,24 @@ export function buildJobs(i: JobsInput): JobDef[] {
       },
     },
     {
+      // cérebro falhando em sequência (token, cota, CLI quebrada): avisa no máximo a cada 6 h
+      name: 'alert.turns_failing',
+      cron: '5 * * * *',
+      run: async (now) => {
+        const since = new Date(Date.parse(now) - 2 * 3600_000).toISOString();
+        const failed = i.db
+          .prepare("SELECT count(*) FROM turns WHERE status = 'failed' AND finished_at >= ?")
+          .pluck()
+          .get(since) as number;
+        const last = getSetting<string>(i.db, 'alert.turns_failing.last');
+        if (failed < 3 || (last && Date.parse(now) - Date.parse(last) < 6 * 3600_000))
+          return `${failed} falha(s) em 2 h`;
+        setSetting(i.db, 'alert.turns_failing.last', now);
+        await i.notify(t.turnsFailing(failed), { critical: true });
+        return `avisado (${failed})`;
+      },
+    },
+    {
       // chip pré-pago do bot vence em 30 dias sem recarga: avisa a partir do dia 25 (crítico, ignora /pausar)
       name: 'alert.sim_recharge',
       cron: '0 11 * * *',
@@ -222,22 +240,25 @@ export function buildJobs(i: JobsInput): JobDef[] {
       name: 'backup',
       cron: '30 3 * * *',
       periodKey: local,
-      run: async () => {
-        const script = path.join(REPO_ROOT, 'scripts', 'backup.sh');
-        if (!fs.existsSync(script) || process.platform === 'win32')
-          return 'sem backup configurado neste ambiente';
-        const r = await execa('bash', [script], {
-          reject: false,
-          env: { ...process.env, DATA_DIR: i.config.DATA_DIR },
-          timeout: 30 * 60_000,
-        });
-        if (r.exitCode !== 0) {
-          await i.notify(`🚨 Backup falhou (código ${r.exitCode}). Veja \`journalctl -u impetus\`.`, {
+      run: async (now) => {
+        const d = local(now);
+        try {
+          const r = await runBackup({
+            db: i.db,
+            backupsDir: path.join(i.config.DATA_DIR, 'backups'),
+            localDate: d,
+            keepDays: i.config.BACKUP_KEEP_DAYS ?? 14,
+            remote: i.config.BACKUP_REMOTE,
+            mediaDir: path.join(i.config.DATA_DIR, 'media'),
+            syncMedia: weekdayPt(d) === 'domingo',
+          });
+          return `${path.basename(r.file)} ${Math.round(r.bytes / 1024)} KB · podados ${r.pruned}${r.uploaded ? ' · enviado' : ' · só local'}`;
+        } catch (e) {
+          await i.notify(`🚨 Backup falhou: ${String((e as Error).message).slice(0, 200)}`, {
             critical: true,
           });
-          throw new Error(`backup.sh saiu com ${r.exitCode}: ${String(r.stderr).slice(-300)}`);
+          throw e;
         }
-        return String(r.stdout).split('\n').filter(Boolean).at(-1) ?? 'ok';
       },
     },
   ];

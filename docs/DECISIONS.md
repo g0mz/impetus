@@ -193,6 +193,18 @@ O adaptador previsto na Fase 7 foi antecipado. Implementação sem dependência 
 - O Baileys continua disponível com `CHANNEL=whatsapp`.
 - Número de teste da Meta (até 5 destinatários) é suficiente para um usuário; token permanente via *system user*.
 
+### D-028 — WhatsApp (Baileys) no chip secundário volta a ser o canal principal (2026-10-14)
+- O dono decidiu usar o chip pré-pago Claro secundário (recarga mínima R$ 15 a cada 30 dias). Substitui a D-027;
+  Telegram fica como alternativa (`CHANNEL=telegram`).
+- Pareamento por código exige navegador padrão (`Browsers.macOS('Chrome')`); nome customizado era recusado.
+- `wa:link` grava e confere `creds.json` antes de sair (no Windows o `process.exit` deixou o arquivo com 0 bytes).
+- Lembrete de recarga: `/recarga` + job `alert.sim_recharge` (crítico a partir de 25 dias).
+
+### D-029 — Backup em TypeScript em vez de `scripts/backup.sh` (2026-10-14, Fase 6)
+- `src/ops/backup.ts` usa a API de backup do better-sqlite3 (consistente com WAL, sem `sqlite3` CLI), gzip e
+  retenção local; rclone só se `BACKUP_REMOTE` estiver definido. Roda igual no PC (Windows) e na VM e é testado
+  com restore real (`tests/integration/ops.test.ts`). `npm run restore` confere `integrity_check`.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

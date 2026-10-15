@@ -4,6 +4,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 6 — Deploy e operação (parcial, sem a VM) (2026-10-14, D-029)
+
+#### Adicionado
+- `runtime/deploy/setup-vm.sh` idempotente (pacotes, Node 24, usuário de serviço, clone/pull, build, systemd).
+- Backup em `src/ops/backup.ts` (API de backup do SQLite → gzip → retenção → rclone opcional via `BACKUP_REMOTE`;
+  mídia aos domingos) e `npm run restore` com `integrity_check`; restore testado automaticamente.
+- Alerta `alert.turns_failing` (≥ 3 turnos falhos em 2 h, no máximo a cada 6 h).
+- `/status` mostra latência p50/p90 dos turnos (7 dias), memória (RSS) e uptime.
+- DEPLOY.md: restore e migração do PC para a VM (copiar `wa-auth` e o banco com o app parado).
+
+#### Corrigido
+- `/status` mostrava "Último backup: nunca" sempre (procurava `job = 'backup'`, mas a chave tem o período).
+
+#### Pendente (precisa da VM)
+- Build/execução em linux-arm64, rodar `setup-vm.sh`, leitura de RSS/latência após 24 h.
+
 ### Fase 5 — Relatórios e insights (2026-10-14)
 
 #### Adicionado

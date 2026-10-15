@@ -35,6 +35,8 @@ Defina `MODEL_FAST=haiku` e `REPORT_CHARTS=false`.
 
 ## 2. Preparação do sistema
 
+> Atalho: `REPO_URL=https://github.com/<você>/impetus.git bash runtime/deploy/setup-vm.sh` faz §2 e §4 (idempotente). Os passos manuais abaixo continuam valendo como referência.
+
 ```bash
 sudo apt update && sudo apt -y upgrade
 sudo apt -y install build-essential python3 git sqlite3 rclone unattended-upgrades
@@ -131,17 +133,28 @@ Teste: `curl -X POST <url> -H "X-Api-Key: …" -H "Content-Type: application/jso
 
 ## 7. Backup e restore
 
-`scripts/backup.sh` (job diário 03:30):
+Job `backup` (diário 03:30, `src/ops/backup.ts`, decisão D-028):
+- Cópia consistente do SQLite pela API de backup do `better-sqlite3` (segura com WAL e com o app rodando) →
+  `DATA_DIR/backups/impetus-AAAA-MM-DD.db.gz`; retenção local de `BACKUP_KEEP_DAYS` (padrão 14).
+- Com `BACKUP_REMOTE` (ex.: `gcrypt:impetus`): `rclone copy` dos backups das últimas 48 h para `<remote>/db/` e,
+  aos domingos, `rclone sync` de `data/media` para `<remote>/media/`. Falha → alerta crítico no WhatsApp.
+- `gcrypt` é um remote **rclone crypt** sobre o Google Drive (`rclone config`: crie `gdrive` e depois `gcrypt`
+  apontando para `gdrive:impetus-enc`). Guarde a senha do crypt fora da VM.
+- `data/wa-auth` (credencial) **nunca** entra no backup.
+
+**Restore** (testado automaticamente em `tests/integration/ops.test.ts`):
 ```bash
-sqlite3 "$DATA_DIR/impetus.db" ".backup '$DATA_DIR/backups/impetus-$(date +%F).db'"
-gzip -f "$DATA_DIR/backups/impetus-$(date +%F).db"
-rclone copy "$DATA_DIR/backups/" gcrypt:impetus/db/ --max-age 48h
-rclone sync "$DATA_DIR/media/" gcrypt:impetus/media/          # semanal (domingo)
-find "$DATA_DIR/backups/" -name '*.db.gz' -mtime +14 -delete  # retenção local
+sudo systemctl stop impetus
+mv data/impetus.db data/impetus.db.old          # se existir
+rclone copy gcrypt:impetus/db/impetus-AAAA-MM-DD.db.gz data/backups/   # ou use um backup local
+npm run restore -- data/backups/impetus-AAAA-MM-DD.db.gz   # confere integrity_check e conta refeições/séries
+sudo systemctl start impetus                     # refaça o wa:link se a pasta wa-auth não existir
 ```
-- `gcrypt` é um remote **rclone crypt** sobre o Google Drive (`rclone config`: crie `gdrive` e depois `gcrypt` apontando para `gdrive:impetus-enc`). Guarde a senha do crypt fora da VM.
-- Retenção remota: 30 diários + 12 mensais (script de poda mensal).
-- **Restore:** VM nova → §2–4 → `rclone copy gcrypt:impetus/db/<arquivo> .` → `gunzip` → `data/impetus.db` → refazer o vínculo do WhatsApp (§5). **Teste o restore uma vez** na Fase 6.
+
+### Migrar do PC para a VM
+1. Pare o app no PC (o WhatsApp não pode rodar em dois lugares com a mesma sessão).
+2. Copie `data/wa-auth/` e `data/impetus.db` para `~/impetus/data/` na VM (`scp -r`), `chmod 700 data/wa-auth`.
+3. `sudo systemctl restart impetus` e confira `whatsapp conectado` no `journalctl`.
 
 ## 8. Operação
 

@@ -189,9 +189,18 @@ function status(ctx: CommandContext): CommandResult {
     start,
   )!;
   const backup = one<{ finished_at: string; ok: number }>(
-    "SELECT finished_at, ok FROM job_runs WHERE job = 'backup' ORDER BY id DESC LIMIT 1",
+    "SELECT finished_at, ok FROM job_runs WHERE job LIKE 'backup%' AND finished_at IS NOT NULL ORDER BY id DESC LIMIT 1",
   );
   const health = one<{ at: string | null }>('SELECT max(received_at) at FROM health_raw')?.at;
+  const weekAgo = new Date(Date.parse(now) - 7 * 86400_000).toISOString();
+  const durations = ctx.db
+    .prepare(
+      "SELECT duration_ms FROM turns WHERE kind = 'chat' AND status = 'done' AND duration_ms IS NOT NULL AND started_at >= ? ORDER BY duration_ms",
+    )
+    .pluck()
+    .all(weekAgo) as number[];
+  const pct = (p: number) =>
+    durations[Math.min(durations.length - 1, Math.floor(p * durations.length))]! / 1000;
   const lines = [
     '🩺 Status',
     `• Canal: ${ctx.channelStatus ? ctx.channelStatus() : 'terminal'}`,
@@ -199,6 +208,8 @@ function status(ctx: CommandContext): CommandResult {
     `• Hoje: ${today.n} turnos · custo estimado US$ ${(today.cost ?? 0).toFixed(2)}`,
     `• Último backup: ${backup ? `${backup.ok ? 'ok' : 'FALHOU'} ${ago(backup.finished_at, now)}` : 'nunca'}`,
     `• Último sync de saúde: ${ago(health, now)}`,
+    `• Latência 7 d: ${durations.length ? `p50 ${pct(0.5).toFixed(0)} s · p90 ${pct(0.9).toFixed(0)} s (n=${durations.length})` : 'sem turnos'}`,
+    `• Memória: ${Math.round(process.memoryUsage().rss / 1048576)} MB · no ar há ${(process.uptime() / 3600).toFixed(1).replace('.', ',')} h`,
   ];
   if (ctx.claudeTokenExpiresAt) lines.push(`• Token Claude expira em ${ctx.claudeTokenExpiresAt}`);
   return { text: lines.join('\n') };
