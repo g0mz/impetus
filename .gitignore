@@ -7,3 +7,6 @@ coverage/
 evals/images/*
 !evals/images/.gitkeep
 !evals/images/README.md
+
+# binários e modelos locais (whisper.cpp)
+tools/
