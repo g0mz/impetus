@@ -24,7 +24,9 @@ export function nutritionSummary(
   const complete = days.filter((d) => isCompleteDay(d, goals.kcal));
   const proteinAvg = mean(complete.map((d) => d.protein_g));
   const hit =
-    goals.protein_g !== undefined ? complete.filter((d) => d.protein_g >= 0.9 * goals.protein_g!).length : null;
+    goals.protein_g !== undefined
+      ? complete.filter((d) => d.protein_g >= 0.9 * goals.protein_g!).length
+      : null;
   return {
     days_logged: days.filter((d) => d.meals > 0).length,
     complete_days: complete.length,

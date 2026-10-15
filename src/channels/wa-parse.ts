@@ -18,7 +18,7 @@ export type WaLike = {
     imageMessage?: { caption?: string | null; contextInfo?: Ctx } | null;
     ephemeralMessage?: { message?: WaLike['message'] } | null;
     viewOnceMessage?: { message?: WaLike['message'] } | null;
-    audioMessage?: unknown;
+    audioMessage?: { seconds?: number | null; contextInfo?: Ctx } | null;
   } | null;
 };
 
@@ -29,6 +29,7 @@ export type ParsedWa = {
   text: string | null;
   hasImage: boolean;
   hasAudio: boolean;
+  audioSeconds: number | null;
   quotedId: string | null;
   at: string;
 };
@@ -56,7 +57,8 @@ export function parseWaMessage(msg: WaLike): ParsedWa | null {
   const m = unwrap(msg.message);
   if (!m) return null;
   const text = m.conversation ?? m.extendedTextMessage?.text ?? m.imageMessage?.caption ?? null;
-  const ctx = m.extendedTextMessage?.contextInfo ?? m.imageMessage?.contextInfo ?? null;
+  const ctx =
+    m.extendedTextMessage?.contextInfo ?? m.imageMessage?.contextInfo ?? m.audioMessage?.contextInfo ?? null;
   const hasImage = Boolean(m.imageMessage);
   const hasAudio = Boolean(m.audioMessage);
   if (!text && !hasImage && !hasAudio) return null;
@@ -72,6 +74,7 @@ export function parseWaMessage(msg: WaLike): ParsedWa | null {
     text: text?.trim() || null,
     hasImage,
     hasAudio,
+    audioSeconds: m.audioMessage?.seconds ?? null,
     quotedId: ctx?.stanzaId ?? null,
     at: new Date(secs * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z'),
   };

@@ -17,6 +17,7 @@ import { createOwnerGuard } from './gateway/owner-pairing.ts';
 import { createTurnRunner } from './gateway/turn-runner.ts';
 import type { Logger } from './logger.ts';
 import type { ReportKind } from './reports/build.ts';
+import { createWhisperCppTranscriber } from './media/transcribe.ts';
 import { generateReport } from './reports/service.ts';
 import { buildJobs, startScheduler, type Notify } from './scheduler/jobs.ts';
 import { nowUtcIso } from './time.ts';
@@ -132,8 +133,19 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       ...(config.REPORT_CHARTS ? { chartsDir: path.join(config.mediaDir, 'charts') } : {}),
       logger: reportLogger,
     });
+  const transcribe =
+    config.TRANSCRIBE === 'whisper-cpp'
+      ? createWhisperCppTranscriber({
+          whisperBin: config.WHISPER_BIN,
+          modelPath: config.WHISPER_MODEL!,
+          ffmpegBin: config.FFMPEG_BIN,
+          ...(config.WHISPER_THREADS ? { threads: config.WHISPER_THREADS } : {}),
+        })
+      : undefined;
   const handle = createInbox({
     report,
+    ...(transcribe ? { transcribe } : {}),
+    audioMaxSeconds: config.AUDIO_MAX_SECONDS,
     db,
     channel,
     registry,

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import PQueue from 'p-queue';
 import type { Logger } from '../logger.ts';
+import { saveAudio } from '../media/audio.ts';
 import { saveNormalizedImage } from '../media/images.ts';
 import { splitMessage, type Channel, type InboundHandler, type SendOptions } from './types.ts';
 import { parseTgUpdate, tgMessageId, type TgUpdate } from './tg-parse.ts';
@@ -74,8 +75,11 @@ export function createTelegramChannel(opts: TelegramOptions): Channel {
     const imagePath = p.imageFileId
       ? await saveNormalizedImage(await downloadFile(p.imageFileId), opts.mediaDir)
       : null;
-    if (!p.text && !imagePath) return; // áudio: Fase 7
+    const audioPath = p.audioFileId ? saveAudio(await downloadFile(p.audioFileId), opts.mediaDir) : null;
+    if (!p.text && !imagePath && !audioPath) return;
     await onMessage({
+      audioPath,
+      audioSeconds: p.audioSeconds,
       externalId: p.id,
       senderIds: p.senderIds,
       chatId: p.chatId,

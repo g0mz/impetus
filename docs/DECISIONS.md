@@ -205,6 +205,15 @@ O adaptador previsto na Fase 7 foi antecipado. Implementação sem dependência 
   retenção local; rclone só se `BACKUP_REMOTE` estiver definido. Roda igual no PC (Windows) e na VM e é testado
   com restore real (`tests/integration/ops.test.ts`). `npm run restore` confere `integrity_check`.
 
+### D-030 — Mensagens de voz com whisper.cpp local (2026-10-14, Fase 7)
+- Canal salva o áudio (OGG/Opus) → gateway transcreve (ffmpeg → WAV 16 kHz → `whisper-cli -l pt`) → o texto
+  vai ao cérebro com o prefixo 🎤 (o system prompt avisa que pode haver erro de reconhecimento e pede para
+  confirmar números improváveis). Sem rede, sem custo por uso; o áudio não sai da máquina.
+- Modelo padrão `ggml-small-q5_1` (~190 MB): bom em PT-BR e viável em 2 OCPU A1. Trocável por `WHISPER_MODEL`.
+- Um áudio por vez (CPU); limite `AUDIO_MAX_SECONDS` (180 s). Comandos falados não viram comando.
+- Retry de turno falho reenvia a transcrição gravada, não o arquivo.
+- `TRANSCRIBE=none` (padrão) responde pedindo texto.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

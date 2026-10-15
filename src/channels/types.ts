@@ -8,6 +8,10 @@ export type InboundMessage = {
   text: string | null;
   /** Caminho absoluto da imagem salva em data/media (se houver). */
   imagePath: string | null;
+  /** Caminho absoluto do áudio salvo (mensagem de voz), transcrito no gateway. */
+  audioPath?: string | null;
+  /** Duração informada pelo canal, em segundos. */
+  audioSeconds?: number | null;
   /** Id externo da mensagem do bot citada (correção por citação). */
   quotedExternalId: string | null;
   at: string;

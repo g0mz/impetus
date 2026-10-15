@@ -38,7 +38,8 @@ export function sleepStats(days: HealthDay[], goalH?: number, tzOffsetMin = -180
     nights: withSleep.length,
     avg_min: round(mean(withSleep.map((d) => d.sleep_minutes!))),
     regularity_min: round(sd(mids)),
-    days_below_goal: goalH !== undefined ? withSleep.filter((d) => d.sleep_minutes! < goalH * 60).length : null,
+    days_below_goal:
+      goalH !== undefined ? withSleep.filter((d) => d.sleep_minutes! < goalH * 60).length : null,
   };
 }
 

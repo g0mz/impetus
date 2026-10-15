@@ -11,8 +11,8 @@ export type TgMessage = {
   caption?: string;
   photo?: TgPhotoSize[];
   document?: { file_id: string; mime_type?: string };
-  voice?: unknown;
-  audio?: unknown;
+  voice?: { file_id: string; duration?: number };
+  audio?: { file_id: string; duration?: number };
   reply_to_message?: { message_id: number };
 };
 
@@ -26,6 +26,9 @@ export type ParsedTg = {
   /** file_id da imagem (maior resolução da foto, ou documento image/*). */
   imageFileId: string | null;
   hasAudio: boolean;
+  /** file_id e duração da mensagem de voz/áudio. */
+  audioFileId: string | null;
+  audioSeconds: number | null;
   quotedId: string | null;
   at: string;
 };
@@ -53,6 +56,8 @@ export function parseTgUpdate(u: TgUpdate): ParsedTg | null {
     text,
     imageFileId,
     hasAudio,
+    audioFileId: (m.voice ?? m.audio)?.file_id ?? null,
+    audioSeconds: (m.voice ?? m.audio)?.duration ?? null,
     quotedId: m.reply_to_message ? tgMessageId(m.chat.id, m.reply_to_message.message_id) : null,
     at: new Date(m.date * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z'),
   };

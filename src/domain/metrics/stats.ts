@@ -1,4 +1,5 @@
-export const mean = (xs: number[]): number | null => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+export const mean = (xs: number[]): number | null =>
+  xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
 
 export function median(xs: number[]): number | null {
   if (!xs.length) return null;
@@ -28,7 +29,7 @@ export function slope(points: { x: number; y: number }[]): number | null {
 export function ranks(xs: number[]): number[] {
   const idx = xs.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
   const r = new Array<number>(xs.length);
-  for (let i = 0; i < idx.length; ) {
+  for (let i = 0; i < idx.length;) {
     let j = i;
     while (j + 1 < idx.length && idx[j + 1]!.v === idx[i]!.v) j++;
     for (let k = i; k <= j; k++) r[idx[k]!.i] = (i + j) / 2 + 1;

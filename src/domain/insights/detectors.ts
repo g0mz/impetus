@@ -42,13 +42,30 @@ const SEV = { warning: 1, suggestion: 0.7, info: 0.4, celebration: 0.5 } as cons
 /** Confiança pelo tamanho da amostra: satura em n = 14. */
 const conf = (n: number) => Math.min(1, 0.4 + n / 14);
 const clamp = (x: number) => Math.max(0, Math.min(1, x));
-const score = (sev: InsightCandidate['severity'], magnitude: number, n = 14) => Math.round(SEV[sev] * clamp(magnitude) * conf(n) * 100) / 100;
+const score = (sev: InsightCandidate['severity'], magnitude: number, n = 14) =>
+  Math.round(SEV[sev] * clamp(magnitude) * conf(n) * 100) / 100;
 
 export const MUSCLE_PT: Record<string, string> = {
-  chest: 'peito', front_delts: 'deltoide anterior', side_delts: 'deltoide lateral', rear_delts: 'deltoide posterior',
-  lats: 'dorsais', upper_back: 'costas (meio)', traps: 'trapézio', biceps: 'bíceps', triceps: 'tríceps', forearms: 'antebraço',
-  quads: 'quadríceps', hamstrings: 'posteriores', glutes: 'glúteos', calves: 'panturrilhas', adductors: 'adutores',
-  abductors: 'abdutores', abs: 'abdômen', obliques: 'oblíquos', lower_back: 'lombar', neck: 'pescoço',
+  chest: 'peito',
+  front_delts: 'deltoide anterior',
+  side_delts: 'deltoide lateral',
+  rear_delts: 'deltoide posterior',
+  lats: 'dorsais',
+  upper_back: 'costas (meio)',
+  traps: 'trapézio',
+  biceps: 'bíceps',
+  triceps: 'tríceps',
+  forearms: 'antebraço',
+  quads: 'quadríceps',
+  hamstrings: 'posteriores',
+  glutes: 'glúteos',
+  calves: 'panturrilhas',
+  adductors: 'adutores',
+  abductors: 'abdutores',
+  abs: 'abdômen',
+  obliques: 'oblíquos',
+  lower_back: 'lombar',
+  neck: 'pescoço',
 };
 
 type Detector = (c: InsightContext) => InsightCandidate | InsightCandidate[] | null;
@@ -60,7 +77,10 @@ export const DETECTORS: Record<string, Detector> = {
           id: 'pr_celebration',
           domain: 'training',
           severity: 'celebration',
-          title: `${c.prs.length} PR${c.prs.length > 1 ? 's' : ''}: ${c.prs.slice(0, 3).map((p) => `${p.exercise} ${p.best}`).join(', ')}`,
+          title: `${c.prs.length} PR${c.prs.length > 1 ? 's' : ''}: ${c.prs
+            .slice(0, 3)
+            .map((p) => `${p.exercise} ${p.best}`)
+            .join(', ')}`,
           evidence: { prs: c.prs.length },
           score: score('celebration', 1),
         }
@@ -87,11 +107,17 @@ export const DETECTORS: Record<string, Detector> = {
         severity: 'suggestion',
         title: `Empurrar:puxar em ${String(c.pushPull).replace('.', ',')} (alvo 0,7–1,4)`,
         evidence: { push_pull: c.pushPull },
-        action: c.pushPull > 1.4 ? 'Acrescente 2–4 séries de remada ou puxada por semana.' : 'Acrescente 2–4 séries de supino ou desenvolvimento por semana.',
+        action:
+          c.pushPull > 1.4
+            ? 'Acrescente 2–4 séries de remada ou puxada por semana.'
+            : 'Acrescente 2–4 séries de supino ou desenvolvimento por semana.',
         score: score('suggestion', Math.abs(Math.log(c.pushPull)) / Math.log(2)),
       });
     }
-    const zero = c.musclesWithHistory.filter((m) => !(c.setsByMuscle[m] ?? 0) && !['neck', 'forearms', 'obliques', 'abductors', 'adductors'].includes(m));
+    const zero = c.musclesWithHistory.filter(
+      (m) =>
+        !(c.setsByMuscle[m] ?? 0) && !['neck', 'forearms', 'obliques', 'abductors', 'adductors'].includes(m),
+    );
     if (zero.length && c.workSets > 0) {
       out.push({
         id: 'volume_imbalance:zero',
@@ -120,13 +146,20 @@ export const DETECTORS: Record<string, Detector> = {
       : null,
 
   protein_gap: (c) =>
-    c.goals.protein_g !== undefined && c.nutrition.complete_days >= 4 && c.nutrition.protein_adherence_pct !== null && c.nutrition.protein_adherence_pct < 60
+    c.goals.protein_g !== undefined &&
+    c.nutrition.complete_days >= 4 &&
+    c.nutrition.protein_adherence_pct !== null &&
+    c.nutrition.protein_adherence_pct < 60
       ? {
           id: 'protein_gap',
           domain: 'nutrition',
           severity: 'warning',
           title: `Meta de proteína batida em ${c.nutrition.protein_adherence_pct}% dos dias completos`,
-          evidence: { aderencia_pct: c.nutrition.protein_adherence_pct, media_g: c.nutrition.protein_avg ?? 0, meta_g: c.goals.protein_g },
+          evidence: {
+            aderencia_pct: c.nutrition.protein_adherence_pct,
+            media_g: c.nutrition.protein_avg ?? 0,
+            meta_g: c.goals.protein_g,
+          },
           n: c.nutrition.complete_days,
           action: 'Inclua uma fonte prática de proteína na refeição mais fraca (ex.: iogurte, ovos, whey).',
           score: score('warning', 1 - c.nutrition.protein_adherence_pct / 100, c.nutrition.complete_days),
@@ -151,7 +184,9 @@ export const DETECTORS: Record<string, Detector> = {
   },
 
   maintenance_update: (c) =>
-    c.maintenance !== null && c.previousMaintenance !== null && Math.abs(c.maintenance - c.previousMaintenance) > 150
+    c.maintenance !== null &&
+    c.previousMaintenance !== null &&
+    Math.abs(c.maintenance - c.previousMaintenance) > 150
       ? {
           id: 'maintenance_update',
           domain: 'body',
@@ -206,7 +241,11 @@ export const DETECTORS: Record<string, Detector> = {
       evidence: { media_min: c.sleep.avg_min ?? 0, regularidade_min: c.sleep.regularity_min ?? 0 },
       n: c.sleep.nights,
       action: 'Fixe o horário de dormir e acordar, inclusive no fim de semana.',
-      score: score('suggestion', short ? (goalMin - c.sleep.avg_min!) / 90 : (c.sleep.regularity_min! - 60) / 60, c.sleep.nights),
+      score: score(
+        'suggestion',
+        short ? (goalMin - c.sleep.avg_min!) / 90 : (c.sleep.regularity_min! - 60) / 60,
+        c.sleep.nights,
+      ),
     };
   },
 
@@ -225,7 +264,10 @@ export const DETECTORS: Record<string, Detector> = {
       : null,
 
   steps_below: (c) =>
-    c.goals.steps !== undefined && c.steps.steps_avg !== null && c.steps.days_with_data >= 3 && c.steps.steps_avg < 0.8 * c.goals.steps
+    c.goals.steps !== undefined &&
+    c.steps.steps_avg !== null &&
+    c.steps.days_with_data >= 3 &&
+    c.steps.steps_avg < 0.8 * c.goals.steps
       ? {
           id: 'steps_below',
           domain: 'activity',
@@ -275,6 +317,9 @@ export function runDetectors(c: InsightContext): InsightCandidate[] {
     return r === null ? [] : Array.isArray(r) ? r : [r];
   });
   const special = all.filter((i) => i.severity === 'celebration' || i.domain === 'system');
-  const rest = all.filter((i) => !special.includes(i)).sort((a, b) => b.score - a.score).slice(0, 6);
+  const rest = all
+    .filter((i) => !special.includes(i))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
   return [...special, ...rest];
 }

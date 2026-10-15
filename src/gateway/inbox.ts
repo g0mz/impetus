@@ -7,7 +7,9 @@ import {
   linkedEntitiesByExternalId,
   setMessagesTurn,
 } from '../db/repos/messages.ts';
+import { t } from '../i18n/pt-br.ts';
 import type { Logger } from '../logger.ts';
+import type { Transcriber } from '../media/transcribe.ts';
 import type { Registry, ToolSettings } from '../tools/registry.ts';
 import { nowUtcIso } from '../time.ts';
 import { parseCommand, runCommand } from './commands.ts';
@@ -28,6 +30,10 @@ export type InboxDeps = {
   debounceImageMs?: number;
   clock?: () => string;
   claudeTokenExpiresAt?: string;
+  /** Transcrição de mensagens de voz; sem ela, áudio recebe uma resposta explicando. */
+  transcribe?: Transcriber;
+  /** Duração máxima aceita para áudio (s). */
+  audioMaxSeconds?: number;
   /** /relatorio: gera na hora (usa o cérebro; fallback determinístico). */
   report?: (
     kind: 'daily' | 'weekly' | 'monthly',
@@ -98,6 +104,8 @@ export function createInbox(deps: InboxDeps) {
         })
       : null;
 
+  let transcribeChain: Promise<void> = Promise.resolve();
+
   async function handle(m: InboundMessage): Promise<void> {
     if (deps.owner && m.senderIds) {
       const verdict = deps.owner.check(m.senderIds, m.text, m.chatId);
@@ -118,9 +126,9 @@ export function createInbox(deps: InboxDeps) {
       direction: 'in',
       external_id: m.externalId,
       quoted_external_id: m.quotedExternalId,
-      kind: m.imagePath ? 'image' : 'text',
+      kind: m.audioPath ? 'audio' : m.imagePath ? 'image' : 'text',
       text: m.text,
-      media_path: m.imagePath,
+      media_path: m.audioPath ?? m.imagePath,
       created_at: m.at,
     });
     if (duplicate) {
@@ -128,7 +136,20 @@ export function createInbox(deps: InboxDeps) {
       return;
     }
 
-    const cmd = !m.imagePath && m.text ? parseCommand(m.text) : null;
+    if (m.audioPath) {
+      const text = await transcribeVoice(m, id);
+      if (text === null) return;
+      m = {
+        ...m,
+        text: m.text
+          ? `${m.text}
+🎤 ${text}`
+          : `🎤 ${text}`,
+        audioPath: null,
+      };
+    }
+
+    const cmd = !m.imagePath && m.text && !m.text.startsWith('🎤') ? parseCommand(m.text) : null;
     if (cmd?.name === 'relatorio' && deps.report) {
       const arg = cmd.args.toLowerCase();
       const kind = /^dia|hoje/.test(arg) ? 'daily' : /^m[eê]s/.test(arg) ? 'monthly' : 'weekly';
@@ -175,27 +196,64 @@ export function createInbox(deps: InboxDeps) {
     await enqueue([item]);
   }
 
+  /**
+   * Transcreve a mensagem de voz (uma por vez: CPU) e grava o texto na mensagem. Devolve null se não deu
+   * para transcrever (já respondeu ao usuário e marcou a mensagem).
+   */
+  async function transcribeVoice(m: InboundMessage, id: number): Promise<string | null> {
+    const fail = async (text: string) => {
+      deps.db.prepare("UPDATE messages SET status = 'processed' WHERE id = ?").run(id);
+      await reply(text, m.chatId, undefined, []);
+      return null;
+    };
+    if (!deps.transcribe) return fail(t.audioUnavailable);
+    const max = deps.audioMaxSeconds ?? 180;
+    if (m.audioSeconds && m.audioSeconds > max) return fail(t.audioTooLong(max));
+    const job = transcribeChain.then(async () => {
+      await deps.channel.processing?.(m, true);
+      try {
+        return await deps.transcribe!(m.audioPath!);
+      } finally {
+        await deps.channel.processing?.(m, false);
+      }
+    });
+    transcribeChain = job.then(
+      () => undefined,
+      () => undefined,
+    );
+    const r = await job;
+    if (!r.ok) {
+      deps.logger.warn({ id, error: r.error }, 'transcrição falhou');
+      return fail(t.audioFailed);
+    }
+    deps.logger.info({ id, ms: r.ms, chars: r.text.length }, 'áudio transcrito');
+    deps.db.prepare('UPDATE messages SET text = ? WHERE id = ?').run(r.text, id);
+    return r.text;
+  }
+
   /** Reprocessa as mensagens de um turno que falhou ou foi adiado (job do scheduler). */
   async function retryTurn(turnId: number): Promise<boolean> {
     const msgs = deps.db
       .prepare(
-        "SELECT id, text, media_path, quoted_external_id, created_at FROM messages WHERE turn_id = ? AND direction = 'in' AND status = 'failed' ORDER BY id",
+        "SELECT id, kind, text, media_path, quoted_external_id, created_at FROM messages WHERE turn_id = ? AND direction = 'in' AND status = 'failed' ORDER BY id",
       )
       .all(turnId) as {
       id: number;
+      kind: string;
       text: string | null;
       media_path: string | null;
       quoted_external_id: string | null;
       created_at: string;
     }[];
     if (!msgs.length) return false;
+    // áudio: reenvia a transcrição já gravada (o arquivo .ogg não vai ao cérebro)
     const batch: Pending[] = msgs.map((x) => ({
       id: x.id,
-      imageOnly: Boolean(x.media_path) && !x.text,
+      imageOnly: x.kind === 'image' && !x.text,
       msg: {
         externalId: `retry-${x.id}`,
-        text: x.text,
-        imagePath: x.media_path,
+        text: x.kind === 'audio' && x.text ? `🎤 ${x.text}` : x.text,
+        imagePath: x.kind === 'image' ? x.media_path : null,
         quotedExternalId: x.quoted_external_id,
         at: x.created_at,
         ...(deps.owner?.defaultChat() ? { chatId: deps.owner.defaultChat()! } : {}),

@@ -1,0 +1,13 @@
+id: meals_voice_transcript
+description: Mensagem de voz transcrita (🎤), números por extenso e sem pontuação, como o Whisper costuma devolver
+now: '2026-10-13T16:00:00Z'
+steps:
+  - text: '🎤 no almoço eu comi cento e cinquenta gramas de frango grelhado cento e vinte de arroz branco e cem gramas de feijão carioca'
+expect:
+  meals: 1
+  items:
+    - { label: 'frango', grams: 150, origin: user_stated }
+    - { label: 'arroz', grams: 120, origin: user_stated }
+    - { label: 'feij', grams: 100, origin: user_stated }
+  kcal: [430, 620]
+  max_questions: 0

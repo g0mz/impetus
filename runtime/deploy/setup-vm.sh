@@ -14,7 +14,7 @@ log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 log "pacotes do sistema"
 sudo apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python3 git sqlite3 rclone \
-  unattended-upgrades fonts-dejavu-core ca-certificates curl
+  unattended-upgrades fonts-dejavu-core ca-certificates curl ffmpeg cmake
 
 if ! command -v node >/dev/null || [[ "$(node -v)" != v24* ]]; then
   log "Node 24 LTS"
@@ -45,6 +45,19 @@ log "dependências e build"
 sudo -u "$APP_USER" bash -lc "cd '$APP_DIR' && npm ci --no-audit --no-fund && npm run build"
 sudo -u "$APP_USER" mkdir -p "$APP_HOME/.local/state/impetus/brain" "$APP_DIR/data"
 sudo chmod 700 "$APP_DIR/data"
+
+log "whisper.cpp (mensagens de voz)"
+WHISPER_TAG="${WHISPER_TAG:-v1.9.5}"
+WHISPER_DIR="$APP_HOME/whisper.cpp"
+WHISPER_MODEL_NAME="${WHISPER_MODEL_NAME:-ggml-small-q5_1.bin}"
+if [[ ! -x "$WHISPER_DIR/build/bin/whisper-cli" ]]; then
+  [[ -d "$WHISPER_DIR/.git" ]] || sudo -u "$APP_USER" git clone --depth 1 --branch "$WHISPER_TAG" https://github.com/ggml-org/whisper.cpp "$WHISPER_DIR"
+  sudo -u "$APP_USER" bash -lc "cd '$WHISPER_DIR' && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF && cmake --build build -j --config Release --target whisper-cli"
+fi
+if [[ ! -f "$WHISPER_DIR/models/$WHISPER_MODEL_NAME" ]]; then
+  sudo -u "$APP_USER" curl -fL -o "$WHISPER_DIR/models/$WHISPER_MODEL_NAME"     "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$WHISPER_MODEL_NAME"
+fi
+echo "   TRANSCRIBE=whisper-cpp  WHISPER_BIN=$WHISPER_DIR/build/bin/whisper-cli  WHISPER_MODEL=$WHISPER_DIR/models/$WHISPER_MODEL_NAME"
 
 log "Claude Code"
 if ! sudo -u "$APP_USER" bash -lc 'command -v claude' >/dev/null; then

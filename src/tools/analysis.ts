@@ -11,7 +11,8 @@ export const getReportBriefTool = defineTool({
     'ReportBrief já calculado (métricas + candidatos de insight) de um relatório. Use SOMENTE os números daqui ao redigir.',
   input: z.object({ report_id: z.number().int().positive() }),
   handler: (ctx, { report_id }) => {
-    const row = ctx.db.prepare('SELECT metrics_json FROM reports WHERE id = ?').pluck().get(report_id) as string | undefined;
+    const row = ctx.db.prepare('SELECT metrics_json FROM reports WHERE id = ?').pluck().get(report_id) as
+      string | undefined;
     if (!row) return err('NOT_FOUND', `relatório ${report_id} não existe`);
     return ok(JSON.parse(row) as unknown);
   },
@@ -39,24 +40,43 @@ export function weightSnapshot(db: Db, localDate: string) {
 export const logBodyMetricTool = defineTool({
   name: 'log_body_metric',
   scope: 'write',
-  description: 'Registra peso, % de gordura ou cintura ("pesei 74,2"). Responda com a TENDÊNCIA devolvida, não só o valor do dia.',
+  description:
+    'Registra peso, % de gordura ou cintura ("pesei 74,2"). Responda com a TENDÊNCIA devolvida, não só o valor do dia.',
   input: z
     .object({
       weight_kg: z.number().min(25).max(350).optional(),
       body_fat_pct: z.number().min(2).max(70).optional(),
       waist_cm: z.number().min(40).max(250).optional(),
-      measured_at: z.string().regex(/^\d{4}-\d{2}-\d{2}(T.+)?$/).optional(),
+      measured_at: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}(T.+)?$/)
+        .optional(),
     })
-    .refine((v) => v.weight_kg !== undefined || v.body_fat_pct !== undefined || v.waist_cm !== undefined, 'informe uma medida'),
+    .refine(
+      (v) => v.weight_kg !== undefined || v.body_fat_pct !== undefined || v.waist_cm !== undefined,
+      'informe uma medida',
+    ),
   handler: (ctx, input) => {
-    const { at, localDate } = resolveWhen(input.measured_at, ctx.now, ctx.settings.cutoffHour, ctx.settings.timeZone);
+    const { at, localDate } = resolveWhen(
+      input.measured_at,
+      ctx.now,
+      ctx.settings.cutoffHour,
+      ctx.settings.timeZone,
+    );
     const id = Number(
       ctx.db
         .prepare(
           `INSERT INTO body_metrics (measured_at, local_date, weight_kg, body_fat_pct, waist_cm, source, created_at)
            VALUES (?, ?, ?, ?, ?, 'chat', ?)`,
         )
-        .run(at, localDate, input.weight_kg ?? null, input.body_fat_pct ?? null, input.waist_cm ?? null, ctx.now).lastInsertRowid,
+        .run(
+          at,
+          localDate,
+          input.weight_kg ?? null,
+          input.body_fat_pct ?? null,
+          input.waist_cm ?? null,
+          ctx.now,
+        ).lastInsertRowid,
     );
     ctx.audit('body_metric', id, 'create');
     return ok({ id, local_date: localDate, ...weightSnapshot(ctx.db, localDate) });

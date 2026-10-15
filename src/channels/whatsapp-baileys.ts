@@ -10,6 +10,7 @@ import makeWASocket, {
 } from 'baileys';
 import PQueue from 'p-queue';
 import type { Logger } from '../logger.ts';
+import { saveAudio } from '../media/audio.ts';
 import { saveNormalizedImage } from '../media/images.ts';
 import {
   splitMessage,
@@ -109,6 +110,9 @@ export function createWhatsAppChannel(opts: WhatsAppOptions): Channel {
     if (!p) return;
     try {
       let imagePath: string | null = null;
+      let audioPath: string | null = null;
+      if (p.hasAudio)
+        audioPath = saveAudio((await downloadMediaMessage(m, 'buffer', {})) as Buffer, opts.mediaDir);
       if (p.hasImage) {
         const buf = (await downloadMediaMessage(m, 'buffer', {})) as Buffer;
         imagePath = await saveNormalizedImage(buf, opts.mediaDir);
@@ -119,12 +123,14 @@ export function createWhatsAppChannel(opts: WhatsAppOptions): Channel {
         externalId: p.id,
         senderIds: p.senderIds,
         chatId: p.chatId,
-        text: p.hasAudio && !p.text ? null : p.text,
+        text: p.text,
+        audioPath,
+        audioSeconds: p.audioSeconds,
         imagePath,
         quotedExternalId: p.quotedId,
         at: p.at,
       };
-      if (!msg.text && !msg.imagePath) return; // áudio: Fase 7
+      if (!msg.text && !msg.imagePath && !msg.audioPath) return;
       await onMessage(msg);
     } catch (e) {
       log.error({ err: e, id: p.id }, 'whatsapp: falha ao processar mensagem');

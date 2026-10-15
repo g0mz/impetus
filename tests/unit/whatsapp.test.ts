@@ -22,9 +22,18 @@ describe('parseWaMessage (formato Baileys)', () => {
       text: 'oi',
       hasImage: false,
       hasAudio: false,
+      audioSeconds: null,
       quotedId: null,
       at: '2025-10-14T00:00:00Z',
     });
+  });
+
+  it('mensagem de voz: duração e citação', () => {
+    const p = parseWaMessage({
+      ...base,
+      message: { audioMessage: { seconds: 12, contextInfo: { stanzaId: 'BOT1' } } },
+    });
+    expect(p).toMatchObject({ hasAudio: true, audioSeconds: 12, text: null, quotedId: 'BOT1' });
   });
 
   it('resposta citando mensagem do bot e imagem com legenda', () => {

@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 7 — Mensagens de voz (2026-10-14, D-030)
+
+#### Adicionado
+- WhatsApp e Telegram recebem áudio; o gateway transcreve com whisper.cpp local (`TRANSCRIBE=whisper-cpp`) e
+  manda ao coach como `🎤 <texto>`. Avisos claros quando a transcrição está desligada, o áudio é longo demais
+  ou não foi entendido. Um áudio por vez; retry usa a transcrição gravada.
+- `system.md`: mensagens 🎤 podem ter erro de reconhecimento; confirmar números improváveis.
+- `setup-vm.sh` instala ffmpeg, compila `whisper-cli` (v1.9.5) e baixa `ggml-small-q5_1`.
+
 ### Fase 6 — Deploy e operação (parcial, sem a VM) (2026-10-14, D-029)
 
 #### Adicionado

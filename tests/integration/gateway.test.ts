@@ -268,7 +268,7 @@ describe('gateway ponta a ponta (cérebro falso via MCP)', () => {
     expect(await g.say('/ultimo elevação lateral')).toBe(
       '📈 Elevação lateral com halteres — últimas sessões\n• 13/10: 10kg 3×15',
     );
-    
+
     expect(await g.say('/xpto')).toBe(t.unknownCommand('xpto'));
   });
 

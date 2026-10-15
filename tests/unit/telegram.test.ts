@@ -23,6 +23,8 @@ describe('parseTgUpdate', () => {
       text: 'oi',
       imageFileId: null,
       hasAudio: false,
+      audioFileId: null,
+      audioSeconds: null,
       quotedId: null,
       at: '2025-10-14T00:00:00Z',
     });
@@ -50,7 +52,11 @@ describe('parseTgUpdate', () => {
     expect(parseTgUpdate(msg({ text: 'x', from: { id: 1, is_bot: true } }))).toBeNull();
     expect(parseTgUpdate(msg({ sticker: {} }))).toBeNull();
     expect(parseTgUpdate({ update_id: 1 })).toBeNull();
-    expect(parseTgUpdate(msg({ voice: {} }))?.hasAudio).toBe(true);
+    expect(parseTgUpdate(msg({ voice: { file_id: 'V1', duration: 7 } }))).toMatchObject({
+      hasAudio: true,
+      audioFileId: 'V1',
+      audioSeconds: 7,
+    });
   });
 });
 

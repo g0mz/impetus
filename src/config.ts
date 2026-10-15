@@ -55,6 +55,13 @@ const schema = z
 
     OFF_USER_AGENT: z.string().default('Impetus/0.1 (uso pessoal)'),
     HC_STALE_HOURS: int(48),
+    /** Mensagens de voz: none (responde pedindo texto) | whisper-cpp (local, ARCHITECTURE/D-030). */
+    TRANSCRIBE: z.enum(['none', 'whisper-cpp']).default('none'),
+    WHISPER_BIN: z.string().default('whisper-cli'),
+    WHISPER_MODEL: z.string().optional(),
+    WHISPER_THREADS: z.coerce.number().int().positive().optional(),
+    FFMPEG_BIN: z.string().default('ffmpeg'),
+    AUDIO_MAX_SECONDS: int(180),
     /** Remote rclone para o backup (ex.: gcrypt:impetus). Vazio = só backup local. */
     BACKUP_REMOTE: z.string().min(1).optional(),
     BACKUP_KEEP_DAYS: int(14),
@@ -72,6 +79,13 @@ const schema = z
         code: 'custom',
         path: ['GEMINI_API_KEY'],
         message: 'obrigatória com BRAIN_PROVIDER=gemini',
+      });
+    }
+    if (c.TRANSCRIBE === 'whisper-cpp' && !c.WHISPER_MODEL) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['WHISPER_MODEL'],
+        message: 'obrigatório com TRANSCRIBE=whisper-cpp',
       });
     }
     if (c.CHANNEL === 'telegram' && !c.TELEGRAM_BOT_TOKEN) {

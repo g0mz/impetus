@@ -45,6 +45,11 @@ export const t = {
     `📶 Faz ${days} dias da última recarga do chip do bot. Recarregue (mín. R$ 15) para a linha não ser cancelada e mande /recarga.`,
   turnsFailing: (n: number) =>
     `🚨 ${n} mensagens falharam no cérebro nas últimas 2 h. Veja /status e \`journalctl -u impetus\` (token, cota ou CLI).`,
+  audioUnavailable:
+    '🎤 Ainda não consigo ouvir áudio por aqui (transcrição desligada). Mande por texto, por favor.',
+  audioTooLong: (max: number) =>
+    `🎤 Áudio longo demais (máx. ${Math.round(max / 60)} min). Mande em partes ou por texto.`,
+  audioFailed: '🎤 Não consegui entender o áudio. Pode repetir ou mandar por texto?',
   skippedReports: (cmds: string) => `Durante a pausa pulei relatório(s); para ver agora: ${cmds}`,
   reportGenerating: '📊 Gerando o relatório…',
 } as const;
