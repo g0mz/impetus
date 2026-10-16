@@ -183,6 +183,25 @@ describe('POST /ingest/health', () => {
     );
   });
 
+  it('acumulado do dia com fim crescente (payload real) substitui, sem somar (D-032)', async () => {
+    const g = setup('2026-10-16T18:20:00Z');
+    const p = (count: number, kcal: number, end: string) =>
+      JSON.stringify({
+        timestamp: end,
+        app_version: '1.9.22',
+        steps: [{ count, start_time: '2026-10-16T03:00:00Z', end_time: end }],
+        active_calories: [{ calories: kcal, start_time: '2026-10-16T03:00:00Z', end_time: end }],
+      });
+    await g.post(p(4049, 2.6, '2026-10-16T18:10:12.610299Z'));
+    await g.post(p(4060, 3.0, '2026-10-16T18:17:08.360095Z'));
+    await g.post(p(4050, 2.7, '2026-10-16T18:15:54.332472Z')); // atrasado: não regride
+    await g.app.drain();
+    expect(
+      g.db.prepare("SELECT steps, active_kcal FROM health_daily WHERE local_date = '2026-10-16'").get(),
+    ).toEqual({ steps: 4060, active_kcal: 3 });
+    expect(g.db.prepare("SELECT count(*) FROM health_samples WHERE type = 'steps'").pluck().get()).toBe(1);
+  });
+
   it('rate limit de 60 req/min', async () => {
     const g = setup();
     let last = 0;

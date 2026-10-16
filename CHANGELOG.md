@@ -9,6 +9,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 #### Corrigido
 - Ingest: payload do botão "Test Webhook" do HC Webhook (`test: true`, dados fictícios) era gravado como real;
   agora só confirma conexão e chave (`{ ok:true, test:true }`) e nada entra no banco.
+- Passos e calorias contados em dobro: o HC Webhook reenvia o acumulado do dia com o fim crescente. A chave passa a
+  ser `type|start` nos tipos acumulados, e um payload atrasado não regride o valor (D-032). Banco local reprocessado.
 
 ### Robustez após o primeiro uso real (2026-10-15, D-031)
 

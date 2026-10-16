@@ -236,6 +236,16 @@ Problemas vistos no treino de 14/10 e correções:
   entrada serial (ordem preservada com áudio), trava de instância única por `DATA_DIR`.
 - Eval `workout_conversation` reproduz a conversa real; suíte 11/11 (3 pulados por falta de foto).
 
+### D-032 — Chave `type|start` para tipos acumulados do HC (2026-10-16, Fase 4, aprovada)
+O primeiro sync real (HC Webhook 1.9.22) confirmou o risco do D-025. Passos e calorias chegam como **um bloco por
+dia, do início do dia até o instante do sync** (`03:00Z → agora`), e o fim muda a cada envio. Com a chave do D-008
+(`type|start|end`), cada sync virava uma linha nova e o dia somava todas: 16.209 passos em vez de 4.060.
+- Em `steps`, `active_kcal`, `total_kcal` e `distance`, a chave passa a ser `type|start`. O upsert substitui o
+  valor e o `end_at`.
+- O upsert só aplica se o `end_at` novo for ≥ ao gravado. Assim, um payload atrasado não regride o acumulado.
+- Os demais tipos (FC, HRV, SpO2, sono) seguem com `type|start|end`.
+- O botão "Test Webhook" manda dados fictícios com `test: true`: o ingest responde ok e não grava nada.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

@@ -25,15 +25,26 @@ export function markRaw(db: Db, id: number, now: string, error: string | null): 
   db.prepare('UPDATE health_raw SET processed_at = ?, error = ? WHERE id = ?').run(now, error, id);
 }
 
-/** Chave de idempotência (D-008): type|start|end — reenvio do mesmo intervalo atualiza o valor. */
-export const sampleKey = (s: Pick<Sample, 'type' | 'start_at' | 'end_at'>) =>
-  `${s.type}|${s.start_at}|${s.end_at ?? ''}`;
+/**
+ * Tipos que o HC Webhook manda como acumulado "início do dia → agora", com o fim mudando a cada sync (D-032).
+ */
+const CUMULATIVE = new Set<Sample['type']>(['steps', 'active_kcal', 'total_kcal', 'distance']);
 
+/**
+ * Chave de idempotência: type|start|end (D-008). Nos acumulados é type|start (D-032): o bloco do dia é
+ * substituído a cada sync em vez de virar outra linha e ser somado.
+ */
+export const sampleKey = (s: Pick<Sample, 'type' | 'start_at' | 'end_at'>) =>
+  CUMULATIVE.has(s.type) ? `${s.type}|${s.start_at}` : `${s.type}|${s.start_at}|${s.end_at ?? ''}`;
+
+/** Upsert; um payload atrasado (fim anterior ao gravado) não regride o acumulado. */
 export function upsertSample(db: Db, s: Sample, now: string): void {
   db.prepare(
     `INSERT INTO health_samples (type, start_at, end_at, value, extra, external_key, created_at)
      VALUES (@type, @start_at, @end_at, @value, @extra, @key, @now)
-     ON CONFLICT (external_key) DO UPDATE SET value = excluded.value, extra = excluded.extra, updated_at = @now`,
+     ON CONFLICT (external_key) DO UPDATE SET end_at = excluded.end_at, value = excluded.value,
+       extra = excluded.extra, updated_at = @now
+     WHERE coalesce(excluded.end_at, '') >= coalesce(health_samples.end_at, '')`,
   ).run({ ...s, extra: s.extra === undefined ? null : JSON.stringify(s.extra), key: sampleKey(s), now });
 }
 
