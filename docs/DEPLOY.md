@@ -111,9 +111,24 @@ Isso evita fixar o número no código. Números brasileiros podem ter JID com ou
 
 ### No celular
 1. Mi Fitness → Perfil → Health Connect → ativar e conceder escrita de passos, sono, FC, peso e calorias.
-2. Instale o **HC Webhook** (Play Store, `com.hcwebhook.app`). Conceda leitura só dos tipos usados (DATA_MODEL.md §4).
-3. Webhook URL: endpoint abaixo; header `X-Api-Key: <INGEST_API_KEY>`; formato JSON; sync por intervalo (ex.: 1 h).
-4. Desative a otimização de bateria para Mi Fitness e HC Webhook (Configurações → Apps → Bateria → Sem restrições). Em aparelhos Xiaomi, ative também o "Início automático".
+   O Mi Fitness só repassa ao Health Connect dados **posteriores** à ativação, e o histórico não vai. Se a permissão
+   estiver dada e nada chegar, desligue e ligue a integração de novo. Para testar na hora, meça a FC manualmente no
+   relógio, sincronize o Mi Fitness e confira em Configurações → Health Connect → Dados e acesso → Sinais vitais.
+   O sono só é repassado depois de acordar e abrir o Mi Fitness.
+2. Instale o **HC Webhook**. Na Play Store ele é pago; o APK FOSS é gratuito no GitHub
+   (`github.com/mcnaveen/health-connect-webhook`, release `app-foss-release.apk`, AGPL-3.0). Prefira instalar e
+   atualizar pelo **Obtainium**, apontando para esse repositório. Em "Grant Permissions", conceda leitura só dos
+   tipos usados (DATA_MODEL.md §4).
+3. Em Webhook URLs, adicione o endpoint abaixo. Em Manage Headers → Form: Key `X-Api-Key`, Value
+   `<INGEST_API_KEY>`, e depois Add Header. Formato JSON; sync por intervalo de 60 min (mínimo 15). Save.
+4. Valide com **Sync Now**; o resultado aparece em ⋮ → Webhook Log, com o status `200`.
+   O botão **Test Webhook** manda dados **fictícios** com `test: true`. O ingest responde `{"ok":true,"test":true}`
+   e não grava nada (D-032), então ele só serve para testar conexão e chave.
+5. Desative a otimização de bateria para Mi Fitness, HC Webhook e Tailscale (Configurações → Apps → Bateria → Sem
+   restrições). Em aparelhos Xiaomi, ative também o "Início automático".
+
+Formato real observado (HC Webhook 1.9.22): passos e calorias chegam como um bloco por dia, do início do dia até o
+instante do sync, e cada sync substitui o bloco (D-032). A FC chega como leituras de 1 a 10 min com avg/min/max.
 
 ### Rede: escolha uma opção
 **A) Tailscale (recomendado, nenhuma porta pública):**
@@ -122,6 +137,16 @@ curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up
 sudo tailscale serve --bg --https=443 http://127.0.0.1:8787
 ```
 Instale o Tailscale no celular, na mesma conta. URL: `https://<vm>.<tailnet>.ts.net/ingest/health`. O celular precisa estar conectado à tailnet no momento do sync; deixe o Tailscale como VPN sempre ativa.
+- **Primeiro `serve`:** numa tailnet nova, o comando devolve um link `login.tailscale.com/f/serve?...` e fica
+  esperando. Abra o link e aprove (ou ative em Admin → DNS → HTTPS Certificates); o comando termina sozinho. O
+  MagicDNS precisa estar ligado.
+- **"Unable to resolve host" no celular:** o Android não está usando o DNS do Tailscale. Coloque Configurações →
+  DNS privado em **Desativado** (Automático ou um provedor passam por cima do MagicDNS), deixe "Use Tailscale DNS"
+  ligado no app e desligue/ligue a VPN. Teste no navegador do celular:
+  `https://<host>.<tailnet>.ts.net/healthz`, digitado com o `https://` para o navegador não tratar como busca.
+- **Teste local antes da VM:** funciona igual no PC. Instale o Tailscale no Windows e rode
+  `tailscale serve --bg --https=443 http://127.0.0.1:8787` com `npm run dev` rodando e `INGEST_API_KEY` no `.env`.
+  A URL fica `https://<pc>.<tailnet>.ts.net/ingest/health`. Na VM, gere outra chave e troque URL e header no app.
 
 **B) Caddy + DuckDNS (HTTPS público):** subdomínio gratuito no DuckDNS, Caddy com TLS automático em 443 → `127.0.0.1:8787`. Abra a 443 na Security List da VCN **e** no iptables da imagem Ubuntu da OCI, que vem bloqueando tudo exceto SSH:
 ```bash
