@@ -71,6 +71,11 @@ export function createIngestApp(deps: IngestDeps) {
       } catch {
         return c.json({ ok: false, error: 'JSON inválido' }, 400);
       }
+      // O botão "Test Webhook" do app manda dados fictícios com `test: true`: só confirma conexão e chave.
+      if ((payload as { test?: unknown } | null)?.test === true) {
+        deps.logger.info('ingest: payload de teste recebido (descartado)');
+        return c.json({ ok: true, test: true });
+      }
       const sha = createHash('sha256').update(raw).digest('hex');
       const { id, duplicate } = insertRaw(deps.db, sha, raw, clock());
       if (!duplicate) {

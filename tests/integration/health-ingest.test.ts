@@ -116,6 +116,15 @@ describe('POST /ingest/health', () => {
     expect(await (await g.app.request('/healthz')).json()).toMatchObject({ ok: true });
   });
 
+  it('payload do botão "Test Webhook" (test: true) só confirma conexão: nada é gravado', async () => {
+    const g = setup();
+    const body = JSON.stringify({ ...JSON.parse(FIXTURE), test: true });
+    expect(await (await g.post(body)).json()).toEqual({ ok: true, test: true });
+    await g.app.drain();
+    const count = (t: string) => g.db.prepare(`SELECT count(*) FROM ${t}`).pluck().get();
+    expect([count('health_raw'), count('health_samples'), count('body_metrics')]).toEqual([0, 0, 0]);
+  });
+
   it('reenvio do mesmo payload não duplica nada; get_day_summary mostra passos e sono', async () => {
     const g = setup();
     expect(await (await g.post(FIXTURE)).json()).toEqual({ ok: true, duplicate: false });

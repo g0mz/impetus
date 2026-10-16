@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Primeiro sync real do Health Connect (2026-10-16)
+
+#### Corrigido
+- Ingest: payload do botão "Test Webhook" do HC Webhook (`test: true`, dados fictícios) era gravado como real;
+  agora só confirma conexão e chave (`{ ok:true, test:true }`) e nada entra no banco.
+
 ### Robustez após o primeiro uso real (2026-10-15, D-031)
 
 #### Corrigido
