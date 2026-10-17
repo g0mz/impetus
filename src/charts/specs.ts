@@ -182,3 +182,62 @@ export function sleepSpec(rows: { local_date: string; hours: number }[], goalH?:
     layer: [...(goalH ? [goalBand(goalH, 0.08)] : []), webBars('hours', 'h')],
   } as TopLevelSpec;
 }
+
+/** Peso: pesagens como pontos, tendência como linha, faixa do peso alvo quando houver. */
+export function weightWebSpec(points: WeightPoint[], targetKg?: number): TopLevelSpec {
+  const values = noon(points);
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 160,
+    layer: [
+      ...(targetKg ? [{ ...goalBand(targetKg, 0.01), data: { values: [{ lo: targetKg * 0.99, hi: targetKg * 1.01 }] } }] : []),
+      {
+        data: { values },
+        mark: { type: 'point', filled: true, size: 22, fill: '#8A8F98', opacity: 0.8 },
+        encoding: {
+          x: { field: 'local_date', type: 'temporal', axis: { format: '%d/%m', title: null, labelAngle: 0 } },
+          y: { field: 'weight_kg', type: 'quantitative', scale: { zero: false }, axis: { title: 'kg' } },
+        },
+      },
+      {
+        data: { values },
+        mark: { type: 'line', stroke: DADO, strokeWidth: 2 },
+        encoding: {
+          x: { field: 'local_date', type: 'temporal' },
+          y: { field: 'trend_kg', type: 'quantitative', scale: { zero: false } },
+        },
+      },
+    ],
+  } as TopLevelSpec;
+}
+
+/** Séries por grupo muscular: barras horizontais, a leitura mais rápida de volume. */
+export function setsByMuscleWebSpec(rows: { muscle: string; sets: number }[]): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: Math.max(120, rows.length * 22),
+    data: { values: rows },
+    mark: { type: 'bar', fill: DADO, cornerRadiusEnd: 2 },
+    encoding: {
+      y: { field: 'muscle', type: 'nominal', sort: '-x', axis: { title: null } },
+      x: { field: 'sets', type: 'quantitative', axis: { title: null, format: 'd', tickMinStep: 1 } },
+    },
+  } as TopLevelSpec;
+}
+
+/** e1RM de um exercício ao longo do tempo. */
+export function e1rmWebSpec(points: { local_date: string; e1rm: number }[]): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 160,
+    data: { values: noon(points) },
+    mark: { type: 'line', stroke: DADO, strokeWidth: 2, point: { filled: true, size: 40, fill: DADO } },
+    encoding: {
+      x: { field: 'local_date', type: 'temporal', axis: { format: '%d/%m', title: null, labelAngle: 0 } },
+      y: { field: 'e1rm', type: 'quantitative', scale: { zero: false }, axis: { title: 'kg' } },
+    },
+  } as TopLevelSpec;
+}

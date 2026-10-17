@@ -79,7 +79,7 @@ function loadSets(db: Db, from: string, to: string): TrainingSet[] {
   }));
 }
 
-function loadNutrition(db: Db, p: Period): DayNutrition[] {
+export function loadNutrition(db: Db, p: Period): DayNutrition[] {
   const rows = db
     .prepare(
       `SELECT local_date, count(*) meals, sum(kcal) kcal, sum(protein_g) protein_g, sum(carbs_g) carbs_g, sum(fat_g) fat_g,
@@ -90,7 +90,7 @@ function loadNutrition(db: Db, p: Period): DayNutrition[] {
   return rows;
 }
 
-function loadHealth(db: Db, from: string, to: string): HealthDay[] {
+export function loadHealth(db: Db, from: string, to: string): HealthDay[] {
   return db
     .prepare(
       'SELECT local_date, steps, sleep_minutes, sleep_start, sleep_end, resting_hr FROM health_daily WHERE local_date BETWEEN ? AND ? ORDER BY local_date',
@@ -98,7 +98,7 @@ function loadHealth(db: Db, from: string, to: string): HealthDay[] {
     .all(from, to) as HealthDay[];
 }
 
-function loadWeights(db: Db, to: string) {
+export function loadWeights(db: Db, to: string) {
   return db
     .prepare(
       `SELECT local_date, weight_kg FROM body_metrics b1
