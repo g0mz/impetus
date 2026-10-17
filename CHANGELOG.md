@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Rede da ingestão do Health Connect na VM (2026-10-17)
+
+#### Adicionado
+- Tailscale 1.104.1 na VM (`impetus` na tailnet) com `tailscale serve --bg --https=443 http://127.0.0.1:8787`
+  (decisão D-033). A ingestão fica em `https://impetus.<tailnet>.ts.net/ingest/health`, só de dentro da tailnet.
+- Validado por POST real do payload do botão "Test Webhook" (`{"test":true}`): `200 {"ok":true,"test":true}` com a
+  `X-Api-Key` e `{"ok":false,"error":"unauthorized"}` sem ela; `/healthz` responde 200 pela URL da tailnet.
+- Nenhuma porta aberta: a 8787 segue só em loopback, a 8787 pública não responde e o iptables/Security List não
+  foram alterados.
+
 ### Deploy independente do shape da VM (2026-10-17)
 
 #### Alterado

@@ -246,6 +246,15 @@ dia, do início do dia até o instante do sync** (`03:00Z → agora`), e o fim m
 - Os demais tipos (FC, HRV, SpO2, sono) seguem com `type|start|end`.
 - O botão "Test Webhook" manda dados fictícios com `test: true`: o ingest responde ok e não grava nada.
 
+### D-033 — Tailscale `serve` para a ingestão do HC, em vez de HTTPS público (2026-10-17, Fase 4)
+O ingest escuta só em 127.0.0.1 (ARCHITECTURE.md §9) e o celular precisa alcançá-lo. Entre as duas opções do
+DEPLOY.md §6, ficou a A: `tailscale serve --bg --https=443 http://127.0.0.1:8787` na VM, celular na mesma tailnet.
+- Nada é exposto na internet: a 8787 segue em loopback, a Security List da VCN e o iptables da imagem da OCI não
+  foram tocados (nenhuma porta aberta além da 22). Quem atravessa é o proxy do Tailscale, pelo WireGuard.
+- Custo: o celular precisa estar na tailnet no momento do sync (VPN sempre ativa). A opção B (Caddy + DuckDNS)
+  dispensaria a VPN, mas abriria a 443 para a internet com um endpoint protegido só pela `X-Api-Key`.
+- A `X-Api-Key` continua obrigatória: a tailnet é a primeira camada, não a única.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não
