@@ -24,14 +24,16 @@ No PAYG, **qualquer coisa acima disso é cobrada**. Não crie A1 com mais de 2 O
 - Chave SSH própria; IP público efêmero basta.
 - Sem capacidade A1 na região: tente outro *availability domain* ou use `VM.Standard.E2.1.Micro` (§1.1).
 
-### 1.1 Fallback: E2.1.Micro (1 GB)
-Funciona para uso pessoal, mais lento:
-```bash
-sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf
-```
-Defina `MODEL_FAST=haiku` e `REPORT_CHARTS=false`.
+### 1.1 Fallback: E2.1.Micro (1 GB, x86_64)
+Funciona para uso pessoal, mais lento. O `setup-vm.sh` detecta a arquitetura e a memória: abaixo de 2 GB ele cria
+o swap de 4 GB (`/swapfile`, `vm.swappiness=10`), compila o whisper.cpp com um job só e usa o modelo
+`ggml-base-q5_1` em vez do `small`. Nada disso precisa ser feito à mão.
+
+Ajuste você mesmo em `/etc/impetus/env.app`: `MODEL_FAST=haiku` e `REPORT_CHARTS=false` (o render dos gráficos é o
+pico de memória).
+
+Para trocar de shape depois (A1 liberando capacidade): rode o `setup-vm.sh` na VM nova e siga a migração do §7
+(copiar `data/wa-auth` e `data/impetus.db` com o app parado).
 
 ## 2. Preparação do sistema
 

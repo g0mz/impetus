@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Deploy independente do shape da VM (2026-10-17)
+
+#### Alterado
+- `setup-vm.sh` detecta arquitetura e memória: abaixo de 2 GB (E2.1.Micro) cria o swap de 4 GB com
+  `vm.swappiness=10`, compila o whisper.cpp com um job só e usa o modelo `ggml-base-q5_1` em vez do `small`.
+  Sem isso, `npm ci` e o build do whisper estouram a memória em 1 GB. No fim lembra de `MODEL_FAST=haiku` e
+  `REPORT_CHARTS=false`.
+- DEPLOY.md §1.1: o fallback E2.1.Micro não tem mais passos manuais de swap e explica a troca de shape depois.
+
 ### Primeiro sync real do Health Connect (2026-10-16)
 
 #### Corrigido

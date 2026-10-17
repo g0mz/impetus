@@ -137,7 +137,7 @@ impetus/
 
 ## Fase 6 — Deploy e operação
 
-- [ ] Build e teste em linux-arm64 (`better-sqlite3`, `sharp`, `@resvg/resvg-js`).
+- [ ] Build e teste na VM, linux-arm64 ou x86_64 (`better-sqlite3`, `sharp`, `@resvg/resvg-js`).
 - [x] `deploy/setup-vm.sh` idempotente (DEPLOY.md §2–4) e unit do systemd. *(escrito; rodar na VM)*
 - [x] Backup (`src/ops/backup.ts` + job) e **teste de restore documentado** (automatizado em `ops.test.ts`).
 - [x] Alertas: token Claude expirando, backup falho, `hc_stale`, turnos falhos repetidos.
