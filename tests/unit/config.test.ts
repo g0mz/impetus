@@ -15,6 +15,18 @@ describe('loadConfig', () => {
     expect(c.dbPath.endsWith(path.join('data', 'impetus.db'))).toBe(true);
   });
 
+  it('dashboard vem desligado e na porta 8789', () => {
+    const c = loadConfig({ BRAIN_DIR });
+    expect(c.DASHBOARD).toBe(false);
+    expect(c.DASHBOARD_PORT).toBe(8789);
+  });
+
+  it('aceita ligar o dashboard noutra porta', () => {
+    const c = loadConfig({ BRAIN_DIR, DASHBOARD: 'true', DASHBOARD_PORT: '9000' });
+    expect(c.DASHBOARD).toBe(true);
+    expect(c.DASHBOARD_PORT).toBe(9000);
+  });
+
   it('converte tipos vindos do ambiente', () => {
     const c = loadConfig({
       BRAIN_DIR,
