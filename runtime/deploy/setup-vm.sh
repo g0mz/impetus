@@ -100,6 +100,16 @@ fi
 
 log "serviço systemd"
 sudo install -m 644 "$APP_DIR/runtime/deploy/impetus.service" /etc/systemd/system/impetus.service
+# O MemoryMax da unit vale para a A1. Em 1 GB, deixa o turno usar swap em vez de ser morto pelo OOM
+# (o `claude` do turno sozinho pede ~300 MB).
+if [[ $LOW_MEM == 1 ]]; then
+  sudo mkdir -p /etc/systemd/system/impetus.service.d
+  sudo tee /etc/systemd/system/impetus.service.d/lowmem.conf >/dev/null <<'CONF'
+[Service]
+MemoryMax=900M
+MemorySwapMax=3G
+CONF
+fi
 sudo systemctl daemon-reload
 sudo systemctl enable impetus >/dev/null
 
