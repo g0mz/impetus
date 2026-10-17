@@ -12,6 +12,7 @@ import { migrate } from './db/migrate.ts';
 import { countExercises } from './db/repos/exercises.ts';
 import { getSetting } from './db/repos/settings.ts';
 import { createInbox } from './gateway/inbox.ts';
+import { createDashboardApp, startDashboardServer } from './dashboard/http.ts';
 import { createIngestApp, startIngestServer } from './ingest/http.ts';
 import { createOwnerGuard } from './gateway/owner-pairing.ts';
 import { createTurnRunner } from './gateway/turn-runner.ts';
@@ -94,6 +95,12 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     logger: logger.child({ mod: 'ingest' }),
   });
   const ingest = await startIngestServer(ingestApp, config.INGEST_PORT);
+  const dashboard = config.DASHBOARD
+    ? await startDashboardServer(
+        createDashboardApp({ db, settings, logger: logger.child({ mod: 'dashboard' }) }),
+        config.DASHBOARD_PORT,
+      )
+    : undefined;
 
   const owner = createOwnerGuard(db, logger.child({ mod: 'owner' }));
   let channel: Channel;
@@ -194,7 +201,13 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
   );
 
   logger.info(
-    { channel: channel.name, brain: brain.name, mcp: mcp.url, ingest: ingest.url },
+    {
+      channel: channel.name,
+      brain: brain.name,
+      mcp: mcp.url,
+      ingest: ingest.url,
+      ...(dashboard ? { dashboard: dashboard.url } : {}),
+    },
     'impetus iniciado',
   );
 
@@ -215,6 +228,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       await handle.drain();
       await mcp.close();
       await ingest.close();
+      await dashboard?.close();
       db.close();
       releaseLock();
     },
