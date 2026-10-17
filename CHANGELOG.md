@@ -4,6 +4,33 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Dashboard somente leitura (2026-10-17)
+
+#### Adicionado
+- Seis páginas no celular, servidas pela própria VM na tailnet (`DASHBOARD=true`, porta 8789 em loopback,
+  atravessada por `tailscale serve --https=8443`): resumo, peso, nutrição, treino, exercício e sono/atividade,
+  com recortes de 7, 30, 90 dias e 1 ano.
+- Zero JavaScript: HTML montado no servidor, troca de recorte por querystring e `<form method=get>`. Gráficos são
+  SVG do mesmo pipeline Vega-Lite dos relatórios, parando antes do rasterizador — o que permite o modo escuro
+  reestilizar os gráficos sem re-renderizar (`tokenizeSvg` troca os hex do sistema por `var(--token)`).
+- Elemento visual recorrente: a faixa de meta atrás de cada gráfico, vinda das metas em `settings`, para a tela
+  responder "estou dentro?" antes de qualquer número ser lido.
+- Cache de página em memória invalidado por `max(audit_log.id)` **e** `max(health_daily.updated_at)`: os dados do
+  relógio entram sem passar pelo `audit_log`, e só a primeira fonte deixaria passos e sono velhos na tela.
+- Degradação por métrica: sem dado do relógio, a tela diz o que habilitar no HC Webhook em vez de mostrar gráfico
+  vazio; com poucos pontos, diz quantos dias faltam para a tendência ter sentido.
+- `trainedExercises` (exercícios treinados num período) e specs web de peso, volume, e1RM, kcal/proteína, passos e
+  sono.
+
+#### Corrigido
+- `buildReportBrief` gravava `metrics.maintenance_estimate` em toda chamada com `kind != 'daily'`. Como o dashboard
+  monta o brief a cada página, isso seria uma escrita por visita; agora aceita `{ persist: false }` e um teste de
+  integração garante que nenhuma das seis rotas escreve no banco.
+
+#### Decidido
+- Spec e plano em `docs/superpowers/specs/2026-10-17-dashboard-design.md` e
+  `docs/superpowers/plans/2026-10-17-dashboard.md`.
+
 ### Rede da ingestão do Health Connect na VM (2026-10-17)
 
 #### Adicionado

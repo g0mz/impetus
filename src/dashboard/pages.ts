@@ -15,6 +15,7 @@ import { restingHrTrend, sleepStats, stepsStats } from '../domain/metrics/activi
 import { weightTrend } from '../domain/metrics/body.ts';
 import { epley } from '../domain/training/load.ts';
 import { dash } from '../i18n/pt-br.ts';
+import { formatDayMonth } from '../time.ts';
 import {
   buildReportBrief,
   loadHealth,
@@ -199,7 +200,7 @@ export async function exercicioPage(db: Db, ctx: PageCtx, exerciseId?: number): 
             .slice()
             .reverse()
             .map((s) => [
-              s.local_date,
+              formatDayMonth(s.local_date),
               s.sets
                 .filter((x) => x.reps !== null)
                 .map((x) => `${x.weight_kg ?? 0}×${x.reps}`)

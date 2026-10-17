@@ -123,7 +123,7 @@ export const WEB_THEME: Pick<TopLevelSpec, 'background' | 'padding' | 'config'> 
 function goalBand(goal: number, tolerance = 0.05) {
   return {
     data: { values: [{ lo: goal * (1 - tolerance), hi: goal * (1 + tolerance) }] },
-    mark: { type: 'rect' as const, fill: META, opacity: 0.6 },
+    mark: { type: 'rect' as const, fill: META, opacity: 0.45 },
     encoding: {
       y: { field: 'lo', type: 'quantitative' as const },
       y2: { field: 'hi' as const },
@@ -131,11 +131,20 @@ function goalBand(goal: number, tolerance = 0.05) {
   };
 }
 
-const webBars = (yField: string, title: string | null = null) => ({
-  mark: { type: 'bar' as const, fill: DADO, cornerRadiusEnd: 2 },
+/**
+ * Barras por dia. O eixo é ordinal com `timeUnit`: em escala temporal pura as barras viram fios,
+ * porque não existe banda para ocupar.
+ */
+const webBars = (yField: string) => ({
+  mark: { type: 'bar' as const, fill: DADO, cornerRadiusEnd: 2, width: { band: 0.65 } },
   encoding: {
-    x: { field: 'local_date', type: 'temporal' as const, axis: { format: '%d/%m', title: null, labelAngle: 0 } },
-    y: { field: yField, type: 'quantitative' as const, axis: { title } },
+    x: {
+      field: 'local_date',
+      type: 'ordinal' as const,
+      timeUnit: 'monthdate' as const,
+      axis: { format: '%d/%m', title: null, labelAngle: 0, labelOverlap: 'greedy' as const },
+    },
+    y: { field: yField, type: 'quantitative' as const, axis: { title: null } },
   },
 });
 
@@ -179,7 +188,7 @@ export function sleepSpec(rows: { local_date: string; hours: number }[], goalH?:
     width: WEB_WIDTH,
     height: 140,
     data: { values: noon(rows) },
-    layer: [...(goalH ? [goalBand(goalH, 0.08)] : []), webBars('hours', 'h')],
+    layer: [...(goalH ? [goalBand(goalH, 0.08)] : []), webBars('hours')],
   } as TopLevelSpec;
 }
 

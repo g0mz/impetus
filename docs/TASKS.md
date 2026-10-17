@@ -150,5 +150,5 @@ impetus/
 - [x] Adaptador Telegram (plano B do canal).
 - [ ] `AnthropicApiBrain` e/ou `GeminiBrain` reutilizando `tools/registry` (plano B da cobrança).
 - [x] Transcrição de áudio (Whisper local `whisper.cpp` em ARM, modelo pequeno) para registrar treino por voz. *(D-030)*
-- [ ] Dashboard web somente leitura, servido via Tailscale.
+- [x] Dashboard web somente leitura, servido via Tailscale. *(2026-10-17, seis telas, zero JS)*
 - [ ] Importação do CSV de outro app de treino (Strong ou Hevy) para histórico antigo.

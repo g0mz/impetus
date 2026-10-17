@@ -150,6 +150,16 @@ Instale o Tailscale no celular, na mesma conta. URL: `https://<vm>.<tailnet>.ts.
   `tailscale serve --bg --https=443 http://127.0.0.1:8787` com `npm run dev` rodando e `INGEST_API_KEY` no `.env`.
   A URL fica `https://<pc>.<tailnet>.ts.net/ingest/health`. Na VM, gere outra chave e troque URL e header no app.
 
+### Dashboard na mesma tailnet (opcional)
+O dashboard somente leitura (`DASHBOARD=true`, `DASHBOARD_PORT=8789`) sobe no mesmo processo e também escuta só em
+loopback. A raiz do host já é do ingest, e as páginas usam caminhos absolutos, então ele vai numa porta HTTPS
+própria — assim a URL do HC Webhook no celular não muda:
+```bash
+sudo tailscale serve --bg --https=8443 http://127.0.0.1:8789
+```
+No celular, com o Tailscale ligado: `https://<vm>.<tailnet>.ts.net:8443/`. Em VM de 1 GB, deixe `REPORT_CHARTS=false`
+mesmo com o dashboard ligado: lá os gráficos são SVG, sem o rasterizador.
+
 **B) Caddy + DuckDNS (HTTPS público):** subdomínio gratuito no DuckDNS, Caddy com TLS automático em 443 → `127.0.0.1:8787`. Abra a 443 na Security List da VCN **e** no iptables da imagem Ubuntu da OCI, que vem bloqueando tudo exceto SSH:
 ```bash
 sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
