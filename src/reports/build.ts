@@ -144,7 +144,17 @@ export type ReportBrief = {
   comparisons: { vs_previous_period: Record<string, string> };
 };
 
-export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: string): ReportBrief {
+/**
+ * Monta os números do período. `persist` existe para quem só lê (o dashboard): por padrão o brief
+ * grava a estimativa de manutenção em `settings`, e uma página não pode escrever a cada visita.
+ */
+export function buildReportBrief(
+  db: Db,
+  kind: ReportKind,
+  period: Period,
+  now: string,
+  opts: { persist?: boolean } = {},
+): ReportBrief {
   const goals = getGoals(db);
   const n = days(period);
   const prevPeriod = { start: addDays(period.start, -n), end: addDays(period.start, -1) };
@@ -237,7 +247,8 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     now,
     periodDays: n,
   });
-  if (kind !== 'daily' && maintenance !== null) setSetting(db, 'metrics.maintenance_estimate', maintenance);
+  if (opts.persist !== false && kind !== 'daily' && maintenance !== null)
+    setSetting(db, 'metrics.maintenance_estimate', maintenance);
 
   const cmp: Record<string, string> = {};
   const add = (k: string, a: number | null, b: number | null) => {

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { setSetting } from '../../src/db/repos/settings.ts';
+import { getSetting, setSetting } from '../../src/db/repos/settings.ts';
 import type { RunTurn } from '../../src/gateway/turn-runner.ts';
 import { createLogger } from '../../src/logger.ts';
-import { reportPeriod } from '../../src/reports/build.ts';
+import { addDays } from '../../src/time.ts';
+import { buildReportBrief, reportPeriod } from '../../src/reports/build.ts';
 import { generateReport } from '../../src/reports/service.ts';
 import { buildJobs, runJob, type JobDef } from '../../src/scheduler/jobs.ts';
 import { seedReportWeek } from '../fixtures/report-week.ts';
@@ -307,5 +308,44 @@ describe('verificação de números do relatório', () => {
     });
     expect(numbersNotInBrief(r.text, r.brief)).toEqual([]);
     expect(numbersNotInBrief(`${r.text}\nVocê comeu 2.650 kcal`, r.brief)).toEqual(['2650']);
+  });
+});
+
+describe('brief somente leitura', () => {
+  /**
+   * A estimativa de manutenção usa uma janela fixa de 28 dias antes do fim do período e exige
+   * 80% de dias completos e 8+ pesagens dentro dela: 28 dias densos terminando em 18/10.
+   */
+  function seedDenseMonth(db: ReturnType<typeof makeDb>['db']) {
+    setSetting(db, 'goal.kcal', 2400);
+    const meal = db.prepare(
+      `INSERT INTO meals (eaten_at, local_date, confidence, kcal, protein_g, carbs_g, fat_g, fiber_g, created_at, updated_at)
+       VALUES (?, ?, 'high', 800, 50, 0, 0, 0, ?, ?)`,
+    );
+    const weigh = db.prepare(
+      "INSERT INTO body_metrics (measured_at, local_date, weight_kg, source, created_at) VALUES (?, ?, ?, 'chat', ?)",
+    );
+    for (let i = 0; i < 28; i++) {
+      const d = addDays('2026-09-21', i);
+      for (let k = 0; k < 3; k++) meal.run(`${d}T15:00:00Z`, d, NOW, NOW);
+      if (i % 3 === 0) weigh.run(`${d}T10:00:00Z`, d, 80 + i * 0.02, NOW);
+    }
+  }
+  const PERIOD = { start: '2026-09-21', end: '2026-10-18' };
+
+  it('por padrão grava a estimativa de manutenção', () => {
+    const { db } = makeDb();
+    seedDenseMonth(db);
+    expect(getSetting<number>(db, 'metrics.maintenance_estimate')).toBeUndefined();
+    buildReportBrief(db, 'monthly', PERIOD, NOW);
+    expect(getSetting<number>(db, 'metrics.maintenance_estimate')).toEqual(expect.any(Number));
+  });
+
+  it('persist:false não grava nada', () => {
+    const { db } = makeDb();
+    seedDenseMonth(db);
+    const brief = buildReportBrief(db, 'adhoc', PERIOD, NOW, { persist: false });
+    expect(brief.nutrition.kcal_avg).toBe(2400); // o brief continua completo
+    expect(getSetting<number>(db, 'metrics.maintenance_estimate')).toBeUndefined();
   });
 });
