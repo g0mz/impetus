@@ -67,6 +67,11 @@ sudo -u "$APP_USER" bash -lc "cd '$APP_DIR' && npm ci --no-audit --no-fund && np
 sudo -u "$APP_USER" mkdir -p "$APP_HOME/.local/state/impetus/brain" "$APP_DIR/data"
 sudo chmod 700 "$APP_DIR/data"
 
+# Compilar o whisper leva horas numa E2.1.Micro (1/8 OCPU): WHISPER=0 pula e deixa a voz desligada.
+WHISPER="${WHISPER:-1}"
+if [[ "$WHISPER" == 0 ]]; then
+  log "whisper.cpp: pulado (WHISPER=0) — deixe TRANSCRIBE desligado em env.app"
+else
 log "whisper.cpp (mensagens de voz)"
 WHISPER_TAG="${WHISPER_TAG:-v1.9.5}"
 WHISPER_DIR="$APP_HOME/whisper.cpp"
@@ -86,6 +91,7 @@ if [[ ! -f "$WHISPER_DIR/models/$WHISPER_MODEL_NAME" ]]; then
   sudo -u "$APP_USER" curl -fL -o "$WHISPER_DIR/models/$WHISPER_MODEL_NAME"     "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$WHISPER_MODEL_NAME"
 fi
 echo "   TRANSCRIBE=whisper-cpp  WHISPER_BIN=$WHISPER_DIR/build/bin/whisper-cli  WHISPER_MODEL=$WHISPER_DIR/models/$WHISPER_MODEL_NAME"
+fi
 
 log "Claude Code"
 if ! sudo -u "$APP_USER" bash -lc 'command -v claude' >/dev/null; then
