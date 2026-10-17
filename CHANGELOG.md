@@ -13,6 +13,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   `X-Api-Key` e `{"ok":false,"error":"unauthorized"}` sem ela; `/healthz` responde 200 pela URL da tailnet.
 - Nenhuma porta aberta: a 8787 segue só em loopback, a 8787 pública não responde e o iptables/Security List não
   foram alterados.
+- **Fase 4 ponta a ponta:** primeiro sync real do HC Webhook pelo celular na tailnet (conexão direta, sem relay) —
+  dois payloads processados (19 e 3 amostras, dias 2026-10-16 e 17, nada ignorado).
 
 ### Deploy independente do shape da VM (2026-10-17)
 
