@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { getExercise, trainedExercises } from '../../src/db/repos/training.ts';
 import { undoTurn } from '../../src/db/undo.ts';
+import { seedReportWeek } from '../fixtures/report-week.ts';
 import { data, makeCaller, makeDb } from '../helpers.ts';
 
 type LogOut = {
@@ -566,5 +568,25 @@ describe('log_cardio com velocidade', () => {
       distance_m: 3000,
       duration_s: 1800,
     });
+  });
+});
+
+describe('trainedExercises', () => {
+  it('lista os exercícios com séries no período, do mais frequente ao menos', () => {
+    const { db, ex } = makeDb();
+    seedReportWeek(db, { now: '2026-10-18T23:00:00Z', remada: ex.remada!, supino: ex.supInc! });
+
+    const rows = trainedExercises(db, '2026-10-12', '2026-10-18');
+    expect(rows.length).toBe(2);
+    expect(rows.every((r) => r.sessions === 3)).toBe(true);
+    expect(rows.map((r) => r.name_pt).sort()).toEqual(
+      [ex.remada!, ex.supInc!].map((id) => getExercise(db, id)!.name_pt).sort(),
+    );
+  });
+
+  it('período sem treino devolve lista vazia', () => {
+    const { db, ex } = makeDb();
+    seedReportWeek(db, { now: '2026-10-18T23:00:00Z', remada: ex.remada!, supino: ex.supInc! });
+    expect(trainedExercises(db, '2026-01-01', '2026-01-31')).toEqual([]);
   });
 });

@@ -282,3 +282,22 @@ export function insertCardio(
       .run(c).lastInsertRowid,
   );
 }
+
+/** Exercícios com séries no período, do mais treinado ao menos: alimenta o seletor do dashboard. */
+export function trainedExercises(
+  db: Db,
+  from: string,
+  to: string,
+): { id: number; name_pt: string; sessions: number }[] {
+  return db
+    .prepare(
+      `SELECT e.id, e.name_pt, count(DISTINCT ws.id) AS sessions
+         FROM sets s
+         JOIN workout_sessions ws ON ws.id = s.session_id AND ws.deleted_at IS NULL
+         JOIN exercises e ON e.id = s.exercise_id
+        WHERE s.deleted_at IS NULL AND ws.local_date BETWEEN ? AND ?
+        GROUP BY e.id, e.name_pt
+        ORDER BY sessions DESC, e.name_pt`,
+    )
+    .all(from, to) as { id: number; name_pt: string; sessions: number }[];
+}
