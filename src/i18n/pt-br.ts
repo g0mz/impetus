@@ -65,3 +65,35 @@ export const GOAL_LABELS: Record<string, { label: string; unit: string }> = {
   weight_rate_kg_wk: { label: 'ritmo de peso', unit: 'kg/semana' },
   weight_target_kg: { label: 'peso alvo', unit: 'kg' },
 };
+
+/** Dashboard somente leitura (DASHBOARD=true), lido no celular pela tailnet. */
+export const dash = {
+  app: 'Impetus',
+  nav: {
+    peso: 'peso',
+    nutricao: 'nutrição',
+    treino: 'treino',
+    exercicio: 'exercício',
+    sono: 'sono',
+  },
+  titulo: {
+    resumo: 'Resumo',
+    peso: 'Peso',
+    nutricao: 'Nutrição',
+    treino: 'Treino',
+    exercicio: 'Exercício',
+    sono: 'Sono e atividade',
+  },
+  periodo: { '7d': '7 dias', '30d': '30 dias', '90d': '90 dias', ano: '1 ano' },
+  semDadosSaude:
+    'Nada do relógio ainda. Ligue os tipos no app HC Webhook (passos, sono, frequência cardíaca) e os dados aparecem aqui no próximo sync.',
+  semSono: 'Sono não está sendo enviado pelo relógio. Habilite "Sleep" no app HC Webhook.',
+  semPeso: 'Nenhuma pesagem no período. Mande o peso no WhatsApp para a tendência começar.',
+  semRefeicoes: 'Nenhuma refeição registrada no período.',
+  semTreino: 'Nenhum treino registrado no período.',
+  poucosDados: (faltam: number) => `Poucos dados: mais ${faltam} dia(s) e a tendência ganha sentido.`,
+  escolhaExercicio: 'Escolha um exercício',
+  verTodos: 'ver',
+  metaLabel: 'meta',
+  mediaLabel: 'média',
+} as const;
