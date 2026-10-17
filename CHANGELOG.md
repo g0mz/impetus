@@ -17,9 +17,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   `MemorySwapMax=3G`): o `MemoryMax=1500M` da unit é maior que a RAM da E2.1.Micro, e o `claude` de um turno
   pede ~300 MB — melhor paginar do que ser morto pelo OOM.
 
-#### Em andamento
-- Deploy na E2.1.Micro (x86_64, 954 MB, Ubuntu 24.04.5): swap, Node 24.22, build, banco e `wa-auth` migrados do
-  notebook, Claude Code 2.1.302 instalado. Falta o `CLAUDE_CODE_OAUTH_TOKEN` e subir o serviço.
+#### Fase 6 — deploy feito (E2.1.Micro, 2026-10-17)
+- VM: x86_64, 954 MB, Ubuntu 24.04.5, Node 24.22, Claude Code 2.1.302, swap de 4 GB. Repo privado clonado por
+  deploy key (somente leitura) do usuário `impetus`; banco (integrity ok) e `wa-auth` migrados do notebook.
+- No ar pelo WhatsApp com a sessão migrada, sem novo vínculo: `/status` do celular respondido em ~1 s.
+- **Reboot:** serviço volta sozinho (`enabled`) e o WhatsApp reconecta 3 s após o start; swap persiste pelo fstab.
+- **Restore:** `npm run restore` de um backup gerado na própria VM → 35 tabelas, 18 séries, `integrity_check` ok.
+- **Memória:** 241 MB de RSS do serviço em repouso, com `MemoryMax=900M`. Falta a leitura após 24 h de uso.
+- Ponta solta: dois turnos `command` de 15/10 ficaram `running` (o processo do notebook morreu no meio).
 
 ### Primeiro sync real do Health Connect (2026-10-16)
 
