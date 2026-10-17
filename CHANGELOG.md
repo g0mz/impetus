@@ -27,6 +27,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   monta o brief a cada página, isso seria uma escrita por visita; agora aceita `{ persist: false }` e um teste de
   integração garante que nenhuma das seis rotas escreve no banco.
 
+#### Medido na VM (E2.1.Micro, 1 GB)
+- Primeira carga por rota: 3 ms a 292 ms (a mais cara é `/treino`, que calcula volume e PRs); com cache, 1,4 ms.
+  `/treino?p=ano` ficou em 199 ms, bem abaixo do limite de 3 s que a spec estabeleceu para repensar o recorte.
+  Memória do serviço: 180 MB.
+- No ar em `https://impetus.<tailnet>.ts.net:8443/`, numa porta HTTPS própria da tailnet: a raiz do host continua
+  sendo do ingest, então a URL do HC Webhook no celular não mudou.
+
 #### Decidido
 - Spec e plano em `docs/superpowers/specs/2026-10-17-dashboard-design.md` e
   `docs/superpowers/plans/2026-10-17-dashboard.md`.
