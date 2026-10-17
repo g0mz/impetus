@@ -86,3 +86,99 @@ export function e1rmSpec(points: { local_date: string; exercise: string; e1rm: n
     },
   } as TopLevelSpec;
 }
+
+// ─── Tema web (dashboard) ─────────────────────────────────────────────────────
+// O THEME acima serve o PNG de 1080 px do WhatsApp. O dashboard é tela de celular:
+// largura menor, fundo claro e as cores do sistema de tokens (src/charts/render.ts).
+
+const WEB_WIDTH = 360;
+const DADO = '#1F3A5F';
+const META = '#C3D1B4';
+
+export const WEB_THEME: Pick<TopLevelSpec, 'background' | 'padding' | 'config'> = {
+  background: '#FBFAF7',
+  padding: 8,
+  config: {
+    font: 'system-ui, sans-serif',
+    view: { stroke: null },
+    locale: { number: { decimal: ',', thousands: '.', grouping: [3], currency: ['R$ ', ''] } },
+    axis: {
+      labelColor: '#8A8F98',
+      titleColor: '#8A8F98',
+      gridColor: '#8A8F98',
+      gridOpacity: 0.15,
+      domainColor: '#8A8F98',
+      tickColor: '#8A8F98',
+      labelFontSize: 11,
+      titleFontSize: 11,
+    },
+    legend: { labelColor: '#16181B', titleColor: '#8A8F98', labelFontSize: 11 },
+  },
+};
+
+/**
+ * Faixa de meta: o elemento-assinatura do dashboard, a mesma gramática em todo gráfico.
+ * Desenha a tolerância em volta do alvo, com o dado por cima.
+ */
+function goalBand(goal: number, tolerance = 0.05) {
+  return {
+    data: { values: [{ lo: goal * (1 - tolerance), hi: goal * (1 + tolerance) }] },
+    mark: { type: 'rect' as const, fill: META, opacity: 0.6 },
+    encoding: {
+      y: { field: 'lo', type: 'quantitative' as const },
+      y2: { field: 'hi' as const },
+    },
+  };
+}
+
+const webBars = (yField: string, title: string | null = null) => ({
+  mark: { type: 'bar' as const, fill: DADO, cornerRadiusEnd: 2 },
+  encoding: {
+    x: { field: 'local_date', type: 'temporal' as const, axis: { format: '%d/%m', title: null, labelAngle: 0 } },
+    y: { field: yField, type: 'quantitative' as const, axis: { title } },
+  },
+});
+
+export type NutritionDay = { local_date: string; kcal: number; protein_g: number };
+
+/** Calorias e proteína por dia, cada uma com sua faixa de meta (gráficos empilhados). */
+export function kcalProteinSpec(
+  rows: NutritionDay[],
+  goals: { kcal?: number; protein_g?: number },
+): TopLevelSpec {
+  const values = noon(rows);
+  const panel = (field: string, goal: number | undefined, title: string) => ({
+    width: WEB_WIDTH,
+    height: 120,
+    title,
+    data: { values },
+    layer: [...(goal ? [goalBand(goal)] : []), webBars(field)],
+  });
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    vconcat: [panel('kcal', goals.kcal, 'kcal'), panel('protein_g', goals.protein_g, 'proteína (g)')],
+  } as TopLevelSpec;
+}
+
+/** Passos por dia, com a faixa da meta diária. */
+export function stepsSpec(rows: { local_date: string; steps: number }[], goal?: number): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 140,
+    data: { values: noon(rows) },
+    layer: [...(goal ? [goalBand(goal)] : []), webBars('steps')],
+  } as TopLevelSpec;
+}
+
+/** Horas de sono por noite, com a faixa da meta. */
+export function sleepSpec(rows: { local_date: string; hours: number }[], goalH?: number): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 140,
+    data: { values: noon(rows) },
+    layer: [...(goalH ? [goalBand(goalH, 0.08)] : []), webBars('hours', 'h')],
+  } as TopLevelSpec;
+}
