@@ -12,6 +12,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   Sem isso, `npm ci` e o build do whisper estouram a memória em 1 GB. No fim lembra de `MODEL_FAST=haiku` e
   `REPORT_CHARTS=false`.
 - DEPLOY.md §1.1: o fallback E2.1.Micro não tem mais passos manuais de swap e explica a troca de shape depois.
+- `WHISPER=0` pula o build do whisper.cpp (horas em 1/8 de OCPU); a voz fica desligada e pode ser ligada depois.
+- Em VM de pouca memória, o script instala o drop-in `impetus.service.d/lowmem.conf` (`MemoryMax=900M`,
+  `MemorySwapMax=3G`): o `MemoryMax=1500M` da unit é maior que a RAM da E2.1.Micro, e o `claude` de um turno
+  pede ~300 MB — melhor paginar do que ser morto pelo OOM.
+
+#### Em andamento
+- Deploy na E2.1.Micro (x86_64, 954 MB, Ubuntu 24.04.5): swap, Node 24.22, build, banco e `wa-auth` migrados do
+  notebook, Claude Code 2.1.302 instalado. Falta o `CLAUDE_CODE_OAUTH_TOKEN` e subir o serviço.
 
 ### Primeiro sync real do Health Connect (2026-10-16)
 
