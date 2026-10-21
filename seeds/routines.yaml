@@ -1,4 +1,3 @@
-# RASCUNHO: aguardando revisão do dono (Rosca Scott, Stiff, leg press pés altos). Não importar antes disso.
 # Treino do dono (npm run routines:import). `as` = como ele escreve; `exercise` = name_pt no catálogo.
 # Sem carga: o primeiro "fiz <rotina>" usa a última carga registrada ou pergunta. Descanso só como referência.
 routines:
@@ -40,7 +39,7 @@ routines:
   - name: Lower B # sexta
     exercises:
       - { as: Stiff, exercise: Stiff com barra, sets: 3, reps: [6, 10] } # 3 min
-      - { as: Leg press 45° pés altos, exercise: Leg press 45°, sets: 3, reps: [8, 12] } # 2–3 min
+      - { as: Leg press 45°, exercise: Leg press 45°, sets: 3, reps: [8, 12] } # 2–3 min
       - { as: Flexora sentada, exercise: Cadeira flexora, sets: 3, reps: [8, 12] } # 90 s
       - { as: Cadeira extensora, exercise: Cadeira extensora, sets: 2, reps: [12, 15] } # 90 s
       - { as: Panturrilha em pé na máquina, exercise: Panturrilha em pé, sets: 4, reps: [8, 15] } # 90 s
