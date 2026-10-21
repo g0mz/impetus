@@ -11,6 +11,7 @@ import { GOAL_LABELS, t } from '../i18n/pt-br.ts';
 import { GOAL_ALIASES, GOAL_KEYS, daySummary, getGoals, type GoalKey } from '../tools/body.ts';
 import { MEAL_TYPE_PT, type MealType } from '../domain/nutrition/meal-type.ts';
 import { callTool, type Registry, type ToolSettings } from '../tools/registry.ts';
+import { plannedToday } from '../tools/plan.ts';
 import { computeTargets } from '../tools/training.ts';
 import { formatDayMonth, localDayBounds, toLocalDate } from '../time.ts';
 import { setSetting } from '../db/repos/settings.ts';
@@ -80,9 +81,13 @@ function routineNames(db: Db): string[] {
 }
 
 function treino(ctx: CommandContext, args: string): CommandResult {
-  if (!args) return { text: t.usage('/treino <rotina>') };
-  const res = computeTargets(ctx, args);
-  if (!res) return { text: t.routineNotFound(args, routineNames(ctx.db)) };
+  // sem argumento: rotina planejada para hoje (agenda semanal + ajustes, Fase 8c)
+  const planned = args ? undefined : plannedToday(ctx);
+  if (!args && !planned) return { text: t.usage('/treino <rotina>') };
+  if (!args && !planned!.routine) return { text: t.restDay };
+  const name = args || planned!.routine!.name;
+  const res = computeTargets(ctx, name);
+  if (!res) return { text: t.routineNotFound(name, routineNames(ctx.db)) };
   const header = res.last_date
     ? `📋 Último ${res.routine} (${formatDayMonth(res.last_date)})`
     : `📋 ${res.routine} — ainda sem treino registrado`;

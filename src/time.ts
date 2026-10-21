@@ -125,10 +125,15 @@ export function nowUtcIso(): string {
 
 const WEEKDAYS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
+/** Dia da semana (0 = domingo … 6 = sábado) de uma data de calendário. */
+export function weekdayIndex(localDate: string): number {
+  const [y, m, d] = parseLocalDate(localDate);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
 /** Dia da semana em PT-BR de uma data de calendário. */
 export function weekdayPt(localDate: string): string {
-  const [y, m, d] = parseLocalDate(localDate);
-  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? '';
+  return WEEKDAYS[weekdayIndex(localDate)] ?? '';
 }
 
 /** `2026-10-13` → `13/10`. */

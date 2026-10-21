@@ -392,3 +392,29 @@ CREATE TABLE coach_notes (
 - `observation`: padrão percebido pelo coach; arquivada após 90 dias sem atualização.
 - `life_event`: evento datado; entra no contexto a partir de 2 dias antes de `due_local_date`; resolvido após a
   pergunta e arquivado 30 dias depois. O job `coach_notes.prune` (segunda, 03:30) faz a limpeza.
+
+### Agenda semanal e ajustes temporários (Fase 8c)
+
+```sql
+CREATE TABLE routine_schedule (
+  weekday INTEGER PRIMARY KEY CHECK (weekday BETWEEN 0 AND 6), -- 0 = domingo; dia ausente = descanso
+  routine_id INTEGER NOT NULL REFERENCES routines(id),
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE plan_overrides (
+  id INTEGER PRIMARY KEY,
+  from_local_date TEXT NOT NULL,
+  until_local_date TEXT NOT NULL,     -- até 60 dias depois de from
+  text TEXT NOT NULL,
+  weekday_changes TEXT,               -- JSON {"4": null, "5": 3}: dia da semana → routine_id (null = folga)
+  created_at TEXT NOT NULL,
+  turn_id INTEGER REFERENCES turns(id),
+  deleted_at TEXT
+);
+```
+
+- Ajuste muda sessões, **nunca metas**, e vence pelo filtro de data (sem job). Entre ajustes que mudam o mesmo dia
+  da semana, vale o mais recente. A resolução é a função pura `domain/training/schedule.ts` (`plannedFor`).
+- `get_day_summary.planned`, `get_next_targets.planned_today` e a linha "plano de hoje" do `<today_snapshot>` saem
+  dela; ajustes ativos entram no prompt como `<plan_overrides>`.

@@ -181,10 +181,10 @@ Inspirada no my-fitness-claw (D-033). O Impetus continua dono dos dados (banco, 
 
 Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 
-- [ ] Tabela `routine_schedule` (`weekday` 0–6, `routine_id`) e tool `set_weekly_schedule` ("upper A seg e qui, lower A ter e sex").
-- [ ] Tabela `plan_overrides`: `id`, `from_local_date`, `until_local_date`, `text`, `weekday_changes` (JSON opcional; `null` = folga), `turn_id`, `deleted_at`. Muda sessões, **nunca metas**.
-- [ ] Tools `set_plan_override` / `end_plan_override`. `domain/training/schedule.ts` (puro, com testes) resolve a sessão planejada de um dia com overrides; `get_next_targets` e `get_day_summary` devolvem `planned_today`.
-- [ ] Contexto: `<plan_overrides>` ativos, curto. Override vencido some pelo filtro de data, sem job.
+- [x] Tabela `routine_schedule` (`weekday` 0–6, `routine_id`) e tool `set_weekly_schedule` ("upper A seg e qui, lower A ter e sex").
+- [x] Tabela `plan_overrides`: `id`, `from_local_date`, `until_local_date`, `text`, `weekday_changes` (JSON opcional; `null` = folga), `turn_id`, `deleted_at`. Muda sessões, **nunca metas**.
+- [x] Tools `set_plan_override` / `end_plan_override` / `get_week_plan`. `domain/training/schedule.ts` (puro, com testes) resolve a sessão planejada de um dia com overrides; `get_next_targets` e `get_day_summary` devolvem `planned_today`.
+- [x] Contexto: `<plan_overrides>` ativos, curto. Override vencido some pelo filtro de data, sem job.
 
 ### 8d — Check-in diário
 

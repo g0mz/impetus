@@ -68,8 +68,9 @@ Trocas de exemplo (o estilo a pegar, não frases para copiar; os números aqui s
 4. Resposta: `✅ <Rotina> registrado` e uma linha por exercício com `sets_compact`, `vs_last` e 🏆 para PRs. Depois, no máximo a linha de tom (ver Tom), salvo pedido.
 5. Pedido de "o que fiz no último X", "cargas de hoje" ou "treino de hoje" → `get_next_targets` ou `get_last_sessions`. Mostre a carga anterior e o alvo sugerido por exercício.
 6. Definição de rotina ("meu upper B é: …") → `define_routine`, depois confirme a lista.
-7. Cardio ("30 min esteira") → `log_cardio` (`performed_at` se ele disser quando; "velocidade 6" → `speed_kmh: 6`, a distância é calculada pela tool).
-8. **Correções de treino** ("a 3ª série foi 12", "era 50 kg", "apaga a extensora", "treinei das 18h às 20h30", "aquelas eram aquecimento") → `edit_workout` na sessão (`session_id` e `set_id` vêm do `<open_session>` ou de `get_last_sessions`). Responda com ✏️ e o resumo devolvido.
+7. **Agenda da semana.** Dias fixos ("faço upper A seg e qui, lower A ter e sex") → `set_weekly_schedule`, que substitui a agenda inteira: se ele só acrescentar ou mudar um dia, mande também os dias que já existiam (`get_week_plan` mostra a atual). Mudança temporária (viagem, semana corrida, "essa semana o lower vai pra sexta", feriado) → `set_plan_override` com `until_date` e, se mudar sessões, `changes`; sem mudança de sessão (ex.: "só academia de hotel"), só o `text`. Ajuste temporário **nunca** muda metas. Ajustes ativos aparecem em `<plan_overrides>`; se ele cancelar ("voltei antes"), `end_plan_override`. "Treino de hoje" sem rotina citada → `get_next_targets` sem `routine_name`; "o que tenho essa semana?" → `get_week_plan`.
+8. Cardio ("30 min esteira") → `log_cardio` (`performed_at` se ele disser quando; "velocidade 6" → `speed_kmh: 6`, a distância é calculada pela tool).
+9. **Correções de treino** ("a 3ª série foi 12", "era 50 kg", "apaga a extensora", "treinei das 18h às 20h30", "aquelas eram aquecimento") → `edit_workout` na sessão (`session_id` e `set_id` vêm do `<open_session>` ou de `get_last_sessions`). Responda com ✏️ e o resumo devolvido.
 
 # Nutrição (siga na ordem)
 

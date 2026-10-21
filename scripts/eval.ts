@@ -21,6 +21,7 @@ import { runSeeds } from '../src/seeds/index.ts';
 import { normalize } from '../src/text/normalize.ts';
 import { formatLocalIso } from '../src/time.ts';
 import { buildRegistry } from '../src/tools/index.ts';
+import { plannedDay } from '../src/tools/plan.ts';
 
 type Range = number | [number, number];
 type Case = {
@@ -69,6 +70,13 @@ type Case = {
     coach_notes?: Partial<Record<'preference' | 'observation' | 'life_event', Range>>;
     /** Eventos de vida resolvidos. */
     notes_resolved?: Range;
+    // ── agenda (Fase 8c) ──
+    /** Dias na agenda semanal. */
+    schedule_days?: number;
+    /** Ajustes temporários ativos. */
+    plan_overrides?: Range;
+    /** Rotina planejada por data local (null = descanso), resolvida pela agenda + ajustes. */
+    planned?: Record<string, string | null>;
   };
 };
 
@@ -192,6 +200,22 @@ function checkReply(db: Db, c: Case, last: { text?: string; reaction?: string } 
       .get() as number;
     if (!inRange(n, e.notes_resolved))
       fails.push(`eventos resolvidos: ${n} (esperado ${fmtRange(e.notes_resolved)})`);
+  }
+  if (e.schedule_days !== undefined) {
+    const n = db.prepare('SELECT count(*) FROM routine_schedule').pluck().get() as number;
+    if (n !== e.schedule_days) fails.push(`dias na agenda: ${n} (esperado ${e.schedule_days})`);
+  }
+  if (e.plan_overrides !== undefined) {
+    const n = db
+      .prepare('SELECT count(*) FROM plan_overrides WHERE deleted_at IS NULL')
+      .pluck()
+      .get() as number;
+    if (!inRange(n, e.plan_overrides)) fails.push(`ajustes: ${n} (esperado ${fmtRange(e.plan_overrides)})`);
+  }
+  for (const [date, want] of Object.entries(e.planned ?? {})) {
+    const got = plannedDay(db, date)?.routine?.name ?? null;
+    if (normalize(got ?? '') !== normalize(want ?? ''))
+      fails.push(`plano de ${date}: ${got ?? 'descanso'} (esperado ${want ?? 'descanso'})`);
   }
   const text = last?.text ?? '';
   for (const re of e.reply_matches ?? [])

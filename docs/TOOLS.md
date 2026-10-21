@@ -234,6 +234,33 @@ in:  { note_id: number }
 out: { note_id; forgotten: true }
 ```
 
+### `set_weekly_schedule` (write)
+```ts
+in:  { days: { weekday: 'dom'|'seg'|'ter'|'qua'|'qui'|'sex'|'sab'; routine_name: string }[] }   // substitui a agenda inteira
+out: { schedule: { weekday; routine }[] }
+```
+
+### `set_plan_override` (write)
+```ts
+in:  { from_date?: string /* padrão: hoje */; until_date: string /* ≤ from + 60 dias */; text: string;
+       changes?: { weekday; routine_name: string | null /* null = folga */ }[] }
+out: { override_id; from; until; week: PlannedDay[] }
+```
+
+### `end_plan_override` (write)
+```ts
+in:  { override_id: number }
+out: { override_id; ended: true }
+```
+
+### `get_week_plan` (read)
+```ts
+in:  { from_date?: string; days?: number /* 1–14, padrão 7 */ }
+out: { days: { local_date; date; weekday; routine: string | null; source: 'schedule'|'override'|'none'; overrides? }[] }
+```
+
+`get_next_targets` aceita `routine_name` opcional: sem ele, usa a rotina planejada para hoje e devolve `planned_today`.
+
 ---
 
 ## Análise

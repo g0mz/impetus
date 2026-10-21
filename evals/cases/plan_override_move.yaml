@@ -1,0 +1,14 @@
+id: plan_override_move
+description: >
+  Mudança só desta semana vira ajuste temporário: a sessão de quinta vai para sexta e a agenda volta ao normal
+  na semana seguinte, sem mexer em metas (Fase 8c).
+now: '2026-10-21T13:00:00Z'
+sql:
+  - "INSERT INTO routines (id, name, name_norm, created_at) VALUES (1,'Upper A','upper a','2026-10-01T00:00:00Z'),(2,'Lower A','lower a','2026-10-01T00:00:00Z')"
+  - "INSERT INTO routine_schedule (weekday, routine_id, updated_at) VALUES (3,1,'2026-10-01T00:00:00Z'),(4,2,'2026-10-01T00:00:00Z')"
+steps:
+  - text: 'essa semana não vou conseguir treinar na quinta, joga o lower A pra sexta'
+expect:
+  schedule_days: 2
+  plan_overrides: 1
+  planned: { '2026-10-22': null, '2026-10-23': 'Lower A', '2026-10-29': 'Lower A', '2026-10-30': null }

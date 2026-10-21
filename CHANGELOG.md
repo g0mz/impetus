@@ -4,6 +4,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 8c — Agenda semanal e ajustes temporários (2026-10-21, D-033)
+
+#### Adicionado
+- Tabelas `routine_schedule` e `plan_overrides` (migration 003) e a função pura `plannedFor` / `plannedWeek`
+  (`domain/training/schedule.ts`): agenda semanal com ajustes por cima; o ajuste mais recente vence.
+- Tools `set_weekly_schedule`, `set_plan_override` (até 60 dias; muda sessões, nunca metas), `end_plan_override`
+  e `get_week_plan`; `get_next_targets` sem `routine_name` usa a rotina planejada de hoje.
+- `get_day_summary.planned`, linha "plano de hoje" no `<today_snapshot>` e bloco `<plan_overrides>` no prompt.
+- `/treino` sem argumento mostra a rotina de hoje (ou avisa que é descanso).
+- Evals: asserções `schedule_days`, `plan_overrides` e `planned`; casos `plan_schedule_define` e
+  `plan_override_move`.
+
 ### Fase 8b — Memória da pessoa (2026-10-21, D-033)
 
 #### Adicionado

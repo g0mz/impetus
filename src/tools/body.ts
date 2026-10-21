@@ -3,6 +3,7 @@ import type { Db } from '../db/index.ts';
 import { getSettingsByPrefix, setSetting } from '../db/repos/settings.ts';
 import { sessionSets } from '../db/repos/training.ts';
 import { formatDayMonth, resolveWhen } from '../time.ts';
+import { describePlanned, plannedDay } from './plan.ts';
 import { defineTool, ok } from './registry.ts';
 
 /** Chaves canônicas de meta (D-017) com limites de sanidade. */
@@ -124,6 +125,7 @@ export function daySummary(db: Db, localDate: string) {
     .prepare('SELECT steps, sleep_minutes, resting_hr, active_kcal FROM health_daily WHERE local_date = ?')
     .get(localDate) as Record<string, number | null> | undefined;
   const round = (n: number) => Math.round(n);
+  const planned = plannedDay(db, localDate);
   return {
     local_date: localDate,
     date: formatDayMonth(localDate),
@@ -159,6 +161,7 @@ export function daySummary(db: Db, localDate: string) {
         }
       : {}),
     ...(health ? { health } : {}),
+    ...(planned ? { planned: describePlanned(planned) } : {}),
   };
 }
 

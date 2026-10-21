@@ -1,0 +1,10 @@
+id: plan_schedule_define
+description: Dias fixos de treino viram a agenda semanal (Fase 8c)
+now: '2026-10-21T13:00:00Z'
+sql:
+  - "INSERT INTO routines (id, name, name_norm, created_at) VALUES (1,'Upper A','upper a','2026-10-01T00:00:00Z'),(2,'Lower A','lower a','2026-10-01T00:00:00Z')"
+steps:
+  - text: 'faço upper A segunda e quinta, lower A terça e sexta'
+expect:
+  schedule_days: 4
+  planned: { '2026-10-26': 'Upper A', '2026-10-27': 'Lower A', '2026-10-28': null, '2026-10-30': 'Lower A' }

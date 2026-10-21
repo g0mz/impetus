@@ -1,6 +1,7 @@
 import { analysisTools } from './analysis.ts';
 import { bodyTools } from './body.ts';
 import { coachTools } from './coach.ts';
+import { planTools } from './plan.ts';
 import { createRegistry, type Registry, type ToolDef } from './registry.ts';
 import { nutritionTools } from './nutrition.ts';
 import { trainingTools } from './training.ts';
@@ -13,5 +14,6 @@ export function buildRegistry(): Registry {
     ...bodyTools,
     ...analysisTools,
     ...coachTools,
+    ...planTools,
   ] as unknown as ToolDef[]);
 }

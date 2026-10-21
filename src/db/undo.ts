@@ -2,6 +2,7 @@ import type { Db } from './index.ts';
 import { markUndone, pendingAuditForTurn, type AuditEntry } from './repos/audit.ts';
 import { syncExerciseFts } from './repos/exercises.ts';
 import { refreshItemMacros, refreshMealTotals } from './repos/nutrition.ts';
+import { replaceSchedule, type ScheduleRow } from './repos/plan.ts';
 import { setSetting } from './repos/settings.ts';
 import { nowUtcIso } from '../time.ts';
 
@@ -102,6 +103,12 @@ const HANDLERS: Record<string, UndoHandler> = {
   food: restoreOrSoftDelete('foods'),
   body_metric: softDelete('body_metrics'),
   coach_note: restoreOrSoftDelete('coach_notes'),
+  plan_override: softDelete('plan_overrides'),
+  routine_schedule: (db, e, now) => {
+    const before = parse<ScheduleRow[]>(e.before_json);
+    if (!before) throw new Error('undo de agenda sem estado anterior');
+    replaceSchedule(db, before, now);
+  },
   food_portion: (db, e) => {
     db.prepare('DELETE FROM food_portions WHERE id = ?').run(e.entity_id);
   },

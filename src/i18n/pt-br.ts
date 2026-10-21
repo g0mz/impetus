@@ -2,7 +2,7 @@
 export const t = {
   help: [
     '🤖 *Impetus* — comandos:',
-    '• /treino <rotina> — última sessão e alvos de hoje',
+    '• /treino [rotina] — última sessão e alvos (sem rotina: a planejada para hoje)',
     '• /ultimo <exercício> — últimas 3 sessões do exercício',
     '• /metas — metas atuais · /meta <chave> <valor> — define (ou "remover")',
     '  chaves: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo',
@@ -34,6 +34,7 @@ export const t = {
   goalUnknownKey: (key: string) =>
     `Meta "${key}" desconhecida. Use: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo.`,
   undoNothing: 'Nada para desfazer.',
+  restDay: '😴 Hoje é dia de descanso no seu plano. Para ver uma rotina: /treino <rotina>',
   notesEmpty: '🧠 Ainda não guardei nada sobre você além dos seus registros.',
   notesHint: 'Para eu esquecer algo: /esquecer <id>. Ou só me diga.',
   noteForgotten: (id: number) => `🗑️ Nota ${id} esquecida.`,

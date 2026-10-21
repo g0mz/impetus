@@ -1,5 +1,6 @@
 import type { Db } from '../db/index.ts';
 import { activeNotes } from '../db/repos/coach-notes.ts';
+import { activeOverrides } from '../db/repos/plan.ts';
 import { lastChatSession, sessionSets } from '../db/repos/training.ts';
 import { notesForContext } from '../domain/coach/notes.ts';
 import { setsCompact } from '../domain/training/format.ts';
@@ -41,6 +42,7 @@ function snapshot(db: Db, localDate: string): string {
       ? `treino: ${d.workout.routine ?? 'registrado'} (${d.workout.work_sets} séries)`
       : 'treino: nenhum registrado',
   ];
+  if (d.planned) parts.push(`plano de hoje: ${d.planned.routine ?? 'descanso'}`);
   if (d.cardio?.length) parts.push(`cardio: ${d.cardio.map((c) => c.activity).join(', ')}`);
   if (d.health?.steps != null)
     parts.push(`passos ${fmtInt(d.health.steps)}${g.steps !== undefined ? `/${fmtInt(g.steps)}` : ''}`);
@@ -86,6 +88,8 @@ const ENTITY_PT: Record<string, [string, string]> = {
   food_portion: ['porção', 'porções'],
   body_metric: ['medida corporal', 'medidas corporais'],
   coach_note: ['nota do coach', 'notas do coach'],
+  routine_schedule: ['agenda semanal', 'agendas semanais'],
+  plan_override: ['ajuste do plano', 'ajustes do plano'],
 };
 
 /** "10 séries, 1 sessão de treino" a partir das contagens por entidade. */
@@ -202,6 +206,14 @@ export function buildTurnPrompt(db: Db, input: TurnContextInput): string {
   if (open) blocks.push(`<open_session>${open}</open_session>`);
   const notes = notesForContext(activeNotes(db), localDate);
   if (notes.length) blocks.push(`<coach_notes>\n${notes.join('\n')}\n</coach_notes>`);
+  const ovs = activeOverrides(db, localDate);
+  if (ovs.length) {
+    const lines = ovs.map(
+      (o) =>
+        `- [${o.id}] ${formatDayMonth(o.from_local_date)}–${formatDayMonth(o.until_local_date)}: ${o.text}`,
+    );
+    blocks.push(`<plan_overrides>\n${lines.join('\n')}\n</plan_overrides>`);
+  }
   const recent = recentTurns(db, input.recentTurns, input.currentTurnId);
   if (recent.length) blocks.push(`<recent_turns>\n${recent.join('\n')}\n</recent_turns>`);
   blocks.push(...nutritionContext(db, now, localDate));

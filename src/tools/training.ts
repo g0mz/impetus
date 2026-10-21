@@ -29,6 +29,7 @@ import { detectPrs, vsLast } from '../domain/training/prs.ts';
 import { EQUIPMENT, LOAD_KINDS, isSessionOpen } from '../domain/training/types.ts';
 import { normalize } from '../text/normalize.ts';
 import { formatDayMonth, resolveWhen } from '../time.ts';
+import { describePlanned, plannedToday } from './plan.ts';
 import { defineTool, err, ok, type ToolContext } from './registry.ts';
 
 const when = z
@@ -464,12 +465,23 @@ export const getNextTargetsTool = defineTool({
   scope: 'read',
   description:
     'Alvos para a próxima sessão de uma rotina pela progressão dupla: increase (subir carga), hold (+1 rep na série mais fraca), ' +
-    'deload (−10%) ou first_time. Use para "o que fiz no último upper B" e "cargas de hoje".',
-  input: z.object({ routine_name: z.string().trim().min(1) }),
+    'deload (−10%) ou first_time. Use para "o que fiz no último upper B" e "cargas de hoje". Sem routine_name, usa a ' +
+    'rotina planejada para hoje (agenda semanal + ajustes).',
+  input: z.object({ routine_name: z.string().trim().min(1).optional() }),
   handler: (ctx, { routine_name }) => {
-    const res = computeTargets(ctx, routine_name);
-    if (!res) return err('NOT_FOUND', `rotina "${routine_name}" não existe`, routineNames(ctx));
-    return ok({ ...res, ...(res.last_date ? { last_date_br: formatDayMonth(res.last_date) } : {}) });
+    const planned = plannedToday(ctx);
+    const name = routine_name ?? planned?.routine?.name;
+    if (!name)
+      return planned
+        ? ok({ planned_today: describePlanned(planned), targets: [] }, ['hoje não tem treino planejado (descanso)'])
+        : err('NOT_FOUND', 'sem agenda semanal: passe routine_name', routineNames(ctx));
+    const res = computeTargets(ctx, name);
+    if (!res) return err('NOT_FOUND', `rotina "${name}" não existe`, routineNames(ctx));
+    return ok({
+      ...res,
+      ...(res.last_date ? { last_date_br: formatDayMonth(res.last_date) } : {}),
+      ...(planned ? { planned_today: describePlanned(planned) } : {}),
+    });
   },
 });
 
