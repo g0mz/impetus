@@ -1,0 +1,49 @@
+# RASCUNHO: aguardando revisão do dono (Rosca Scott, Stiff, leg press pés altos). Não importar antes disso.
+# Treino do dono (npm run routines:import). `as` = como ele escreve; `exercise` = name_pt no catálogo.
+# Sem carga: o primeiro "fiz <rotina>" usa a última carga registrada ou pergunta. Descanso só como referência.
+routines:
+  - name: Upper A # segunda
+    exercises:
+      - { as: Supino inclinado na máquina, exercise: Supino inclinado articulado, sets: 3, reps: [6, 10] } # 2–3 min
+      - { as: Puxada alta pronada, exercise: Puxada frontal aberta, sets: 3, reps: [8, 12] } # 2–3 min
+      - { as: Remada banco T com apoio no peito, exercise: Lying T-Bar Row, sets: 3, reps: [8, 12] } # 2 min
+      - { as: Peck deck, exercise: Voador (crucifixo na máquina), sets: 3, reps: [10, 15] } # 90 s
+      - as: Elevação lateral na máquina
+        exercise: Elevação lateral na máquina
+        sets: 4
+        reps: [12, 20] # 90 s
+        create: { equipment: machine, load_kind: stack, primary_muscles: [side_delts] }
+      - { as: Tríceps francês na polia, exercise: Tríceps francês na polia, sets: 3, reps: [8, 12] } # 90 s
+      - { as: Rosca Scott, exercise: Rosca Scott com barra, sets: 3, reps: [8, 12] } # 90 s
+      - { as: Panturrilha sentada, exercise: Panturrilha sentado, sets: 3, reps: [12, 20] } # 60–90 s
+
+  - name: Lower A # terça
+    exercises:
+      - { as: Hack squat, exercise: Agachamento hack, sets: 3, reps: [6, 10] } # 3 min
+      - { as: Leg press 45°, exercise: Leg press 45°, sets: 3, reps: [10, 15] } # 2 min
+      - { as: Flexora sentada, exercise: Cadeira flexora, sets: 4, reps: [8, 12] } # 90 s
+      - { as: Cadeira extensora, exercise: Cadeira extensora, sets: 3, reps: [10, 15] } # 90 s
+      - { as: Panturrilha em pé na máquina, exercise: Panturrilha em pé, sets: 4, reps: [8, 15] } # 90 s
+      - { as: Abdominal na polia alta, exercise: Abdominal na polia, sets: 3, reps: [10, 15] } # 60–90 s
+
+  - name: Upper B # quarta
+    exercises:
+      - { as: Puxada alta com pegada neutra, exercise: Puxada com triângulo, sets: 3, reps: [8, 12] } # 2–3 min
+      - { as: Supino reto na máquina, exercise: Supino reto na máquina, sets: 3, reps: [6, 10] } # 2–3 min
+      - { as: Remada baixa no cabo pegada neutra, exercise: Remada baixa, sets: 3, reps: [8, 12] } # 2 min
+      - { as: Supino inclinado com halteres, exercise: Supino inclinado com halteres, sets: 3, reps: [8, 12] } # 2 min
+      - { as: Elevação lateral na máquina, exercise: Elevação lateral na máquina, sets: 4, reps: [12, 20] } # 90 s
+      - { as: Peck deck invertido, exercise: Voador invertido, sets: 3, reps: [12, 20] } # 90 s
+      - { as: Rosca inclinada com halteres, exercise: Rosca inclinada com halteres, sets: 3, reps: [8, 12] } # 90 s
+      - { as: Tríceps corda, exercise: Tríceps corda, sets: 3, reps: [10, 15] } # 90 s
+
+  - name: Lower B # sexta
+    exercises:
+      - { as: Stiff, exercise: Stiff com barra, sets: 3, reps: [6, 10] } # 3 min
+      - { as: Leg press 45° pés altos, exercise: Leg press 45°, sets: 3, reps: [8, 12] } # 2–3 min
+      - { as: Flexora sentada, exercise: Cadeira flexora, sets: 3, reps: [8, 12] } # 90 s
+      - { as: Cadeira extensora, exercise: Cadeira extensora, sets: 2, reps: [12, 15] } # 90 s
+      - { as: Panturrilha em pé na máquina, exercise: Panturrilha em pé, sets: 4, reps: [8, 15] } # 90 s
+      - { as: Elevação lateral na máquina, exercise: Elevação lateral na máquina, sets: 4, reps: [12, 20] } # 90 s
+      - { as: Peck deck invertido, exercise: Voador invertido, sets: 2, reps: [12, 20] } # 90 s
+      - { as: Abdominal reverso no banco, exercise: Abdominal infra, sets: 3, reps: [10, 20] } # 60–90 s
