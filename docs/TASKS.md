@@ -12,6 +12,8 @@ impetus/
 ├─ runtime/
 │  ├─ prompts/system.md       (system prompt do coach)
 │  ├─ prompts/report.md       (instruções extras para turnos de relatório)
+│  ├─ prompts/checkin.md      (check-in diário; Fase 8d)
+│  ├─ evidence/*.md           (base de evidências lida sob demanda; Fase 8e)
 │  ├─ .env.example
 │  └─ deploy/impetus.service
 ├─ seeds/
@@ -152,3 +154,57 @@ impetus/
 - [x] Transcrição de áudio (Whisper local `whisper.cpp` em ARM, modelo pequeno) para registrar treino por voz. *(D-030)*
 - [ ] Dashboard web somente leitura, servido via Tailscale.
 - [ ] Importação do CSV de outro app de treino (Strong ou Hevy) para histórico antigo.
+
+## Fase 8 — Coach: tom, memória e iniciativa
+
+Inspirada no my-fitness-claw (D-033). O Impetus continua dono dos dados (banco, tools, contas no código); esta fase dá ao coach tom, memória da pessoa e iniciativa. Subfases na ordem abaixo, cada uma fechando com `npm run check` e os evals afetados. DATA_MODEL, TOOLS e ARCHITECTURE são atualizados junto com cada subfase que mexe neles.
+
+### 8a — Tom do coach (prompt + gateway)
+
+- [ ] Seção `# Tom` em `runtime/prompts/system.md`: número sempre com o que significa contra o próprio histórico; a pessoa antes do dado ("saí do plantão" → uma palavra sobre o plantão antes do número); deslize na dieta é normal, sem plano de compensação; pesagem isolada é ruído, aponte a tendência devolvida pela tool; problema pessoal (sono, estresse, motivação) → uma pergunta antes de aconselhar; elogio raro e específico; uma recomendação, não um menu; sem oferta de ajuda no fim.
+- [ ] ~12 trocas de exemplo em PT-BR (estilo, não frases para copiar). Os formatos de registro (✅, 🍽️, ✏️) continuam valendo: o tom entra numa linha a mais, nunca no lugar do formato.
+- [ ] Resposta só com reação: texto final igual a um emoji da allowlist (👍, 💪) vira reação à mensagem do usuário. `Channel.react?(m, emoji)`; o terminal imprime `[reação 👍]`; canal sem `react` envia o emoji como texto.
+- [ ] Asserções de texto no `scripts/eval.ts` (`reply_matches` / `reply_not_matches`), se ainda não existirem.
+- [ ] Evals: `coach_slip` (rodízio de pizza → registra, sem "compensar"), `coach_weight_noise` (+0,8 kg → fala da tendência), `coach_life_first` (peso + "saí do plantão" → registra e pergunta do plantão), `coach_thanks` ("valeu" → reação).
+
+### 8b — Memória da pessoa
+
+- [ ] Tabela `coach_notes`: `id`, `kind` (`preference` | `observation` | `life_event`), `text` (≤ 200 caracteres), `due_local_date` (só `life_event`), `created_at`, `resolved_at`, `turn_id`, `deleted_at`.
+- [ ] Tools `remember_note` (`kind`, `text`, `due_date?`, `replaces_id?` para preferência que contradiz outra) e `resolve_note` (`id`, `rewrite?`), via registry com `audit_log`.
+- [ ] `ContextBuilder`: bloco `<coach_notes>` com ids: todas as preferências, observações mais recentes e `life_event` vencido ou vencendo em ≤ 2 dias. Orçamento ~1.500 caracteres dentro do de §5.2; corta primeiro observações antigas (função pura, com teste).
+- [ ] Prompt: o que vira cada tipo; preferência pedida vence observação; dor ou lesão relatada vira `life_event` com data para perguntar de novo; `life_event` vencido é perguntado uma vez e depois resolvido.
+- [ ] Comandos `/notas` (lista com ids) e `/esquecer <id>` (soft delete), sem LLM.
+- [ ] Limpeza no job semanal, em código: `life_event` resolvido há > 30 dias e observação sem uso há 90 dias → soft delete.
+- [ ] Evals multi-turno: `coach_memory_preference` ("para de usar emoji" → turno seguinte sem emoji) e `coach_memory_life` (viagem até sexta → turno de sábado pergunta da viagem).
+
+### 8c — Agenda semanal e ajustes temporários
+
+Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
+
+- [ ] Tabela `routine_schedule` (`weekday` 0–6, `routine_id`) e tool `set_weekly_schedule` ("upper A seg e qui, lower A ter e sex").
+- [ ] Tabela `plan_overrides`: `id`, `from_local_date`, `until_local_date`, `text`, `weekday_changes` (JSON opcional; `null` = folga), `turn_id`, `deleted_at`. Muda sessões, **nunca metas**.
+- [ ] Tools `set_plan_override` / `end_plan_override`. `domain/training/schedule.ts` (puro, com testes) resolve a sessão planejada de um dia com overrides; `get_next_targets` e `get_day_summary` devolvem `planned_today`.
+- [ ] Contexto: `<plan_overrides>` ativos, curto. Override vencido some pelo filtro de data, sem job.
+
+### 8d — Check-in diário
+
+- [ ] Job `checkin` (`CHECKIN_CRON`, padrão 07:30; `CHECKIN_ENABLED`; respeita `/pausar`), dedupe por dia em `job_runs`.
+- [ ] `reports/checkin.ts` monta um brief determinístico: sessão planejada (com override), alvos, sono da noite, `life_event` vencendo hoje, dado faltando de ontem. Sem sessão, sem sono ruim e sem nota vencendo → **não envia nada** e não chama o cérebro.
+- [ ] Turno `mode: 'checkin'`, `toolScope: 'read'`, `runtime/prompts/checkin.md`: 1 a 3 linhas; sono < 6 h → manter cargas e cortar a última série se pesar.
+- [ ] Fallback sem LLM ("Hoje: <rotina> · <exercício> <alvo>…") com snapshot test.
+- [ ] Resolver junto a pendência do relatório de domingo 20:00 (ver DECISIONS, Pendentes).
+
+### 8e — Base de evidências
+
+- [ ] `runtime/evidence/*.md` em PT-BR: volume, intensidade e esforço, progressão, frequência, descanso, deload, seleção de exercícios, proteína, balanço energético, carboidrato e gordura, timing, suplementos, adesão e `mitos.md`. Formato: conclusão, força da evidência (forte | moderada | fraca), padrão, ressalvas, fontes com DOI.
+- [ ] Regra 10: cada DOI conferido no Crossref ou OpenAlex e cada número no abstract ou texto completo; afirmação sem fonte conferida não entra. **Parar para revisão do dono antes de commitar.**
+- [ ] O cérebro lê sob demanda com `Read` (`--add-dir runtime/evidence`; atualizar ARCHITECTURE §5.1) e um índice de uma linha por arquivo no `system.md`. A evidência fica nos bastidores: nada de "estudos mostram", salvo se perguntarem por quê.
+- [ ] Evals: `coach_myth_breakfast`, `coach_creatine`, `coach_rest_interval` (resposta curta, sem citar autor, coerente com o arquivo).
+
+### 8f — Simulação por personas (sob demanda)
+
+- [ ] `now` injetável no turn-runner e no `ContextBuilder` (relógio simulado).
+- [ ] `evals/personas/*.md`: semana típica do dono; semana com viagem e dor; sumiço de 5 dias e volta.
+- [ ] `scripts/simulate.ts`: um modelo faz a persona pelo canal terminal, com banco temporário e relógio avançando entre momentos; no fim, asserções no banco e rubrica de tom (critérios da 8a) avaliada por LLM-juiz. Consome cota: só quando pedido.
+
+**Aceite:** "pesei 74,8" um dia depois de 74,0 responde com a tendência, sem alarme; "viajo até sexta, só academia de hotel" cria um override e o check-in de quarta reflete isso, e o de sábado volta ao normal; em dia de descanso sem novidade o check-in não envia nada; "para de usar emoji" vale nos turnos seguintes e aparece em `/notas`; "café da manhã é obrigatório?" responde em até 2 linhas, coerente com `mitos.md`; evals 8a–8e verdes.

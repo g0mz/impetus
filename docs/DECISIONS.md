@@ -246,6 +246,19 @@ dia, do início do dia até o instante do sync** (`03:00Z → agora`), e o fim m
 - Os demais tipos (FC, HRV, SpO2, sono) seguem com `type|start|end`.
 - O botão "Test Webhook" manda dados fictícios com `test: true`: o ingest responde ok e não grava nada.
 
+### D-033 — Camada de coach inspirada no my-fitness-claw (2026-10-21, Fase 8, aprovada)
+O my-fitness-claw (Clawdino) guarda tudo em markdown e CSV: dados fracos, mas um coach forte. O Impetus tem o
+inverso. A Fase 8 adota a camada de coach e mantém a de dados.
+- **Adotado:** tom com exemplos e regras (número com significado, pessoa antes do dado, deslize sem compensação);
+  resposta só com reação; memória da pessoa (preferências, observações, eventos datados); ajustes temporários do
+  plano que mudam sessões e nunca metas; check-in diário que fica calado quando não há o que dizer; base de
+  evidências lida sob demanda; simulação por personas.
+- **Adaptado:** a memória vira as tabelas `coach_notes` e `plan_overrides`, escritas por tools (regra 2), em vez de
+  arquivos editados pelo modelo. O check-in decide em código se envia; o LLM só redige. As evidências são reescritas
+  em PT-BR com fontes conferidas (regra 10), não copiadas.
+- **Recusado:** markdown e CSV como banco; níveis pupil/grinder/maxxer (com um usuário, o nível de detalhe é uma
+  preferência em `coach_notes`); plano em PDF; instalação como plugin; Telegram sem BotFather.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

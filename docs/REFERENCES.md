@@ -19,6 +19,7 @@ Reverifique as fontes marcadas com ⚠️ antes de implementar: mudam com frequ�
 - Baileys: https://github.com/WhiskeySockets/Baileys
 
 ## Projetos de referência
+- my-fitness-claw / Clawdino (plugin Claude Code + Telegram; memória em markdown, base de evidências, personas; D-033): https://github.com/pablo-aa/my-fitness-claw
 - ai-fitness-coach (Claude Code + WhatsApp + SQLite; CLI de domínio): https://github.com/Rich627/ai-fitness-coach
 - Tracker de progressão de carga com OpenClaw (log por Telegram ou WhatsApp, regra de progressão): https://www.hostinger.com/ph/tutorials/build-progressive-overload-tracker-openclaw/
 
