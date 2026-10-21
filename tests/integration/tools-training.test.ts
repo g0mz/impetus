@@ -261,6 +261,26 @@ describe('rotina com cargas salvas (D-034)', () => {
     expect(savedOf(db).map((x) => (x as { weight_kg: number | null }).weight_kg)).toEqual([50, 20]);
   });
 
+  it('sem carga salva usa a última carga registrada do exercício e passa a salvá-la', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn } = makeCaller(db);
+    data(
+      call('define_routine', {
+        name: 'Upper B',
+        exercises: [{ exercise_id: ex.remada, target_sets: 3, rep_min: 8, rep_max: 12 }],
+      }),
+    );
+    data(
+      call('log_workout', {
+        entries: [{ exercise_id: ex.remada, sets: [...sets(1, 40, 12), ...sets(2, 55, 9)] }],
+      }),
+    );
+    newTurn('2026-10-15T21:00:00Z');
+    const r = data(call<RoutineOut>('log_routine', { routine_name: 'upper b' }));
+    expect(r.summary[0]?.sets_compact).toBe('55kg 3×8');
+    expect(r.loads_updated).toEqual([{ exercise: 'Remada curvada com barra', to: '55kg' }]);
+  });
+
   it('rotina inexistente → NOT_FOUND com as rotinas existentes', () => {
     const { db, ex } = makeDb();
     const { call } = makeCaller(db);

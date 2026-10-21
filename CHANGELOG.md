@@ -16,6 +16,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `set_routine_loads`: muda o salvo sem registrar treino.
 - `/treino <rotina>` e `get_next_targets` mostram a carga salva ao lado do último treino e do alvo.
 - Eval `workout_routine_loads` e asserção `routine_loads` no `scripts/eval.ts`.
+- `npm run routines:import [arquivo]`: grava rotinas de um YAML (padrão `seeds/routines.yaml`) pelas mesmas tools do
+  coach, num turno de comando (auditado, `/desfazer` volta). Cria exercício ausente quando o arquivo traz `create` e liga
+  o nome usado pelo dono como apelido.
+- `log_routine` sem carga salva usa a última carga registrada do exercício (e passa a salvá-la); exercício de peso
+  corporal (`equipment: bodyweight`, ex.: abdominal) não exige carga.
 
 #### Decidido
 - D-034: a maior carga de trabalho vira a carga salva quando muda; reps e séries só mudam por pedido explícito.

@@ -10,9 +10,11 @@ const p = (o: Partial<Parameters<typeof plannedSets>[0]> = {}) => ({
   ...o,
 });
 
+const BARBELL = { load_kind: 'total', equipment: 'barbell' } as const;
+
 describe('treino salvo da rotina (D-034)', () => {
   it('monta as séries com carga e reps salvas', () => {
-    expect(plannedSets(p(), 'per_hand')).toEqual({
+    expect(plannedSets(p(), { load_kind: 'per_hand', equipment: 'dumbbell' })).toEqual({
       ok: true,
       sets: [
         { weight_kg: 30, reps: 10, set_type: 'work' },
@@ -23,7 +25,7 @@ describe('treino salvo da rotina (D-034)', () => {
   });
 
   it('ajustes do dia substituem só o campo citado', () => {
-    const r = plannedSets(p(), 'total', { weight_kg: 32, sets: 2 });
+    const r = plannedSets(p(), BARBELL, { weight_kg: 32, sets: 2 });
     expect(r).toEqual({
       ok: true,
       sets: [
@@ -40,11 +42,18 @@ describe('treino salvo da rotina (D-034)', () => {
   });
 
   it('diz o que falta; carga vazia só vale para peso corporal', () => {
-    expect(plannedSets(p({ weight_kg: null, target_sets: null }), 'total')).toEqual({
+    expect(plannedSets(p({ weight_kg: null, target_sets: null }), BARBELL)).toEqual({
       ok: false,
       missing: ['sets', 'weight'],
     });
-    const bw = plannedSets(p({ weight_kg: null, target_sets: 2 }), 'bodyweight_plus');
+    const bw = plannedSets(p({ weight_kg: null, target_sets: 2 }), {
+      load_kind: 'bodyweight_plus',
+      equipment: 'bodyweight',
+    });
+    // abdominal: load_kind "total", mas de peso corporal
+    expect(plannedSets(p({ weight_kg: null }), { load_kind: 'total', equipment: 'bodyweight' }).ok).toBe(
+      true,
+    );
     expect(bw).toEqual({
       ok: true,
       sets: [

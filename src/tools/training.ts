@@ -29,7 +29,13 @@ import { bestE1rm } from '../domain/training/load.ts';
 import { MUSCLES } from '../domain/training/muscles.ts';
 import { nextTarget } from '../domain/training/progression.ts';
 import { detectPrs, vsLast } from '../domain/training/prs.ts';
-import { changedLoad, plannedSets, savedReps, type SavedPrescription } from '../domain/training/routine-plan.ts';
+import {
+  changedLoad,
+  plannedSets,
+  savedReps,
+  topWorkLoad,
+  type SavedPrescription,
+} from '../domain/training/routine-plan.ts';
 import { EQUIPMENT, LOAD_KINDS, isSessionOpen } from '../domain/training/types.ts';
 import { normalize } from '../text/normalize.ts';
 import { formatDayMonth, resolveWhen } from '../time.ts';
@@ -438,7 +444,7 @@ export const logRoutineTool = defineTool({
     'Em `changes` vai só o que foi diferente: "supino subi pra 32" → { exercise_id, weight_kg: 32 }; "remada fiz 10 reps" → ' +
     '{ exercise_id, reps: 10 }; "lateral só 2 séries" → { exercise_id, n_sets: 2 }; séries variadas ("30kg 10/10/9") → ' +
     '{ exercise_id, sets: [...] } como no log_workout; "pulei a lateral" → { exercise_id, skip: true }. Exercício fora da rotina ' +
-    'em `changes` (com sets) entra só neste treino. Quando a carga muda, a nova carga fica salva na rotina (loads_updated); ' +
+    'em `changes` (com sets) entra só neste treino. Sem carga salva, usa a última registrada do exercício. Quando a carga muda, a nova carga fica salva na rotina (loads_updated); ' +
     'se o usuário disser que foi só hoje, passe keep_loads: true.',
   input: z.object({
     routine_name: z.string().trim().min(1),
@@ -484,7 +490,12 @@ export const logRoutineTool = defineTool({
         entries.push({ exercise_id: item.exercise_id, sets: c.sets });
         continue;
       }
-      const res = plannedSets(item, ex.load_kind, {
+      // sem carga salva: a última carga registrada do exercício (a 1ª vez não precisa ditar tudo de novo)
+      const lastLoad =
+        item.weight_kg === null && c?.weight_kg === undefined
+          ? topWorkLoad(exerciseSessions(ctx.db, item.exercise_id, 1)[0]?.sets ?? [])
+          : null;
+      const res = plannedSets(lastLoad === null ? item : { ...item, weight_kg: lastLoad }, ex, {
         ...(c?.weight_kg !== undefined ? { weight_kg: c.weight_kg } : {}),
         ...(c?.reps !== undefined ? { reps: c.reps } : {}),
         ...(c?.n_sets !== undefined ? { sets: c.n_sets } : {}),
