@@ -230,35 +230,54 @@ describe('rotina com cargas salvas (D-034)', () => {
     expect((savedOf(db)[0] as { weight_kg: number }).weight_kg).toBe(30);
   });
 
-  it('falta carga ou séries salvas → VALIDATION listando o que perguntar, nada gravado', () => {
+  it('sem nenhuma carga conhecida: anota séries e reps sem carga e avisa; sem PR nem vs_last falsos depois', () => {
     const { db, ex } = makeDb();
-    const { call } = makeCaller(db);
+    const { call, newTurn } = makeCaller(db);
     data(
       call('define_routine', {
         name: 'Lower B',
         exercises: [
           { exercise_id: ex.remada, target_sets: 3, rep_min: 8, rep_max: 10 },
-          { exercise_id: ex.supInc },
+          { exercise_id: ex.barra, target_sets: 2, rep_min: 6, rep_max: 8 },
         ],
       }),
     );
-    const r = call('log_routine', { routine_name: 'lower b' });
-    expect(r).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
-    expect(!r.ok && r.error.message).toContain('Remada curvada com barra (carga)');
-    expect(!r.ok && r.error.message).toContain('Supino inclinado com halteres (séries, reps, carga)');
-    expect(db.prepare('SELECT count(*) FROM sets').pluck().get()).toBe(0);
+    const r = call<RoutineOut & { without_load?: string[] }>('log_routine', { routine_name: 'lower b' });
+    expect(data(r).without_load).toEqual(['Remada curvada com barra']); // barra fixa é peso corporal
+    expect(r.ok && r.hints?.join(' ')).toMatch(/sem carga registrada: Remada curvada com barra/);
+    expect(data(r).summary.map((x) => x.sets_compact)).toEqual(['3×8', '2×6']);
+    expect(data(r).session_totals.work_sets).toBe(5);
+    expect(data(r).loads_updated).toBeUndefined();
 
-    const fixed = data(
+    // depois ele passa a carga: nada de "+50kg" nem 🏆 contra o treino sem carga
+    newTurn('2026-10-16T21:00:00Z');
+    const next = data(
       call<RoutineOut>('log_routine', {
         routine_name: 'lower b',
-        changes: [
-          { exercise_id: ex.remada, weight_kg: 50 },
-          { exercise_id: ex.supInc, sets: sets(2, 20, 12) },
-        ],
+        changes: [{ exercise_id: ex.remada, weight_kg: 50 }],
       }),
     );
-    expect(fixed.summary.map((x) => x.sets_compact)).toEqual(['50kg 3×8', '20kg 2×12']);
-    expect(savedOf(db).map((x) => (x as { weight_kg: number | null }).weight_kg)).toEqual([50, 20]);
+    expect(next.summary[0]).toEqual({
+      exercise: 'Remada curvada com barra',
+      sets_compact: '50kg 3×8',
+      prs: [],
+    });
+    expect(next.loads_updated).toEqual([{ exercise: 'Remada curvada com barra', to: '50kg' }]);
+
+    // e o treino seguinte compara com o de 50 kg, pulando o sem carga
+    newTurn('2026-10-18T21:00:00Z');
+    const third = data(call<RoutineOut>('log_routine', { routine_name: 'lower b' }));
+    expect(third.summary[0]).toMatchObject({ sets_compact: '50kg 3×8', vs_last: '=' });
+  });
+
+  it('falta séries ou reps salvas → VALIDATION listando o que perguntar, nada gravado', () => {
+    const { db, ex } = makeDb();
+    const { call } = makeCaller(db);
+    data(call('define_routine', { name: 'Lower B', exercises: [{ exercise_id: ex.supInc }] }));
+    const r = call('log_routine', { routine_name: 'lower b' });
+    expect(r).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+    expect(!r.ok && r.error.message).toContain('Supino inclinado com halteres (séries, reps');
+    expect(db.prepare('SELECT count(*) FROM sets').pluck().get()).toBe(0);
   });
 
   it('sem carga salva usa a última carga registrada do exercício e passa a salvá-la', () => {

@@ -55,13 +55,15 @@ out: { routine_id; name; exercises: { position; exercise_id; name_pt; target_set
 "Fiz upper A": registra a rotina inteira com as cargas, séries e reps salvas (reps salvas, senão `rep_min`). Em `changes`
 vai só o que foi diferente. Depois de gravar (mesma lógica de sessão do `log_workout`), a maior carga de trabalho de cada
 exercício da rotina vira a carga salva quando difere dela, salvo `keep_loads`. Exercício fora da rotina entra só no treino.
-Faltou carga (exceto peso corporal), séries ou reps salvas → `VALIDATION` com a lista do que perguntar, nada gravado.
+Sem carga salva, usa a carga da sessão mais recente do exercício que teve carga. Sem nenhuma, anota séries e reps sem
+carga e devolve `without_load` (o coach avisa no início da resposta); essas séries não entram em `vs_last` nem em PRs.
+Faltou séries ou reps → `VALIDATION` com a lista do que perguntar, nada gravado.
 ```ts
 in: {
   routine_name: string; performed_at?: string; new_session?: boolean; keep_loads?: boolean; notes?: string;
   changes?: { exercise_id; weight_kg?; reps?; n_sets?; sets?: Set[] /* como log_workout */; skip?: boolean }[];
 }
-out: log_workout.out & { loads_updated?: { exercise; from?: string; to: string }[]; skipped?: string[] }
+out: log_workout.out & { loads_updated?: { exercise; from?: string; to: string }[]; skipped?: string[]; without_load?: string[] }
 ```
 
 ### `set_routine_loads` (write) — D-034

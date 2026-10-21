@@ -29,12 +29,12 @@ describe('dashboard HTTP', () => {
   it('nenhuma rota escreve no banco', async () => {
     const { db, app } = appWithData();
     const audit = () => db.prepare('SELECT COALESCE(max(id),0) FROM audit_log').pluck().get();
-    const settings = () =>
-      db.prepare('SELECT count(*) || json_group_array(key) FROM settings').pluck().get();
+    const settings = () => db.prepare('SELECT count(*) || json_group_array(key) FROM settings').pluck().get();
     const auditBefore = audit();
     const settingsBefore = settings();
 
-    for (const path of ROUTES) for (const p of ['7d', '30d', '90d', 'ano']) await app.request(`${path}?p=${p}`);
+    for (const path of ROUTES)
+      for (const p of ['7d', '30d', '90d', 'ano']) await app.request(`${path}?p=${p}`);
 
     expect(audit()).toBe(auditBefore);
     expect(settings()).toBe(settingsBefore);

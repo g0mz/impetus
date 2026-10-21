@@ -267,6 +267,10 @@ Pedido do dono: deixar o treino predefinido e só dizer "estou fazendo upper A",
   dupla; mudar o salvo é pedido explícito (`set_routine_loads`). "Só hoje" → `keep_loads: true`.
 - A carga salva é o que o usuário faz, não o alvo da progressão: `get_next_targets` e `/treino` mostram as duas.
 - Tudo entra no `/desfazer` (o `log_routine` audita a rotina com o snapshot anterior).
+- **Sem carga conhecida** (nem salva nem em treino anterior): a pedido do dono, o treino é anotado mesmo assim, com séries
+  e reps sem carga, e o coach avisa no início da resposta. Preferimos séries sem carga a uma sessão vazia porque dias de
+  treino e séries por músculo vêm das séries. Para não gerar "+50kg" ou 🏆 falsos depois, num exercício que leva carga
+  as séries sem carga ficam fora de `vs_last` e de PRs, e a carga de referência vem da última sessão **com** carga.
 
 ## Pendentes (decidir na fase indicada)
 

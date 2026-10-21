@@ -25,12 +25,13 @@ import {
   type StoredSet,
 } from '../db/repos/training.ts';
 import { fmtKg, setsCompact } from '../domain/training/format.ts';
-import { bestE1rm } from '../domain/training/load.ts';
+import { bestE1rm, type SetLike } from '../domain/training/load.ts';
 import { MUSCLES } from '../domain/training/muscles.ts';
 import { nextTarget } from '../domain/training/progression.ts';
 import { detectPrs, vsLast } from '../domain/training/prs.ts';
 import {
   changedLoad,
+  isWeightOptional,
   plannedSets,
   savedReps,
   topWorkLoad,
@@ -405,13 +406,20 @@ function writeWorkout(ctx: ToolContext, input: WorkoutInput): Envelope<WorkoutOu
   const summary = touched.map((exId) => {
     const ex = getExercise(ctx.db, exId)!;
     const current = all.filter((s) => s.exercise_id === exId);
-    const last = exerciseSessions(ctx.db, exId, 1, sessionId)[0];
+    // séries anotadas sem carga num exercício com carga (D-034) não entram em vs_last nem em PRs
+    const comparable = (xs: SetLike[]) => isWeightOptional(ex) || xs.some((x) => x.weight_kg !== null);
+    const last = comparable(current)
+      ? exerciseSessions(ctx.db, exId, 6, sessionId).find((x) => comparable(x.sets))
+      : undefined;
     const vs = last ? vsLast(last.sets, current) : undefined;
+    const history = exerciseHistory(ctx.db, exId, sessionId).filter(
+      (x) => isWeightOptional(ex) || x.weight_kg !== null,
+    );
     return {
       exercise: ex.name_pt,
       sets_compact: setsCompact(current),
       ...(vs ? { vs_last: vs } : {}),
-      prs: detectPrs(exerciseHistory(ctx.db, exId, sessionId), current, ex.load_kind, bw),
+      prs: comparable(current) ? detectPrs(history, current, ex.load_kind, bw) : [],
     };
   });
   const session = getSession(ctx.db, sessionId)!;
@@ -444,7 +452,8 @@ export const logRoutineTool = defineTool({
     'Em `changes` vai só o que foi diferente: "supino subi pra 32" → { exercise_id, weight_kg: 32 }; "remada fiz 10 reps" → ' +
     '{ exercise_id, reps: 10 }; "lateral só 2 séries" → { exercise_id, n_sets: 2 }; séries variadas ("30kg 10/10/9") → ' +
     '{ exercise_id, sets: [...] } como no log_workout; "pulei a lateral" → { exercise_id, skip: true }. Exercício fora da rotina ' +
-    'em `changes` (com sets) entra só neste treino. Sem carga salva, usa a última registrada do exercício. Quando a carga muda, a nova carga fica salva na rotina (loads_updated); ' +
+    'em `changes` (com sets) entra só neste treino. Sem carga salva, usa a última registrada do exercício; sem nenhuma, ' +
+    'anota séries e reps sem carga e devolve without_load (avise o usuário). Quando a carga muda, a nova carga fica salva na rotina (loads_updated); ' +
     'se o usuário disser que foi só hoje, passe keep_loads: true.',
   input: z.object({
     routine_name: z.string().trim().min(1),
@@ -477,6 +486,7 @@ export const logRoutineTool = defineTool({
     const entries: WorkoutInput['entries'] = [];
     const missing: { exercise_id: number; exercise: string; missing: string[] }[] = [];
     const skipped: string[] = [];
+    const withoutLoad: string[] = [];
     const inRoutine = new Set(plan.map((re) => re.exercise_id));
     const extras = input.changes.filter((c) => !inRoutine.has(c.exercise_id) && !c.skip);
     for (const item of [...plan, ...extras.map(asPrescription)]) {
@@ -492,14 +502,19 @@ export const logRoutineTool = defineTool({
       }
       // sem carga salva: a última carga registrada do exercício (a 1ª vez não precisa ditar tudo de novo)
       const lastLoad =
-        item.weight_kg === null && c?.weight_kg === undefined
-          ? topWorkLoad(exerciseSessions(ctx.db, item.exercise_id, 1)[0]?.sets ?? [])
-          : null;
-      const res = plannedSets(lastLoad === null ? item : { ...item, weight_kg: lastLoad }, ex, {
+        item.weight_kg === null && c?.weight_kg === undefined ? lastLoggedLoad(ctx, item.exercise_id) : null;
+      const prescription = lastLoad === null ? item : { ...item, weight_kg: lastLoad };
+      const override = {
         ...(c?.weight_kg !== undefined ? { weight_kg: c.weight_kg } : {}),
         ...(c?.reps !== undefined ? { reps: c.reps } : {}),
         ...(c?.n_sets !== undefined ? { sets: c.n_sets } : {}),
-      });
+      };
+      let res = plannedSets(prescription, isWeightOptional(ex), override);
+      // nenhuma carga conhecida: anota séries e reps sem carga e avisa (D-034)
+      if (!res.ok && res.missing.length === 1 && res.missing[0] === 'weight') {
+        res = plannedSets(prescription, true, override);
+        withoutLoad.push(ex.name_pt);
+      }
       if (res.ok) entries.push({ exercise_id: item.exercise_id, sets: res.sets });
       else missing.push({ exercise_id: item.exercise_id, exercise: ex.name_pt, missing: res.missing });
     }
@@ -548,11 +563,26 @@ export const logRoutineTool = defineTool({
         ...logged.data,
         ...(loadsUpdated.length ? { loads_updated: loadsUpdated } : {}),
         ...(skipped.length ? { skipped } : {}),
+        ...(withoutLoad.length ? { without_load: withoutLoad } : {}),
       },
-      logged.hints,
+      withoutLoad.length
+        ? [
+            ...(logged.hints ?? []),
+            `sem carga registrada: ${withoutLoad.join(', ')} — anotado só séries e reps; avise o usuário no início da resposta e peça as cargas`,
+          ]
+        : logged.hints,
     );
   },
 });
+
+/** Carga da sessão mais recente do exercício que teve carga (pula as anotadas sem carga). */
+function lastLoggedLoad(ctx: ToolContext, exerciseId: number): number | null {
+  for (const sess of exerciseSessions(ctx.db, exerciseId, 6)) {
+    const top = topWorkLoad(sess.sets);
+    if (top !== null) return top;
+  }
+  return null;
+}
 
 /** Exercício extra (fora da rotina) tratado como prescrição vazia: só vale o que veio em `changes`. */
 function asPrescription(c: { exercise_id: number }): SavedPrescription & { exercise_id: number } {

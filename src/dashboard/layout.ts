@@ -105,9 +105,7 @@ export function card(title: string, body: string): string {
 }
 
 export function rows(pairs: [string, string][]): string {
-  return `<table>${pairs
-    .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`)
-    .join('')}</table>`;
+  return `<table>${pairs.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>`;
 }
 
 const NAV: [Nav, string, string][] = [

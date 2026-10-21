@@ -43,9 +43,7 @@ const offTarget = (value: number | null, goal: number | undefined): boolean =>
 
 export async function pesoPage(db: Db, ctx: PageCtx): Promise<string> {
   const goals = getGoals(db);
-  const trend = weightTrend(loadWeights(db, ctx.range.end)).filter(
-    (p) => p.local_date >= ctx.range.start,
-  );
+  const trend = weightTrend(loadWeights(db, ctx.range.end)).filter((p) => p.local_date >= ctx.range.start);
   const b = brief(db, ctx);
   const blocks: string[] = [];
 
@@ -97,7 +95,10 @@ export async function nutricaoPage(db: Db, ctx: PageCtx): Promise<string> {
           (await renderChartSvg(
             kcalProteinSpec(
               days.map((d) => ({ local_date: d.local_date, kcal: d.kcal, protein_g: d.protein_g })),
-              { ...(goals.kcal ? { kcal: goals.kcal } : {}), ...(goals.protein_g ? { protein_g: goals.protein_g } : {}) },
+              {
+                ...(goals.kcal ? { kcal: goals.kcal } : {}),
+                ...(goals.protein_g ? { protein_g: goals.protein_g } : {}),
+              },
             ),
           )),
       ),
@@ -142,12 +143,7 @@ export async function treinoPage(db: Db, ctx: PageCtx): Promise<string> {
       blocks.push(card('séries por grupo', await renderChartSvg(setsByMuscleWebSpec(byMuscle))));
     }
     if (b.training.prs.length) {
-      blocks.push(
-        card(
-          'recordes no período',
-          rows(b.training.prs.map((p) => [p.exercise, p.best])),
-        ),
-      );
+      blocks.push(card('recordes no período', rows(b.training.prs.map((p) => [p.exercise, p.best]))));
     }
   }
   return page({ title: dash.titulo.treino, active: 'treino', period: ctx.period, body: blocks.join('') });
@@ -156,10 +152,7 @@ export async function treinoPage(db: Db, ctx: PageCtx): Promise<string> {
 export async function exercicioPage(db: Db, ctx: PageCtx, exerciseId?: number): Promise<string> {
   const lista = trainedExercises(db, ctx.range.start, ctx.range.end);
   const options = lista
-    .map(
-      (e) =>
-        `<option value="${e.id}"${e.id === exerciseId ? ' selected' : ''}>${esc(e.name_pt)}</option>`,
-    )
+    .map((e) => `<option value="${e.id}"${e.id === exerciseId ? ' selected' : ''}>${esc(e.name_pt)}</option>`)
     .join('');
   const seletor =
     `<form class="seletor" method="get" action="/exercicio">` +
@@ -189,9 +182,7 @@ export async function exercicioPage(db: Db, ctx: PageCtx, exerciseId?: number): 
     blocks.push(
       card(
         ex?.name_pt ?? dash.titulo.exercicio,
-        points.length
-          ? await renderChartSvg(e1rmWebSpec(points))
-          : empty(dash.semTreino),
+        points.length ? await renderChartSvg(e1rmWebSpec(points)) : empty(dash.semTreino),
       ),
       card(
         'sessões',
@@ -248,8 +239,7 @@ export async function sonoPage(db: Db, ctx: PageCtx): Promise<string> {
       blocks.push(
         card(
           'passos',
-          stat('passos / dia', num(steps.steps_avg)) +
-            (await renderChartSvg(stepsSpec(passos, goals.steps))),
+          stat('passos / dia', num(steps.steps_avg)) + (await renderChartSvg(stepsSpec(passos, goals.steps))),
         ),
       );
     }
@@ -278,8 +268,7 @@ export async function resumoPage(db: Db, ctx: PageCtx): Promise<string> {
   const body = [
     card(
       dash.titulo.peso,
-      stat('peso', num(b.body.weight_trend_end, 1), 'kg') +
-        stat('kg/semana', num(b.body.rate_kg_wk, 2)),
+      stat('peso', num(b.body.weight_trend_end, 1), 'kg') + stat('kg/semana', num(b.body.rate_kg_wk, 2)),
     ),
     card(
       dash.titulo.nutricao,
@@ -300,7 +289,9 @@ export async function resumoPage(db: Db, ctx: PageCtx): Promise<string> {
       steps.days_with_data === 0 && sleep.nights === 0
         ? empty(dash.semDadosSaude)
         : stat('passos / dia', num(steps.steps_avg)) +
-            (sleep.nights ? stat('horas / noite', num(sleep.avg_min === null ? null : sleep.avg_min / 60, 1), 'h') : ''),
+            (sleep.nights
+              ? stat('horas / noite', num(sleep.avg_min === null ? null : sleep.avg_min / 60, 1), 'h')
+              : ''),
     ),
   ].join('');
 

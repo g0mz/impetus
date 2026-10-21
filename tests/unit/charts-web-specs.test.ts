@@ -55,8 +55,12 @@ describe('specs web de treino e peso', () => {
   });
 
   it('peso desenha a faixa só com peso alvo', () => {
-    expect(JSON.stringify(weightWebSpec([{ local_date: '2026-10-16', weight_kg: 82.4, trend_kg: 82.6 }]))).not.toContain('#C3D1B4');
-    expect(JSON.stringify(weightWebSpec([{ local_date: '2026-10-16', weight_kg: 82.4, trend_kg: 82.6 }], 80))).toContain('#C3D1B4');
+    expect(
+      JSON.stringify(weightWebSpec([{ local_date: '2026-10-16', weight_kg: 82.4, trend_kg: 82.6 }])),
+    ).not.toContain('#C3D1B4');
+    expect(
+      JSON.stringify(weightWebSpec([{ local_date: '2026-10-16', weight_kg: 82.4, trend_kg: 82.6 }], 80)),
+    ).toContain('#C3D1B4');
   });
 
   it('volume cresce de altura com o número de grupos', () => {

@@ -21,6 +21,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   o nome usado pelo dono como apelido.
 - `log_routine` sem carga salva usa a última carga registrada do exercício (e passa a salvá-la); exercício de peso
   corporal (`equipment: bodyweight`, ex.: abdominal) não exige carga.
+- Sem nenhuma carga conhecida, `log_routine` anota séries e reps sem carga e devolve `without_load`; o coach avisa no
+  início da resposta e pede as cargas. Essas séries não geram `vs_last` nem PR falsos no treino seguinte.
+- `seeds/routines.yaml`: Upper A/B e Lower A/B do dono, revisados.
 
 #### Decidido
 - D-034: a maior carga de trabalho vira a carga salva quando muda; reps e séries só mudam por pedido explícito.
