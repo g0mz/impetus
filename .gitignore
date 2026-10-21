@@ -9,4 +9,4 @@ evals/images/*
 !evals/images/README.md
 
 # binários e modelos locais (whisper.cpp)
-tools/
+/tools/
