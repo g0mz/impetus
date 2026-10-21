@@ -92,6 +92,10 @@ export function createTerminalChannel(opts: TerminalOptions): Channel {
       print(`impetus [${n}]> ${text}`);
       return { externalIds: [externalId] };
     },
+    async react(_m: InboundMessage, emoji: string) {
+      print(`impetus> [reação ${emoji}]`);
+      return true;
+    },
     async stop() {
       rl?.close();
     },

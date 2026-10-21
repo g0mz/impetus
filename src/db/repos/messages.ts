@@ -6,7 +6,7 @@ export type MessageInput = {
   direction: 'in' | 'out';
   external_id: string | null;
   quoted_external_id?: string | null;
-  kind: 'text' | 'image' | 'audio' | 'other';
+  kind: 'text' | 'image' | 'audio' | 'reaction' | 'other';
   text: string | null;
   media_path?: string | null;
   turn_id?: number | null;

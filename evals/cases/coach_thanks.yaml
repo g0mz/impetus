@@ -1,0 +1,9 @@
+id: coach_thanks
+description: Agradecimento sem nada a registrar vira só uma reação 👍 (Fase 8a)
+now: '2026-10-21T10:30:00Z'
+steps:
+  - text: 'pesei 74,5'
+  - text: 'valeu!'
+expect:
+  body_metrics: 1
+  reaction: '👍'

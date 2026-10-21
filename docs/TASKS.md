@@ -161,11 +161,11 @@ Inspirada no my-fitness-claw (D-033). O Impetus continua dono dos dados (banco, 
 
 ### 8a — Tom do coach (prompt + gateway)
 
-- [ ] Seção `# Tom` em `runtime/prompts/system.md`: número sempre com o que significa contra o próprio histórico; a pessoa antes do dado ("saí do plantão" → uma palavra sobre o plantão antes do número); deslize na dieta é normal, sem plano de compensação; pesagem isolada é ruído, aponte a tendência devolvida pela tool; problema pessoal (sono, estresse, motivação) → uma pergunta antes de aconselhar; elogio raro e específico; uma recomendação, não um menu; sem oferta de ajuda no fim.
-- [ ] ~12 trocas de exemplo em PT-BR (estilo, não frases para copiar). Os formatos de registro (✅, 🍽️, ✏️) continuam valendo: o tom entra numa linha a mais, nunca no lugar do formato.
-- [ ] Resposta só com reação: texto final igual a um emoji da allowlist (👍, 💪) vira reação à mensagem do usuário. `Channel.react?(m, emoji)`; o terminal imprime `[reação 👍]`; canal sem `react` envia o emoji como texto.
-- [ ] Asserções de texto no `scripts/eval.ts` (`reply_matches` / `reply_not_matches`), se ainda não existirem.
-- [ ] Evals: `coach_slip` (rodízio de pizza → registra, sem "compensar"), `coach_weight_noise` (+0,8 kg → fala da tendência), `coach_life_first` (peso + "saí do plantão" → registra e pergunta do plantão), `coach_thanks` ("valeu" → reação).
+- [x] Seção `# Tom` em `runtime/prompts/system.md`: número sempre com o que significa contra o próprio histórico; a pessoa antes do dado ("saí do plantão" → uma palavra sobre o plantão antes do número); deslize na dieta é normal, sem plano de compensação; pesagem isolada é ruído, aponte a tendência devolvida pela tool; problema pessoal (sono, estresse, motivação) → uma pergunta antes de aconselhar; elogio raro e específico; uma recomendação, não um menu; sem oferta de ajuda no fim.
+- [x] ~12 trocas de exemplo em PT-BR (estilo, não frases para copiar). Os formatos de registro (✅, 🍽️, ✏️) continuam valendo: o tom entra numa linha a mais, nunca no lugar do formato.
+- [x] Resposta só com reação: texto final igual a um emoji da allowlist (👍, 🔥, 👏; o Telegram só aceita uma lista fechada, sem 💪) vira reação à mensagem do usuário. `Channel.react?(m, emoji)`; o terminal imprime `[reação 👍]`; canal sem `react` envia o emoji como texto.
+- [x] Asserções de texto no `scripts/eval.ts` (`reply_matches` / `reply_not_matches`), se ainda não existirem.
+- [x] Evals: `coach_slip` (rodízio de pizza → registra, sem "compensar"), `coach_weight_noise` (+0,8 kg → fala da tendência), `coach_life_first` (peso + "saí do plantão" → registra e pergunta do plantão), `coach_thanks` ("valeu" → reação).
 
 ### 8b — Memória da pessoa
 

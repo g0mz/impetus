@@ -1,0 +1,11 @@
+id: coach_life_first
+description: >
+  Pesagem junto com algo da vida → registra e fala da pessoa, não só do número (Fase 8a).
+  Situação diferente dos exemplos do prompt, para não premiar cópia.
+now: '2026-10-21T10:30:00Z'
+steps:
+  - text: 'pesei 71,3. passei a noite no pronto-socorro com meu filho, febre alta'
+expect:
+  body_metrics: 1
+  reply_matches: ['filho|febre|melhor|tudo bem|ele est']
+  reply_not_matches: ['compens', 'posso ajudar', 'qualquer coisa']

@@ -168,6 +168,20 @@ export function createTelegramChannel(opts: TelegramOptions): Channel {
         log.debug({ err: (e as Error).message }, 'telegram: falha no indicador de processamento');
       }
     },
+    async react(m, emoji) {
+      if (!m.chatId) return false;
+      try {
+        await call('setMessageReaction', {
+          chat_id: m.chatId,
+          message_id: Number(m.externalId.split(':')[1]),
+          reaction: [{ type: 'emoji', emoji }],
+        });
+        return true;
+      } catch (e) {
+        log.debug({ err: (e as Error).message }, 'telegram: falha ao reagir');
+        return false;
+      }
+    },
     async send(text, o) {
       const to = target(o);
       if (!to) throw new Error('telegram: sem destinatário');

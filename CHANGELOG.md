@@ -4,6 +4,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 8a — Tom do coach (2026-10-21, D-033)
+
+#### Adicionado
+- Seção `# Tom` no `system.md` com regras (número com significado, pessoa antes do dado, deslize sem compensação,
+  pesagem é ruído, uma pergunta antes de aconselhar, sem fecho de atendente) e 12 trocas de exemplo em PT-BR.
+  Os formatos de registro continuam; o tom entra em no máximo uma linha depois deles.
+- Resposta só com reação: texto final igual a 👍, 🔥 ou 👏 vira reação na mensagem do usuário (`Channel.react`
+  no WhatsApp, Telegram e terminal), guardada como mensagem `kind = 'reaction'` para o `<recent_turns>`.
+- Evals: asserções `reply_matches`, `reply_not_matches`, `reaction`, `body_metrics` e `sql` de fixture; casos
+  `coach_thanks`, `coach_weight_noise`, `coach_slip` e `coach_life_first`.
+
 ### Primeiro sync real do Health Connect (2026-10-16)
 
 #### Corrigido

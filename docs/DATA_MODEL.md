@@ -29,7 +29,7 @@ CREATE TABLE messages (
   direction TEXT NOT NULL CHECK (direction IN ('in','out')),
   external_id TEXT,                   -- id da mensagem no canal
   quoted_external_id TEXT,            -- se for resposta citando outra
-  kind TEXT NOT NULL,                 -- 'text' | 'image' | 'audio' | 'other'
+  kind TEXT NOT NULL,                 -- 'text' | 'image' | 'audio' | 'reaction' | 'other'
   text TEXT,
   media_path TEXT,                    -- relativo a DATA_DIR
   turn_id INTEGER REFERENCES turns(id),

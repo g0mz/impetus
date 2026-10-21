@@ -27,6 +27,8 @@ type Case = {
   id: string;
   description: string;
   now: string;
+  /** SQL executado antes dos passos (histórico de fixture, ex.: pesagens anteriores). */
+  sql?: string[];
   steps: { text?: string; image?: string; quote_previous?: boolean }[];
   expect: {
     meals?: number;
@@ -53,6 +55,14 @@ type Case = {
     cardio_km?: Range;
     /** A última resposta não pode afirmar registro sem escrita (aviso da trava D-031). */
     no_unconfirmed_write?: boolean;
+    // ── tom (Fase 8a) ──
+    /** Pesagens registradas pelo chat. */
+    body_metrics?: number;
+    /** Regex (sem diferenciar maiúsculas) que a última resposta precisa / não pode casar. */
+    reply_matches?: string[];
+    reply_not_matches?: string[];
+    /** O último passo virou só esta reação, sem texto. */
+    reaction?: string;
   };
 };
 
@@ -149,6 +159,27 @@ function check(db: Db, c: Case): string[] {
   return fails;
 }
 
+/** Asserções sobre a última resposta: texto ou reação (Fase 8a). */
+function checkReply(db: Db, c: Case, last: { text?: string; reaction?: string } | undefined): string[] {
+  const e = c.expect;
+  const fails: string[] = [];
+  if (e.body_metrics !== undefined) {
+    const n = db
+      .prepare("SELECT count(*) FROM body_metrics WHERE source = 'chat' AND deleted_at IS NULL")
+      .pluck()
+      .get() as number;
+    if (n !== e.body_metrics) fails.push(`pesagens pelo chat: ${n} (esperado ${e.body_metrics})`);
+  }
+  if (e.reaction !== undefined && last?.reaction !== e.reaction)
+    fails.push(`reação ${last?.reaction ?? 'nenhuma'} (esperado ${e.reaction}; texto: ${last?.text ?? '—'})`);
+  const text = last?.text ?? '';
+  for (const re of e.reply_matches ?? [])
+    if (!new RegExp(re, 'i').test(text)) fails.push(`resposta não casa /${re}/`);
+  for (const re of e.reply_not_matches ?? [])
+    if (new RegExp(re, 'i').test(text)) fails.push(`resposta casa /${re}/ (proibido)`);
+  return fails;
+}
+
 function checkTraining(db: Db, c: Case): string[] {
   const e = c.expect;
   const fails: string[] = [];
@@ -240,13 +271,20 @@ await runCli(async () => {
     const brain = createBrain(config, mcp.url, logger);
     let clock = new Date(c.now).getTime();
     const now = () => new Date(clock).toISOString().replace(/\.\d{3}Z$/, 'Z');
+    for (const q of c.sql ?? []) db.exec(q);
     const sent: string[] = [];
+    let last: { text?: string; reaction?: string } | undefined;
     const channel: Channel = {
       name: 'terminal',
       start: async () => {},
       send: async (text) => {
         sent.push(text);
+        last = { text };
         return { externalIds: [`eval-out-${sent.length}`] };
+      },
+      react: async (_m, emoji) => {
+        last = { reaction: emoji };
+        return true;
       },
       stop: async () => {},
     };
@@ -277,11 +315,13 @@ await runCli(async () => {
         });
         clock += 60_000;
       }
-      const fails = check(db, c);
+      const fails = [...check(db, c), ...checkReply(db, c, last)];
       results.push({
         id: c.id,
         status: fails.length ? 'fail' : 'pass',
-        detail: fails.length ? fails.join(' | ') : (sent.at(-1) ?? '').split('\n')[0]!.slice(0, 90),
+        detail: fails.length
+          ? fails.join(' | ')
+          : (last?.reaction ?? last?.text ?? '').split('\n')[0]!.slice(0, 90),
         secs: Math.round((Date.now() - started) / 1000),
       });
       fs.appendFileSync(

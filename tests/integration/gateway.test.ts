@@ -62,6 +62,7 @@ async function setup(makeScript: (ex: Record<string, number>) => Script) {
   };
 
   const sent: string[] = [];
+  const reactions: { to: string; emoji: string }[] = [];
   let n = 0;
   const channel: Channel = {
     name: 'terminal',
@@ -69,6 +70,10 @@ async function setup(makeScript: (ex: Record<string, number>) => Script) {
     send: async (text) => {
       sent.push(text);
       return { externalIds: [`out-${++n}`] };
+    },
+    react: async (m, emoji) => {
+      reactions.push({ to: m.externalId, emoji });
+      return true;
     },
     stop: async () => {},
   };
@@ -111,6 +116,7 @@ async function setup(makeScript: (ex: Record<string, number>) => Script) {
     ex,
     tokens,
     sent,
+    reactions,
     prompts,
     say,
     setNow: (iso: string) => (clockNow = iso),
@@ -316,5 +322,19 @@ ${t.unconfirmedWrite}`);
     await g.say('/ajuda', { externalId: 'dup' });
     await g.say('/ajuda', { externalId: 'dup' });
     expect(g.sent).toHaveLength(1);
+  });
+
+  it('resposta só com emoji da allowlist vira reação e aparece no histórico (8a)', async () => {
+    const g = await setup(() => async (input) =>
+      /valeu/.test(input.prompt.split('<user_message>')[1]!) ? { text: ' 👍\n' } : { text: '👍 boa' },
+    );
+    await g.say('valeu');
+    expect(g.sent).toHaveLength(0);
+    expect(g.reactions).toEqual([{ to: 'in-1', emoji: '👍' }]);
+    expect(count(g.db, "SELECT count(*) FROM messages WHERE kind = 'reaction' AND text = '👍'")).toBe(1);
+
+    await g.say('e agora?');
+    expect(g.sent).toEqual(['👍 boa']);
+    expect(g.prompts.at(-1)).toMatch(/<recent_turns>[\s\S]*👍/);
   });
 });

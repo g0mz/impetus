@@ -1,0 +1,21 @@
+id: coach_weight_noise
+description: >
+  Pesagem 0,8 kg acima da véspera numa semana em queda: registra e fala da tendência/média,
+  sem alarme e sem plano de compensação (Fase 8a).
+now: '2026-10-21T10:30:00Z'
+sql:
+  - >-
+    INSERT INTO body_metrics (measured_at, local_date, weight_kg, source, created_at) VALUES
+    ('2026-10-14T10:00:00Z','2026-10-14',75.4,'chat','2026-10-14T10:00:00Z'),
+    ('2026-10-15T10:00:00Z','2026-10-15',75.1,'chat','2026-10-15T10:00:00Z'),
+    ('2026-10-16T10:00:00Z','2026-10-16',75.0,'chat','2026-10-16T10:00:00Z'),
+    ('2026-10-17T10:00:00Z','2026-10-17',74.7,'chat','2026-10-17T10:00:00Z'),
+    ('2026-10-18T10:00:00Z','2026-10-18',74.5,'chat','2026-10-18T10:00:00Z'),
+    ('2026-10-19T10:00:00Z','2026-10-19',74.2,'chat','2026-10-19T10:00:00Z'),
+    ('2026-10-20T10:00:00Z','2026-10-20',74.0,'chat','2026-10-20T10:00:00Z')
+steps:
+  - text: 'pesei 74,8 hoje, que porra é essa'
+expect:
+  body_metrics: 8
+  reply_matches: ['m[eé]dia|tend[eê]ncia']
+  reply_not_matches: ['compens', 'jejum', 'posso ajudar', 'qualquer coisa', 'estou aqui']

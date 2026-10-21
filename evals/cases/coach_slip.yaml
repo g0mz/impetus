@@ -1,0 +1,16 @@
+id: coach_slip
+description: Deslize na dieta é registrado e tratado como normal, sem plano de compensação (Fase 8a)
+now: '2026-10-21T00:30:00Z'
+steps:
+  - text: 'rodízio de pizza com a galera do trampo, comi umas 8 fatias e 2 latas de coca'
+expect:
+  meals: 1
+  min_items: 2
+  max_questions: 1
+  reply_matches: ['normal|faz parte|tranquil|sem problema|sem culpa|segue o plano|vida que segue']
+  reply_not_matches:
+    - 'compens'
+    - 'jejum'
+    - 'amanh[ãa][^.]{0,60}(menos|cort|restring|reduz)'
+    - 'posso ajudar'
+    - 'qualquer coisa'

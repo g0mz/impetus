@@ -1,5 +1,5 @@
 import PQueue from 'p-queue';
-import type { Channel, InboundMessage } from '../channels/types.ts';
+import { reactionOnly, type Channel, type InboundMessage } from '../channels/types.ts';
 import type { Db } from '../db/index.ts';
 import {
   insertMessage,
@@ -86,7 +86,18 @@ export function createInbox(deps: InboxDeps) {
         inboundMessageIds: batch.map((b) => b.id),
         ...(quoted.length ? { quoted } : {}),
       });
-      await reply(outcome.text, last.chatId, outcome.turnId, outcome.entities);
+      const emoji = outcome.status === 'done' ? reactionOnly(outcome.text) : null;
+      if (emoji && (await deps.channel.react?.(last, emoji))) {
+        // Guardada como mensagem de saída para o <recent_turns> mostrar a resposta do coach.
+        insertMessage(deps.db, {
+          channel: channelName,
+          direction: 'out',
+          external_id: `reaction:${last.externalId}`,
+          kind: 'reaction',
+          text: emoji,
+          turn_id: outcome.turnId,
+        });
+      } else await reply(outcome.text, last.chatId, outcome.turnId, outcome.entities);
     } catch (e) {
       deps.logger.error({ err: e }, 'falha no turno');
     } finally {

@@ -184,6 +184,17 @@ export function createWhatsAppChannel(opts: WhatsAppOptions): Channel {
         log.debug({ err: e }, 'whatsapp: falha no indicador de processamento');
       }
     },
+    async react(m, emoji) {
+      const key = raw.get(m.externalId)?.key;
+      if (!sock || !m.chatId || !key) return false;
+      try {
+        await sock.sendMessage(m.chatId, { react: { text: emoji, key } });
+        return true;
+      } catch (e) {
+        log.debug({ err: e }, 'whatsapp: falha ao reagir');
+        return false;
+      }
+    },
     async send(text, o) {
       const to = target(o);
       if (!sock || !to) throw new Error('whatsapp: sem conexão ou sem destinatário');

@@ -30,9 +30,20 @@ export interface Channel {
   sendImage?(path: string, caption: string | null, opts?: SendOptions): Promise<{ externalIds: string[] }>;
   /** Indicador de processamento (👀 / "digitando…"); opcional por canal. */
   processing?(m: InboundMessage, on: boolean): Promise<void>;
+  /** Reage à mensagem do usuário (substitui o 👀). Devolve false se não conseguiu. */
+  react?(m: InboundMessage, emoji: string): Promise<boolean>;
   /** Estado da conexão para o /status. */
   status?(): string;
   stop(): Promise<void>;
+}
+
+/** Emojis que podem virar reação (todos aceitos pelo Telegram, que tem lista fechada). */
+export const REACTION_EMOJIS = ['👍', '🔥', '👏'] as const;
+
+/** Resposta que é só um emoji da allowlist vira reação em vez de texto (Fase 8a). */
+export function reactionOnly(text: string): string | null {
+  const t = text.trim();
+  return (REACTION_EMOJIS as readonly string[]).includes(t) ? t : null;
 }
 
 /** Divide texto longo em até `maxParts` partes, quebrando em linhas (SPEC/TASKS Fase 2). */
