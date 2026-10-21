@@ -80,8 +80,8 @@ export function createTurnRunner(deps: TurnRunnerDeps) {
   return async function runTurn(req: TurnRequest): Promise<TurnOutcome> {
     const now = clock();
     const mode = req.mode ?? 'turn';
-    const toolScope = mode === 'report' ? 'read' : 'all';
-    const turnId = createTurn(deps.db, mode === 'report' ? 'report' : 'chat', now);
+    const toolScope = mode === 'turn' ? 'all' : 'read';
+    const turnId = createTurn(deps.db, mode === 'turn' ? 'chat' : mode, now);
     setMessagesTurn(deps.db, req.inboundMessageIds, turnId, 'queued');
     const log = deps.logger.child({ turnId });
 

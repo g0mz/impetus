@@ -12,7 +12,8 @@ export function chooseModel(
   models: ModelConfig,
 ): string {
   if (input.hasImage) return models.vision;
-  if (input.mode === 'report') return models.report;
+  // relatório e check-in: uma vez por período, o tom pesa mais que o custo
+  if (input.mode === 'report' || input.mode === 'checkin') return models.report;
   if (ANALYTIC.test(normalize(input.text))) return models.report;
   // registro longo (treino inteiro, várias refeições): o modelo rápido perdia itens e confundia séries (D-031)
   const lines = input.text.split('\n').filter((l) => l.trim()).length;

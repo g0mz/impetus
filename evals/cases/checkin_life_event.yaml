@@ -1,0 +1,15 @@
+id: checkin_life_event
+description: >
+  Evento de vida vencendo num dia de descanso → o check-in pergunta dele, sem inventar treino; a resposta do
+  usuário resolve a nota (Fase 8d + 8b).
+now: '2026-10-22T10:30:00Z'
+sql:
+  - "INSERT INTO routines (id, name, name_norm, created_at) VALUES (1,'Upper A','upper a','2026-10-01T00:00:00Z'),(2,'Lower A','lower a','2026-10-01T00:00:00Z')"
+  - "INSERT INTO routine_schedule (weekday, routine_id, updated_at) VALUES (3,1,'2026-10-01T00:00:00Z'),(5,2,'2026-10-01T00:00:00Z')"
+  - "INSERT INTO coach_notes (kind, text, due_local_date, created_at, updated_at) VALUES ('life_event', 'dor no joelho direito depois do agachamento', '2026-10-22', '2026-10-19T12:00:00Z', '2026-10-19T12:00:00Z')"
+steps:
+  - checkin: true
+  - text: 'melhorou bastante, quase não sinto mais'
+expect:
+  notes_resolved: 1
+  reply_not_matches: ['posso ajudar', 'qualquer coisa']

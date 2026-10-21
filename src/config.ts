@@ -52,6 +52,8 @@ const schema = z
     REPORT_WEEKLY_CRON: z.string().default('0 20 * * 0'),
     REPORT_MONTHLY_CRON: z.string().default('0 9 1 * *'),
     REPORT_CHARTS: bool.default(true),
+    CHECKIN_ENABLED: bool.default(true),
+    CHECKIN_CRON: z.string().default('30 7 * * *'),
 
     OFF_USER_AGENT: z.string().default('Impetus/0.1 (uso pessoal)'),
     HC_STALE_HOURS: int(48),

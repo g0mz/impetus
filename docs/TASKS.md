@@ -188,11 +188,11 @@ Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 
 ### 8d — Check-in diário
 
-- [ ] Job `checkin` (`CHECKIN_CRON`, padrão 07:30; `CHECKIN_ENABLED`; respeita `/pausar`), dedupe por dia em `job_runs`.
-- [ ] `reports/checkin.ts` monta um brief determinístico: sessão planejada (com override), alvos, sono da noite, `life_event` vencendo hoje, dado faltando de ontem. Sem sessão, sem sono ruim e sem nota vencendo → **não envia nada** e não chama o cérebro.
-- [ ] Turno `mode: 'checkin'`, `toolScope: 'read'`, `runtime/prompts/checkin.md`: 1 a 3 linhas; sono < 6 h → manter cargas e cortar a última série se pesar.
-- [ ] Fallback sem LLM ("Hoje: <rotina> · <exercício> <alvo>…") com snapshot test.
-- [ ] Resolver junto a pendência do relatório de domingo 20:00 (ver DECISIONS, Pendentes).
+- [x] Job `checkin` (`CHECKIN_CRON`, padrão 07:30; `CHECKIN_ENABLED`; respeita `/pausar`), dedupe por dia em `job_runs`.
+- [x] `reports/checkin.ts` monta um brief determinístico: sessão planejada (com override), alvos, sono da noite, `life_event` vencendo hoje, dado faltando de ontem. Sem sessão, sem sono ruim e sem nota vencendo → **não envia nada** e não chama o cérebro.
+- [x] Turno `mode: 'checkin'`, `toolScope: 'read'`, `runtime/prompts/checkin.md`: 1 a 3 linhas; sono < 6 h → manter cargas e cortar a última série se pesar.
+- [x] Fallback sem LLM ("Hoje: <rotina> · <exercício> <alvo>…") com snapshot test.
+- [x] Pendência do relatório de domingo 20:00: mantido (D-034).
 
 ### 8e — Base de evidências
 

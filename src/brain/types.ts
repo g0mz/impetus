@@ -1,4 +1,4 @@
-export type BrainMode = 'turn' | 'report';
+export type BrainMode = 'turn' | 'report' | 'checkin';
 export type ToolScopeName = 'all' | 'read';
 
 export type BrainInput = {

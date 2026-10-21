@@ -33,8 +33,7 @@ await runCli(() => {
   const config = loadConfig();
   const db = openDb(config.dbPath, { readonly: true });
   const row = db.prepare('SELECT id, payload FROM health_raw ORDER BY id DESC LIMIT 1').get() as
-    | { id: number; payload: string }
-    | undefined;
+    { id: number; payload: string } | undefined;
   if (!row) {
     console.error('Nenhum payload em health_raw. Configure o HC Webhook e sincronize primeiro.');
     process.exitCode = 1;
@@ -44,10 +43,21 @@ await runCli(() => {
   const times: number[] = [];
   collectTimes(payload, times);
   const first = Math.min(...times);
-  const dayStart = Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth(), new Date(first).getUTCDate());
+  const dayStart = Date.UTC(
+    new Date(first).getUTCFullYear(),
+    new Date(first).getUTCMonth(),
+    new Date(first).getUTCDate(),
+  );
   const out = transform(payload, BASE - dayStart) as Record<string, unknown>;
   const file = path.join(REPO_ROOT, 'tests', 'fixtures', 'hc_real_anon.json');
-  fs.writeFileSync(file, `${JSON.stringify({ _comment: `real anonimizado (health_raw ${row.id})`, ...out }, null, 2)}\n`);
-  console.log(`Fixture salvo em ${file}. Tipos: ${Object.keys(out).filter((k) => Array.isArray(out[k])).join(', ')}`);
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify({ _comment: `real anonimizado (health_raw ${row.id})`, ...out }, null, 2)}\n`,
+  );
+  console.log(
+    `Fixture salvo em ${file}. Tipos: ${Object.keys(out)
+      .filter((k) => Array.isArray(out[k]))
+      .join(', ')}`,
+  );
   db.close();
 });

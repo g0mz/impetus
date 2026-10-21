@@ -111,11 +111,10 @@ const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1
 function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
   const turns = db
     .prepare(
-      `SELECT id FROM turns WHERE kind IN ('chat','command') AND status = 'done' AND id != ? ORDER BY id DESC LIMIT ?`,
+      `SELECT id, kind FROM turns WHERE kind IN ('chat','command','checkin') AND status = 'done' AND id != ? ORDER BY id DESC LIMIT ?`,
     )
-    .pluck()
-    .all(excludeTurnId ?? -1, limit) as number[];
-  return turns.reverse().map((id, i, all) => {
+    .all(excludeTurnId ?? -1, limit) as { id: number; kind: string }[];
+  return turns.reverse().map(({ id, kind }, i, all) => {
     const fresh = i >= all.length - 2;
     const msg = (dir: 'in' | 'out') =>
       (db
@@ -144,6 +143,8 @@ function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
       parts.push(`registrou ${describeEntities(Object.fromEntries(counts.map((c) => [c.entity, c.n])))}`);
     if (updates) parts.push(`alterou ${updates} registro(s)`);
     const what = parts.length ? parts.join('; ') : undone ? 'desfeito' : 'nada gravado';
+    if (kind === 'checkin')
+      return `- check-in da manhã (enviado por você): "${clip(msg('out').replace(/\s+/g, ' '), 400)}"`;
     const user = clip(msg('in').replace(/\s+/g, ' '), fresh ? 1200 : 240);
     const bot = clip(msg('out').replace(/\s+/g, ' '), fresh ? 600 : 160);
     return `- usuário: "${user}" → [${what}]${bot ? ` → coach: "${bot}"` : ''}`;

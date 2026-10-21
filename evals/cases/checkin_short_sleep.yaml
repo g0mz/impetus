@@ -1,0 +1,15 @@
+id: checkin_short_sleep
+description: >
+  Check-in de dia de treino depois de uma noite curta: curto, cita a rotina, sugere manter as cargas,
+  sem formato de registro nem fecho de atendente (Fase 8d).
+now: '2026-10-21T10:30:00Z'
+sql:
+  - "INSERT INTO routines (id, name, name_norm, created_at) VALUES (1,'Upper A','upper a','2026-10-01T00:00:00Z'),(2,'Lower A','lower a','2026-10-01T00:00:00Z')"
+  - "INSERT INTO routine_schedule (weekday, routine_id, updated_at) VALUES (3,1,'2026-10-01T00:00:00Z'),(5,2,'2026-10-01T00:00:00Z')"
+  - "INSERT INTO health_daily (local_date, sleep_minutes, updated_at) VALUES ('2026-10-21', 310, '2026-10-21T10:00:00Z')"
+steps:
+  - checkin: true
+expect:
+  checkin_sent: true
+  reply_matches: ['upper a', 'mant[eé]m|manter|segura|mesma carga|mesmas cargas|sem subir']
+  reply_not_matches: ['✅', 'posso ajudar', 'qualquer coisa', 'registrad']

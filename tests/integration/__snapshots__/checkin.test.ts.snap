@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`check-in diário (Fase 8d) > fallback determinístico 1`] = `
+"☀️ Bom dia! Hoje: *Upper A*.
+• Supino inclinado com halteres: 32kg 3×8
+Dormiu 5h20: mantenha as cargas e corte a última série se pesar."
+`;

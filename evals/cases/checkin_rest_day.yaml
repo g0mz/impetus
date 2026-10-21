@@ -1,0 +1,10 @@
+id: checkin_rest_day
+description: Dia de descanso sem noite curta nem evento → o check-in não manda nada e não chama o cérebro (Fase 8d)
+now: '2026-10-22T10:30:00Z'
+sql:
+  - "INSERT INTO routines (id, name, name_norm, created_at) VALUES (1,'Upper A','upper a','2026-10-01T00:00:00Z'),(2,'Lower A','lower a','2026-10-01T00:00:00Z')"
+  - "INSERT INTO routine_schedule (weekday, routine_id, updated_at) VALUES (3,1,'2026-10-01T00:00:00Z'),(5,2,'2026-10-01T00:00:00Z')"
+steps:
+  - checkin: true
+expect:
+  checkin_sent: false

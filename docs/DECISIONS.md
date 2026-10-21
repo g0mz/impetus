@@ -259,12 +259,18 @@ inverso. A Fase 8 adota a camada de coach e mantém a de dados.
 - **Recusado:** markdown e CSV como banco; níveis pupil/grinder/maxxer (com um usuário, o nível de detalhe é uma
   preferência em `coach_notes`); plano em PDF; instalação como plugin; Telegram sem BotFather.
 
+### D-034 — Check-in da manhã decidido no código; relatório semanal fica no domingo (2026-10-21, Fase 8d)
+- O código decide se o check-in sai (sessão planejada, noite < 6 h ou evento de vida vencendo). Dado faltando de
+  ontem, sozinho, não gera mensagem: seria cobrança diária. Dia sem nada a dizer não chama o cérebro.
+- O check-in usa `MODEL_REPORT`: sai uma vez por dia e o tom pesa mais que o custo.
+- **Relatório semanal mantido no domingo 20:00** (pendência da Fase 5). Mudar para segunda exigiria separar o
+  período do relatório agendado do `/relatorio semana` (que mostra a semana corrente). O jantar de domingo fica de
+  fora do semanal, mas entra nas tendências da semana seguinte. Reavaliar depois de algumas semanas de check-in.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não
   tem *interrupt*. Proposta: rodar a query num `worker_thread` e encerrar o worker no timeout. A tool não está
   atribuída a nenhuma fase.
-- **Fase 5 — Relatório semanal no domingo às 20:00** deixa o jantar de domingo de fora. Alternativas: segunda de
-  manhã, ou tratar domingo como dia parcial.
 - **Fase 6 — RSS < 400 MB** não considera o processo `claude` (≈300 MB por turno). O fallback E2.1.Micro (1 GB) é
   otimista.

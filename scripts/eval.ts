@@ -22,6 +22,7 @@ import { normalize } from '../src/text/normalize.ts';
 import { formatLocalIso } from '../src/time.ts';
 import { buildRegistry } from '../src/tools/index.ts';
 import { plannedDay } from '../src/tools/plan.ts';
+import { generateCheckin, sendCheckin } from '../src/reports/checkin.ts';
 
 type Range = number | [number, number];
 type Case = {
@@ -31,7 +32,8 @@ type Case = {
   /** SQL executado antes dos passos (histórico de fixture, ex.: pesagens anteriores). */
   sql?: string[];
   /** `now` no passo salta o relógio (ex.: dias depois); sem ele, cada passo avança 1 min. */
-  steps: { text?: string; image?: string; quote_previous?: boolean; now?: string }[];
+  /** `checkin: true` dispara o check-in da manhã em vez de uma mensagem do usuário (Fase 8d). */
+  steps: { text?: string; image?: string; quote_previous?: boolean; now?: string; checkin?: boolean }[];
   expect: {
     meals?: number;
     items?: { label: string; grams?: Range; origin?: string }[];
@@ -77,6 +79,9 @@ type Case = {
     plan_overrides?: Range;
     /** Rotina planejada por data local (null = descanso), resolvida pela agenda + ajustes. */
     planned?: Record<string, string | null>;
+    // ── check-in (Fase 8d) ──
+    /** O último check-in foi enviado (true) ou ficou calado (false). */
+    checkin_sent?: boolean;
   };
 };
 
@@ -319,6 +324,7 @@ await runCli(async () => {
     for (const q of c.sql ?? []) db.exec(q);
     const sent: string[] = [];
     let last: { text?: string; reaction?: string } | undefined;
+    let checkinSent: boolean | undefined;
     const channel: Channel = {
       name: 'terminal',
       start: async () => {},
@@ -349,6 +355,14 @@ await runCli(async () => {
       let i = 0;
       for (const s of c.steps) {
         if (s.now) clock = new Date(s.now).getTime();
+        if (s.checkin) {
+          const r = await generateCheckin({ db, now: now(), settings, runTurn, logger });
+          checkinSent = r !== null;
+          if (r) await sendCheckin(db, channel, r);
+          else last = undefined;
+          clock += 60_000;
+          continue;
+        }
         const imagePath = s.image
           ? await saveNormalizedImage(fs.readFileSync(path.join(IMAGES_DIR, s.image)), config.mediaDir)
           : null;
@@ -362,6 +376,10 @@ await runCli(async () => {
         clock += 60_000;
       }
       const fails = [...check(db, c), ...checkReply(db, c, last)];
+      if (c.expect.checkin_sent !== undefined && checkinSent !== c.expect.checkin_sent)
+        fails.push(
+          `check-in ${checkinSent ? 'enviado' : 'não enviado'} (esperado ${c.expect.checkin_sent ? 'enviado' : 'calado'})`,
+        );
       results.push({
         id: c.id,
         status: fails.length ? 'fail' : 'pass',

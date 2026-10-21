@@ -73,6 +73,8 @@ export type JobsInput = SchedulerDeps & {
   /** Envia os gráficos depois do texto (opcional por canal). */
   notifyImages?: (paths: string[]) => Promise<void>;
   retryTurn: (turnId: number) => Promise<boolean>;
+  /** Gera e envia o check-in da manhã; devolve o resumo para job_runs (Fase 8d). */
+  checkin?: () => Promise<string>;
   /** Espera o canal ficar pronto para enviar; false = desistiu (não gera o relatório, não gasta cota). */
   waitChannel?: () => Promise<boolean>;
   config: {
@@ -80,6 +82,8 @@ export type JobsInput = SchedulerDeps & {
     REPORT_DAILY_TIME: string;
     REPORT_WEEKLY_CRON: string;
     REPORT_MONTHLY_CRON: string;
+    CHECKIN_ENABLED?: boolean;
+    CHECKIN_CRON?: string;
     HC_STALE_HOURS: number;
     CLAUDE_TOKEN_EXPIRES_AT?: string | undefined;
     DATA_DIR: string;
@@ -233,6 +237,19 @@ export function buildJobs(i: JobsInput): JobDef[] {
           done.push(`${kind}: ${await runJob(i, job, now)}`);
         }
         return done.join(', ') || 'nada a recuperar';
+      },
+    },
+    {
+      // check-in da manhã: o código decide se há algo a dizer; dia sem novidade não manda nada (Fase 8d)
+      name: 'checkin',
+      cron: i.config.CHECKIN_CRON ?? '30 7 * * *',
+      periodKey: local,
+      run: async () => {
+        if (!i.checkin || i.config.CHECKIN_ENABLED === false) return 'desligado';
+        if (getSetting<boolean>(i.db, 'proactive.paused')) return 'pulado (pausado)';
+        if (i.waitChannel && !(await i.waitChannel()))
+          throw new Error('canal indisponível; check-in não gerado');
+        return i.checkin();
       },
     },
     {

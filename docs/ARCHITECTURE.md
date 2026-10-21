@@ -120,6 +120,17 @@ O scheduler executa `reports.build(kind, period)`:
 
 Se o cérebro falhar, envia o **template determinístico** (sem LLM). O relatório nunca deixa de sair.
 
+### 4.7 Check-in da manhã (Fase 8d)
+
+O job `checkin` (`CHECKIN_CRON`, padrão 07:30; respeita `/pausar` e `CHECKIN_ENABLED`) chama
+`reports/checkin.ts`:
+1. Monta um brief no código: sessão planejada (agenda + ajustes), alvos da progressão, sono da noite, eventos de
+   vida vencendo e dados faltando de ontem.
+2. Sem sessão, sem noite curta (< 6 h) e sem evento vencendo → **não envia nada** e não chama o cérebro.
+3. Senão, turno `mode: 'checkin'` (só leitura, `MODEL_REPORT`, `runtime/prompts/checkin.md`) redige 1 a 3 linhas;
+   se falhar, vai o fallback determinístico.
+4. A mensagem é gravada com o `turn_id` (turno `kind = 'checkin'`) e aparece no `<recent_turns>` da resposta dele.
+
 ## 5. Cérebro (`brain/`)
 
 ### 5.1 Invocação do Claude Code

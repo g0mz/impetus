@@ -19,6 +19,7 @@ import type { Logger } from './logger.ts';
 import type { ReportKind } from './reports/build.ts';
 import { createWhisperCppTranscriber } from './media/transcribe.ts';
 import { acquireInstanceLock } from './ops/lock.ts';
+import { generateCheckin, sendCheckin } from './reports/checkin.ts';
 import { generateReport } from './reports/service.ts';
 import { buildJobs, startScheduler, type Notify } from './scheduler/jobs.ts';
 import { nowUtcIso } from './time.ts';
@@ -140,6 +141,19 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       ...(config.REPORT_CHARTS ? { chartsDir: path.join(config.mediaDir, 'charts') } : {}),
       logger: reportLogger,
     });
+  /** Check-in da manhã: gera, envia e grava a mensagem com o turno (aparece no <recent_turns>). */
+  const checkin = async () => {
+    const r = await generateCheckin({
+      db,
+      now: nowUtcIso(),
+      settings,
+      ...(brain.name === 'none' ? {} : { runTurn }),
+      logger: reportLogger,
+    });
+    if (!r) return 'nada a dizer';
+    await sendCheckin(db, channel, r);
+    return `enviado (${r.reason}${r.usedLlm ? '' : ', fallback'})`;
+  };
   const transcribe =
     config.TRANSCRIBE === 'whisper-cpp'
       ? createWhisperCppTranscriber({
@@ -188,6 +202,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
         for (const p of paths) await channel.sendImage(p, null);
       },
       retryTurn: handle.retryTurn,
+      checkin,
       waitChannel: () => waitChannelOpen(channel),
       config,
     }),

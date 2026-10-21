@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 8d — Check-in diário (2026-10-21, D-034)
+
+#### Adicionado
+- `reports/checkin.ts`: brief determinístico (sessão planejada, alvos, sono, eventos de vida, faltas de ontem),
+  decisão de envio no código, fallback sem LLM e `sendCheckin` (grava a mensagem com o turno).
+- Modo de cérebro e tipo de turno `checkin` (só leitura, `MODEL_REPORT`), prompt `runtime/prompts/checkin.md`;
+  check-ins enviados aparecem no `<recent_turns>`.
+- Job `checkin` (`CHECKIN_CRON`, padrão 07:30; `CHECKIN_ENABLED`; respeita `/pausar`; um por dia).
+- Evals: passo `checkin: true` e asserção `checkin_sent`; casos `checkin_short_sleep`, `checkin_rest_day` e
+  `checkin_life_event`.
+
+#### Corrigido
+- `.gitignore` ignorava `src/tools/` (regra `tools/` sem âncora); `src/tools/coach.ts` da 8b não tinha entrado no
+  commit.
+
 ### Fase 8c — Agenda semanal e ajustes temporários (2026-10-21, D-033)
 
 #### Adicionado
