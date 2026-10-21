@@ -169,13 +169,13 @@ Inspirada no my-fitness-claw (D-033). O Impetus continua dono dos dados (banco, 
 
 ### 8b — Memória da pessoa
 
-- [ ] Tabela `coach_notes`: `id`, `kind` (`preference` | `observation` | `life_event`), `text` (≤ 200 caracteres), `due_local_date` (só `life_event`), `created_at`, `resolved_at`, `turn_id`, `deleted_at`.
-- [ ] Tools `remember_note` (`kind`, `text`, `due_date?`, `replaces_id?` para preferência que contradiz outra) e `resolve_note` (`id`, `rewrite?`), via registry com `audit_log`.
-- [ ] `ContextBuilder`: bloco `<coach_notes>` com ids: todas as preferências, observações mais recentes e `life_event` vencido ou vencendo em ≤ 2 dias. Orçamento ~1.500 caracteres dentro do de §5.2; corta primeiro observações antigas (função pura, com teste).
-- [ ] Prompt: o que vira cada tipo; preferência pedida vence observação; dor ou lesão relatada vira `life_event` com data para perguntar de novo; `life_event` vencido é perguntado uma vez e depois resolvido.
-- [ ] Comandos `/notas` (lista com ids) e `/esquecer <id>` (soft delete), sem LLM.
-- [ ] Limpeza no job semanal, em código: `life_event` resolvido há > 30 dias e observação sem uso há 90 dias → soft delete.
-- [ ] Evals multi-turno: `coach_memory_preference` ("para de usar emoji" → turno seguinte sem emoji) e `coach_memory_life` (viagem até sexta → turno de sábado pergunta da viagem).
+- [x] Tabela `coach_notes`: `id`, `kind` (`preference` | `observation` | `life_event`), `text` (≤ 200 caracteres), `due_local_date` (só `life_event`), `created_at`, `resolved_at`, `turn_id`, `deleted_at`.
+- [x] Tools `remember_note` (`kind`, `text`, `due_date?`, `replaces_id?` para nota que contradiz outra), `resolve_note` (`note_id`, `outcome?` → vira observation) e `forget_note`, via registry com `audit_log`.
+- [x] `ContextBuilder`: bloco `<coach_notes>` com ids: todas as preferências, observações mais recentes e `life_event` vencido ou vencendo em ≤ 2 dias. Orçamento ~1.500 caracteres dentro do de §5.2; corta primeiro observações antigas (função pura, com teste).
+- [x] Prompt: o que vira cada tipo; preferência pedida vence observação; dor ou lesão relatada vira `life_event` com data para perguntar de novo; `life_event` vencido é perguntado uma vez e depois resolvido.
+- [x] Comandos `/notas` (lista com ids) e `/esquecer <id>` (soft delete), sem LLM.
+- [x] Limpeza no job semanal, em código: `life_event` resolvido há > 30 dias e observação sem uso há 90 dias → soft delete.
+- [x] Evals multi-turno: `coach_memory_preference` ("para de usar emoji" → turno seguinte sem emoji) e `coach_memory_life` (viagem até sexta → turno de sábado pergunta da viagem).
 
 ### 8c — Agenda semanal e ajustes temporários
 

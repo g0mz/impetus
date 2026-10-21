@@ -325,8 +325,9 @@ ${t.unconfirmedWrite}`);
   });
 
   it('resposta só com emoji da allowlist vira reação e aparece no histórico (8a)', async () => {
-    const g = await setup(() => async (input) =>
-      /valeu/.test(input.prompt.split('<user_message>')[1]!) ? { text: ' 👍\n' } : { text: '👍 boa' },
+    const g = await setup(
+      () => async (input) =>
+        /valeu/.test(input.prompt.split('<user_message>')[1]!) ? { text: ' 👍\n' } : { text: '👍 boa' },
     );
     await g.say('valeu');
     expect(g.sent).toHaveLength(0);

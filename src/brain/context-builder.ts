@@ -1,5 +1,7 @@
 import type { Db } from '../db/index.ts';
+import { activeNotes } from '../db/repos/coach-notes.ts';
 import { lastChatSession, sessionSets } from '../db/repos/training.ts';
+import { notesForContext } from '../domain/coach/notes.ts';
 import { setsCompact } from '../domain/training/format.ts';
 import { isSessionOpen } from '../domain/training/types.ts';
 import { daySummary } from '../tools/body.ts';
@@ -83,6 +85,7 @@ const ENTITY_PT: Record<string, [string, string]> = {
   food: ['alimento', 'alimentos'],
   food_portion: ['porção', 'porções'],
   body_metric: ['medida corporal', 'medidas corporais'],
+  coach_note: ['nota do coach', 'notas do coach'],
 };
 
 /** "10 séries, 1 sessão de treino" a partir das contagens por entidade. */
@@ -197,6 +200,8 @@ export function buildTurnPrompt(db: Db, input: TurnContextInput): string {
   ];
   const open = openSession(db, now, settings);
   if (open) blocks.push(`<open_session>${open}</open_session>`);
+  const notes = notesForContext(activeNotes(db), localDate);
+  if (notes.length) blocks.push(`<coach_notes>\n${notes.join('\n')}\n</coach_notes>`);
   const recent = recentTurns(db, input.recentTurns, input.currentTurnId);
   if (recent.length) blocks.push(`<recent_turns>\n${recent.join('\n')}\n</recent_turns>`);
   blocks.push(...nutritionContext(db, now, localDate));

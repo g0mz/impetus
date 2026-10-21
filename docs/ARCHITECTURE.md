@@ -162,6 +162,10 @@ Regras:
 kcal 1.240/— · proteína 98/150 g · treino: upper B registrado 18:10 · passos 6.420/10.000 · sono 6h40
 </today_snapshot>
 <open_session>upper B iniciado 18:10 — 3 exercícios, 10 séries</open_session>
+<coach_notes>   (Fase 8b: preferências, eventos de vida próximos e observações recentes, com ids; ~1.500 caracteres)
+- [3] preferência: prefere respostas sem análise de tendência
+- [7] evento (pergunte agora): viagem a SP a trabalho até 31/10
+</coach_notes>
 <recent_turns>   (últimos 8 turnos, resumidos: mensagem do usuário + 1 linha do que foi registrado)
 …
 </recent_turns>

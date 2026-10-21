@@ -4,6 +4,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 8b — Memória da pessoa (2026-10-21, D-033)
+
+#### Adicionado
+- Tabela `coach_notes` (migration 002): preferências, observações e eventos de vida com data.
+- Tools `remember_note` (com `replaces_id`), `resolve_note` (desfecho vira observação) e `forget_note`, com
+  auditoria e `/desfazer`.
+- Bloco `<coach_notes>` no prompt do turno (função pura `notesForContext`, ~1.500 caracteres): todas as
+  preferências, eventos a até 2 dias da data ("pergunte agora" no dia) e observações mais recentes.
+- Seção `# Memória da pessoa` no `system.md`; comandos `/notas` e `/esquecer <id>`; job `coach_notes.prune`
+  (segunda 03:30) arquiva eventos resolvidos há 30+ dias e observações paradas há 90+ dias.
+- Evals: `now` por passo, asserções `coach_notes` e `notes_resolved`; casos `coach_memory_preference` e
+  `coach_memory_life`.
+
 ### Fase 8a — Tom do coach (2026-10-21, D-033)
 
 #### Adicionado

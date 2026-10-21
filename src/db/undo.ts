@@ -101,6 +101,7 @@ const HANDLERS: Record<string, UndoHandler> = {
   },
   food: restoreOrSoftDelete('foods'),
   body_metric: softDelete('body_metrics'),
+  coach_note: restoreOrSoftDelete('coach_notes'),
   food_portion: (db, e) => {
     db.prepare('DELETE FROM food_portions WHERE id = ?').run(e.entity_id);
   },

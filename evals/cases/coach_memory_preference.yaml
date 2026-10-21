@@ -1,0 +1,20 @@
+id: coach_memory_preference
+description: >
+  Preferência pedida vira nota e vale nos turnos seguintes (Fase 8b): depois de pedir para não falar de
+  tendência, a pesagem seguinte vem sem análise.
+now: '2026-10-21T10:30:00Z'
+sql:
+  - >-
+    INSERT INTO body_metrics (measured_at, local_date, weight_kg, source, created_at) VALUES
+    ('2026-10-17T10:00:00Z','2026-10-17',74.9,'chat','2026-10-17T10:00:00Z'),
+    ('2026-10-18T10:00:00Z','2026-10-18',74.6,'chat','2026-10-18T10:00:00Z'),
+    ('2026-10-19T10:00:00Z','2026-10-19',74.4,'chat','2026-10-19T10:00:00Z'),
+    ('2026-10-20T10:00:00Z','2026-10-20',74.3,'chat','2026-10-20T10:00:00Z')
+steps:
+  - text: 'quando eu mandar meu peso só registra, não precisa comentar tendência nem média, isso me deixa ansioso'
+  - text: 'pesei 74,2'
+    now: '2026-10-22T10:30:00Z'
+expect:
+  coach_notes: { preference: 1 }
+  body_metrics: 5
+  reply_not_matches: ['tend[eê]ncia', 'm[eé]dia', 'semana']

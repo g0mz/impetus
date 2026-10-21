@@ -7,6 +7,7 @@ import { hcStaleAlert } from '../ingest/process.ts';
 import type { Logger } from '../logger.ts';
 import { reportPeriod, type ReportKind } from '../reports/build.ts';
 import { runBackup } from '../ops/backup.ts';
+import { pruneNotes } from '../db/repos/coach-notes.ts';
 import { toLocalDate, nowUtcIso, weekdayPt } from '../time.ts';
 
 export type Notify = (text: string, opts?: { critical?: boolean }) => Promise<void>;
@@ -233,6 +234,13 @@ export function buildJobs(i: JobsInput): JobDef[] {
         }
         return done.join(', ') || 'nada a recuperar';
       },
+    },
+    {
+      // memória do coach: eventos resolvidos há 30+ dias e observações paradas há 90+ dias (Fase 8b)
+      name: 'coach_notes.prune',
+      cron: '30 3 * * 1',
+      periodKey: local,
+      run: async (now) => `${pruneNotes(i.db, now)} nota(s) arquivada(s)`,
     },
     { name: 'turns.retry_failed', cron: '*/10 * * * *', run: retry('failed', 10) },
     { name: 'turns.retry_deferred', cron: '0 * * * *', run: retry('deferred', 1) },

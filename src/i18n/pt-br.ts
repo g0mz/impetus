@@ -10,6 +10,7 @@ export const t = {
     '• /status — saúde do sistema',
     '• /hoje — resumo do dia · /peso <kg> — registra peso',
     '• /relatorio [dia|semana|mes] — relatório na hora',
+    '• /notas — o que eu lembro sobre você · /esquecer <id> — apaga uma nota',
     '• /pausar · /retomar — mensagens automáticas',
     '• /recarga — anota a recarga do chip do bot (lembrete mensal)',
     '• /ajuda — esta lista',
@@ -33,6 +34,9 @@ export const t = {
   goalUnknownKey: (key: string) =>
     `Meta "${key}" desconhecida. Use: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo.`,
   undoNothing: 'Nada para desfazer.',
+  notesEmpty: '🧠 Ainda não guardei nada sobre você além dos seus registros.',
+  notesHint: 'Para eu esquecer algo: /esquecer <id>. Ou só me diga.',
+  noteForgotten: (id: number) => `🗑️ Nota ${id} esquecida.`,
   undoDone: (what: string) => `↩️ Desfeito: ${what}.`,
   brainFailed: 'Não consegui processar agora, tento de novo em 10 min.',
   brainDeferred: 'Atingi o limite de uso do momento; processo sua mensagem na próxima hora cheia.',

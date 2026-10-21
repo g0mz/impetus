@@ -29,7 +29,8 @@ type Case = {
   now: string;
   /** SQL executado antes dos passos (histórico de fixture, ex.: pesagens anteriores). */
   sql?: string[];
-  steps: { text?: string; image?: string; quote_previous?: boolean }[];
+  /** `now` no passo salta o relógio (ex.: dias depois); sem ele, cada passo avança 1 min. */
+  steps: { text?: string; image?: string; quote_previous?: boolean; now?: string }[];
   expect: {
     meals?: number;
     items?: { label: string; grams?: Range; origin?: string }[];
@@ -63,6 +64,11 @@ type Case = {
     reply_not_matches?: string[];
     /** O último passo virou só esta reação, sem texto. */
     reaction?: string;
+    // ── memória (Fase 8b) ──
+    /** Notas ativas ou resolvidas (não apagadas) por tipo. */
+    coach_notes?: Partial<Record<'preference' | 'observation' | 'life_event', Range>>;
+    /** Eventos de vida resolvidos. */
+    notes_resolved?: Range;
   };
 };
 
@@ -172,6 +178,21 @@ function checkReply(db: Db, c: Case, last: { text?: string; reaction?: string } 
   }
   if (e.reaction !== undefined && last?.reaction !== e.reaction)
     fails.push(`reação ${last?.reaction ?? 'nenhuma'} (esperado ${e.reaction}; texto: ${last?.text ?? '—'})`);
+  for (const [kind, want] of Object.entries(e.coach_notes ?? {})) {
+    const n = db
+      .prepare('SELECT count(*) FROM coach_notes WHERE kind = ? AND deleted_at IS NULL')
+      .pluck()
+      .get(kind) as number;
+    if (!inRange(n, want)) fails.push(`notas ${kind}: ${n} (esperado ${fmtRange(want)})`);
+  }
+  if (e.notes_resolved !== undefined) {
+    const n = db
+      .prepare('SELECT count(*) FROM coach_notes WHERE resolved_at IS NOT NULL AND deleted_at IS NULL')
+      .pluck()
+      .get() as number;
+    if (!inRange(n, e.notes_resolved))
+      fails.push(`eventos resolvidos: ${n} (esperado ${fmtRange(e.notes_resolved)})`);
+  }
   const text = last?.text ?? '';
   for (const re of e.reply_matches ?? [])
     if (!new RegExp(re, 'i').test(text)) fails.push(`resposta não casa /${re}/`);
@@ -303,6 +324,7 @@ await runCli(async () => {
     try {
       let i = 0;
       for (const s of c.steps) {
+        if (s.now) clock = new Date(s.now).getTime();
         const imagePath = s.image
           ? await saveNormalizedImage(fs.readFileSync(path.join(IMAGES_DIR, s.image)), config.mediaDir)
           : null;

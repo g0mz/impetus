@@ -1,0 +1,14 @@
+id: coach_memory_life
+description: >
+  Evento de vida com data vira nota e o coach pergunta dele quando chega a hora; com a resposta, resolve (Fase 8b).
+now: '2026-10-21T22:00:00Z'
+steps:
+  - text: 'semana que vem viajo pra SP a trabalho, de segunda 26 até sexta 30, só vai ter academia de hotel'
+  - text: 'pesei 74,6'
+    now: '2026-11-01T11:00:00Z'
+  - text: 'foi tranquila, treinei 3 vezes no hotel'
+    now: '2026-11-01T11:05:00Z'
+expect:
+  coach_notes: { life_event: [1, 2] }
+  notes_resolved: [1, 2]
+  body_metrics: 1

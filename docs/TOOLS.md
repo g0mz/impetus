@@ -214,6 +214,28 @@ get_goals out: { goals: Record<string, number> }
 
 ---
 
+## Coach (Fase 8)
+
+### `remember_note` (write)
+```ts
+in:  { kind: 'preference'|'observation'|'life_event'; text: string /* 3–200 */; due_date?: string /* AAAA-MM-DD, obrigatório e exclusivo de life_event */; replaces_id?: number }
+out: { note_id; kind; replaced_id? }
+```
+
+### `resolve_note` (write)
+```ts
+in:  { note_id: number; outcome?: string }   // só life_event; outcome cria uma observation
+out: { note_id; resolved: true; observation_id? }
+```
+
+### `forget_note` (write)
+```ts
+in:  { note_id: number }
+out: { note_id; forgotten: true }
+```
+
+---
+
 ## Análise
 
 ### `get_metrics` (read)

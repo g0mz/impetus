@@ -368,3 +368,27 @@ CREATE TABLE job_runs (
 | `food_portions` | IBGE — Tabela de medidas referidas para os alimentos consumidos no Brasil (POF 2008–2009), `liv50000.pdf` | `seeds/portions_ibge.csv`: 84 medidas comuns, cada uma conferida no PDF, com página e referência. **Não inventar gramaturas** |
 | `exercises` | `yuhonas/free-exercise-db` (domínio público), versionado em `seeds/vendor/free-exercise-db/` | Importa os 876; `seeds/exercises_ptbr.csv` sobrescreve ~100 exercícios comuns com `name_pt`, aliases, `load_kind`, `increment_kg`, `is_compound` e músculos (D-012) |
 | `exercise_aliases` | `seeds/exercises_ptbr.csv` | Ex.: "sup inc", "supino inclinado", "supino inclinado halter" → mesmo id |
+
+## 7. Coach (Fase 8)
+
+Memória da pessoa (D-033), escrita só pelas tools `remember_note`, `resolve_note` e `forget_note`. Entra no prompt
+do turno como `<coach_notes>` (ARCHITECTURE.md §5.2), com orçamento de ~1.500 caracteres.
+
+```sql
+CREATE TABLE coach_notes (
+  id INTEGER PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('preference','observation','life_event')),
+  text TEXT NOT NULL,                 -- ≤ 200 caracteres, terceira pessoa
+  due_local_date TEXT,                -- só life_event: a partir de quando perguntar de novo
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  resolved_at TEXT,                   -- life_event já perguntado
+  turn_id INTEGER REFERENCES turns(id),
+  deleted_at TEXT
+);
+```
+
+- `preference`: o que ele pediu sobre o comportamento do coach; sai só por pedido (`forget_note`, `/esquecer`).
+- `observation`: padrão percebido pelo coach; arquivada após 90 dias sem atualização.
+- `life_event`: evento datado; entra no contexto a partir de 2 dias antes de `due_local_date`; resolvido após a
+  pergunta e arquivado 30 dias depois. O job `coach_notes.prune` (segunda, 03:30) faz a limpeza.

@@ -14,6 +14,7 @@ import { callTool, type Registry, type ToolSettings } from '../tools/registry.ts
 import { computeTargets } from '../tools/training.ts';
 import { formatDayMonth, localDayBounds, toLocalDate } from '../time.ts';
 import { setSetting } from '../db/repos/settings.ts';
+import { activeNotes } from '../db/repos/coach-notes.ts';
 
 export type CommandContext = {
   db: Db;
@@ -58,6 +59,10 @@ export function runCommand(ctx: CommandContext, name: string, args: string): Com
       return peso(ctx, args);
     case 'recarga':
       return recarga(ctx);
+    case 'notas':
+      return notas(ctx);
+    case 'esquecer':
+      return esquecer(ctx, args);
     case 'pausar':
       return pausar(ctx, true);
     case 'retomar':
@@ -156,6 +161,40 @@ function meta(ctx: CommandContext, args: string): CommandResult {
   if (!env.ok) return { text: `⚠️ ${env.error.message}`, turnId };
   const label = GOAL_LABELS[key]?.label ?? key;
   return { text: value === null ? t.goalRemoved(label) : t.goalSet(label, fmtGoal(key, value)), turnId };
+}
+
+const NOTE_LABEL = { preference: 'Preferências', observation: 'Observações', life_event: 'Eventos' } as const;
+
+/** /notas: o que o coach lembra sobre o dono, com ids para /esquecer (Fase 8b). */
+function notas(ctx: CommandContext): CommandResult {
+  const notes = activeNotes(ctx.db);
+  if (!notes.length) return { text: t.notesEmpty };
+  const lines = ['🧠 O que eu lembro sobre você'];
+  for (const kind of ['preference', 'life_event', 'observation'] as const) {
+    const xs = notes.filter((n) => n.kind === kind);
+    if (!xs.length) continue;
+    lines.push('', `*${NOTE_LABEL[kind]}*`);
+    for (const n of xs)
+      lines.push(
+        `• [${n.id}] ${n.text}${n.due_local_date ? ` (a partir de ${formatDayMonth(n.due_local_date)})` : ''}`,
+      );
+  }
+  lines.push('', t.notesHint);
+  return { text: lines.join('\n') };
+}
+
+function esquecer(ctx: CommandContext, args: string): CommandResult {
+  const id = Number(args.replace(/^\[|\]$/g, ''));
+  if (!Number.isInteger(id) || id <= 0) return { text: t.usage('/esquecer <id>  (ids em /notas)') };
+  const { result: env, turnId } = inCommandTurn(ctx, (turnId) =>
+    callTool(
+      ctx.registry,
+      'forget_note',
+      { note_id: id },
+      { db: ctx.db, now: ctx.now, turnId, settings: ctx.settings, toolScope: 'all' },
+    ),
+  );
+  return { text: env.ok ? t.noteForgotten(id) : `⚠️ ${env.error.message}`, turnId };
 }
 
 function desfazer(ctx: CommandContext): CommandResult {
