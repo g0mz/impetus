@@ -123,6 +123,8 @@ CREATE TABLE routine_exercises (
   target_sets INTEGER,
   rep_min INTEGER,
   rep_max INTEGER,
+  weight_kg REAL,                     -- carga salva (halter = por mão); NULL = sem carga/peso corporal (D-034)
+  reps INTEGER,                       -- reps salvas por série; NULL = usa rep_min (D-034)
   PRIMARY KEY (routine_id, position)
 );
 

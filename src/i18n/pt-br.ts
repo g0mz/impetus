@@ -2,7 +2,7 @@
 export const t = {
   help: [
     '🤖 *Impetus* — comandos:',
-    '• /treino <rotina> — última sessão e alvos de hoje',
+    '• /treino <rotina> — cargas salvas, última sessão e alvos de hoje',
     '• /ultimo <exercício> — últimas 3 sessões do exercício',
     '• /metas — metas atuais · /meta <chave> <valor> — define (ou "remover")',
     '  chaves: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo',
@@ -15,7 +15,8 @@ export const t = {
     '• /ajuda — esta lista',
     '',
     'Ou escreva livremente, por exemplo:',
-    '• "meu upper B é: supino inclinado halter 3x8-12, remada curvada 4x6-10"',
+    '• "meu upper B é: supino inclinado halter 3x10 30kg, remada curvada 4x8 60kg"',
+    '• "fiz upper B" (usa as cargas salvas) · "fiz upper B, supino subi pra 32"',
     '• "upper B: supino inclinado halter 3x10 30kg, remada curvada 4x8 60kg"',
     '• "supino 32kg 10 9 8" (anexa ao treino em andamento)',
     '• "30 min esteira"',

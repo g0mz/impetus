@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { getExercise, trainedExercises } from '../../src/db/repos/training.ts';
 import { undoTurn } from '../../src/db/undo.ts';
+import { runCommand } from '../../src/gateway/commands.ts';
+import { buildRegistry } from '../../src/tools/index.ts';
 import { seedReportWeek } from '../fixtures/report-week.ts';
-import { data, makeCaller, makeDb } from '../helpers.ts';
+import { data, makeCaller, makeDb, SETTINGS } from '../helpers.ts';
 
 type LogOut = {
   session_id: number;
@@ -106,6 +108,206 @@ describe('define_routine', () => {
       ok: false,
       error: { code: 'VALIDATION' },
     });
+  });
+});
+
+describe('rotina com cargas salvas (D-034)', () => {
+  type RoutineOut = LogOut & {
+    loads_updated?: { exercise: string; from?: string; to: string }[];
+    skipped?: string[];
+  };
+  const savedOf = (db: ReturnType<typeof makeDb>['db']) =>
+    db
+      .prepare('SELECT exercise_id, target_sets, weight_kg, reps FROM routine_exercises ORDER BY position')
+      .all();
+
+  function upperA(call: ReturnType<typeof makeCaller>['call'], ex: Record<string, number>) {
+    return data(
+      call<{ exercises: { name_pt: string; saved?: string }[] }>('define_routine', {
+        name: 'Upper A',
+        exercises: [
+          { exercise_id: ex.supInc, target_sets: 3, rep_min: 8, rep_max: 12, weight_kg: 30, reps: 10 },
+          { exercise_id: ex.remada, target_sets: 4, reps: 8, weight_kg: 60 },
+          { exercise_id: ex.barra, target_sets: 3, reps: 8 },
+        ],
+      }),
+    );
+  }
+
+  it('define_routine salva carga e reps; redefinir sem carga mantém a salva', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn } = makeCaller(db);
+    const r = upperA(call, ex);
+    expect(r.exercises.map((e) => e.saved)).toEqual(['30kg 3×10', '60kg 4×8', '3×8']);
+    newTurn();
+    data(
+      call('define_routine', {
+        name: 'upper a',
+        exercises: [{ exercise_id: ex.remada, target_sets: 3 }, { exercise_id: ex.lateral }],
+      }),
+    );
+    expect(savedOf(db)).toEqual([
+      { exercise_id: ex.remada, target_sets: 3, weight_kg: 60, reps: 8 },
+      { exercise_id: ex.lateral, target_sets: null, weight_kg: null, reps: null },
+    ]);
+  });
+
+  it('"fiz upper A" registra tudo com as cargas salvas, sem mexer nelas', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn, state } = makeCaller(db);
+    upperA(call, ex);
+    newTurn('2026-10-14T21:00:00Z');
+    const r = data(call<RoutineOut>('log_routine', { routine_name: 'upper a' }));
+    expect(r.routine).toBe('Upper A');
+    expect(r.summary.map((x) => x.sets_compact)).toEqual(['30kg 3×10', '60kg 4×8', '3×8']);
+    expect(r.session_totals).toEqual({ work_sets: 10, exercises: 3 });
+    expect(r.loads_updated).toBeUndefined();
+    expect(auditCount(db, state.turnId, 'routine')).toBe(0);
+  });
+
+  it('mudança de carga atualiza a rotina; o próximo treino já usa a nova; /desfazer volta as duas coisas', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn, state } = makeCaller(db);
+    upperA(call, ex);
+    newTurn('2026-10-14T21:00:00Z');
+    const r = data(
+      call<RoutineOut>('log_routine', {
+        routine_name: 'Upper A',
+        changes: [
+          { exercise_id: ex.supInc, weight_kg: 32 },
+          {
+            exercise_id: ex.remada,
+            sets: [
+              { weight_kg: 60, reps: 8 },
+              { weight_kg: 57.5, reps: 8 },
+            ],
+          },
+          { exercise_id: ex.barra, skip: true },
+          { exercise_id: ex.lateral, sets: sets(3, 10, 15) },
+        ],
+      }),
+    );
+    expect(r.summary.map((x) => [x.exercise, x.sets_compact])).toEqual([
+      ['Supino inclinado com halteres', '32kg 3×10'],
+      ['Remada curvada com barra', '60kg 8, 57,5kg 8'],
+      ['Elevação lateral com halteres', '10kg 3×15'],
+    ]);
+    expect(r.skipped).toEqual(['Barra fixa']);
+    // remada: maior carga de trabalho segue 60 → não muda; lateral é extra e não entra na rotina
+    expect(r.loads_updated).toEqual([
+      { exercise: 'Supino inclinado com halteres', from: '30kg', to: '32kg' },
+    ]);
+    expect(savedOf(db).map((x) => (x as { weight_kg: number | null }).weight_kg)).toEqual([32, 60, null]);
+
+    const t2 = state.turnId;
+    undoTurn(db, t2);
+    expect(savedOf(db).map((x) => (x as { weight_kg: number | null }).weight_kg)).toEqual([30, 60, null]);
+    expect(db.prepare('SELECT count(*) FROM sets WHERE deleted_at IS NULL').pluck().get()).toBe(0);
+
+    newTurn('2026-10-16T21:00:00Z');
+    data(
+      call('log_routine', { routine_name: 'Upper A', changes: [{ exercise_id: ex.supInc, weight_kg: 28 }] }),
+    );
+    newTurn('2026-10-18T21:00:00Z');
+    const next = data(call<RoutineOut>('log_routine', { routine_name: 'Upper A' }));
+    expect(next.summary[0]).toMatchObject({ sets_compact: '28kg 3×10', vs_last: '=' });
+  });
+
+  it('keep_loads registra a carga do dia sem salvar', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn } = makeCaller(db);
+    upperA(call, ex);
+    newTurn('2026-10-14T21:00:00Z');
+    const r = data(
+      call<RoutineOut>('log_routine', {
+        routine_name: 'Upper A',
+        keep_loads: true,
+        changes: [{ exercise_id: ex.supInc, weight_kg: 24 }],
+      }),
+    );
+    expect(r.summary[0]?.sets_compact).toBe('24kg 3×10');
+    expect(r.loads_updated).toBeUndefined();
+    expect((savedOf(db)[0] as { weight_kg: number }).weight_kg).toBe(30);
+  });
+
+  it('falta carga ou séries salvas → VALIDATION listando o que perguntar, nada gravado', () => {
+    const { db, ex } = makeDb();
+    const { call } = makeCaller(db);
+    data(
+      call('define_routine', {
+        name: 'Lower B',
+        exercises: [
+          { exercise_id: ex.remada, target_sets: 3, rep_min: 8, rep_max: 10 },
+          { exercise_id: ex.supInc },
+        ],
+      }),
+    );
+    const r = call('log_routine', { routine_name: 'lower b' });
+    expect(r).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+    expect(!r.ok && r.error.message).toContain('Remada curvada com barra (carga)');
+    expect(!r.ok && r.error.message).toContain('Supino inclinado com halteres (séries, reps, carga)');
+    expect(db.prepare('SELECT count(*) FROM sets').pluck().get()).toBe(0);
+
+    const fixed = data(
+      call<RoutineOut>('log_routine', {
+        routine_name: 'lower b',
+        changes: [
+          { exercise_id: ex.remada, weight_kg: 50 },
+          { exercise_id: ex.supInc, sets: sets(2, 20, 12) },
+        ],
+      }),
+    );
+    expect(fixed.summary.map((x) => x.sets_compact)).toEqual(['50kg 3×8', '20kg 2×12']);
+    expect(savedOf(db).map((x) => (x as { weight_kg: number | null }).weight_kg)).toEqual([50, 20]);
+  });
+
+  it('rotina inexistente → NOT_FOUND com as rotinas existentes', () => {
+    const { db, ex } = makeDb();
+    const { call } = makeCaller(db);
+    upperA(call, ex);
+    expect(call('log_routine', { routine_name: 'lower A' })).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_FOUND', candidates: ['Upper A'] },
+    });
+  });
+
+  it('set_routine_loads muda o salvo sem registrar treino; /treino e get_next_targets mostram', () => {
+    const { db, ex } = makeDb();
+    const { call, newTurn, state } = makeCaller(db);
+    upperA(call, ex);
+    newTurn();
+    const r = data(
+      call<{ exercises: { saved?: string }[] }>('set_routine_loads', {
+        routine_name: 'Upper A',
+        loads: [
+          { exercise_id: ex.supInc, weight_kg: 34, reps: 8 },
+          { exercise_id: ex.barra, weight_kg: 5 },
+        ],
+      }),
+    );
+    expect(r.exercises.map((x) => x.saved)).toEqual(['34kg 3×8', '60kg 4×8', '5kg 3×8']);
+    expect(db.prepare('SELECT count(*) FROM sets').pluck().get()).toBe(0);
+    expect(
+      call('set_routine_loads', { routine_name: 'Upper A', loads: [{ exercise_id: ex.lateral, reps: 1 }] }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_FOUND' },
+    });
+    const t = data(
+      call<{ targets: { saved?: string; rule: string }[] }>('get_next_targets', { routine_name: 'Upper A' }),
+    );
+    expect(t.targets[0]).toMatchObject({ saved: '34kg 3×8', rule: 'first_time' });
+    const cmd = { db, registry: buildRegistry(), settings: SETTINGS, now: state.now };
+    expect(runCommand(cmd, 'treino', 'upper a').text).toBe(
+      [
+        '📋 Upper A — ainda sem treino registrado',
+        '• Supino inclinado com halteres: salvo 34kg 3×8',
+        '• Remada curvada com barra: salvo 60kg 4×8',
+        '• Barra fixa: salvo 5kg 3×8',
+      ].join('\n'),
+    );
+    undoTurn(db, state.turnId);
+    expect((savedOf(db)[0] as { weight_kg: number }).weight_kg).toBe(30);
   });
 });
 
