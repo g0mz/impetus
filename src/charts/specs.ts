@@ -200,7 +200,9 @@ export function weightWebSpec(points: WeightPoint[], targetKg?: number): TopLeve
     width: WEB_WIDTH,
     height: 160,
     layer: [
-      ...(targetKg ? [{ ...goalBand(targetKg, 0.01), data: { values: [{ lo: targetKg * 0.99, hi: targetKg * 1.01 }] } }] : []),
+      ...(targetKg
+        ? [{ ...goalBand(targetKg, 0.01), data: { values: [{ lo: targetKg * 0.99, hi: targetKg * 1.01 }] } }]
+        : []),
       {
         data: { values },
         mark: { type: 'point', filled: true, size: 22, fill: '#8A8F98', opacity: 0.8 },

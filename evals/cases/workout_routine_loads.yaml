@@ -1,0 +1,18 @@
+id: workout_routine_loads
+description: >
+  Rotina com cargas salvas (D-034): o usuário define o upper A com carga e reps, depois só diz "fiz upper A" com
+  uma mudança. Tudo entra com a carga salva, a carga que mudou fica salva e a que foi "só hoje" não.
+now: '2026-10-21T22:30:00Z'
+steps:
+  - text: 'meu upper A é: supino inclinado halter 3x10 30kg, remada curvada 4x8 60kg, elevação lateral 3x15 10kg'
+  - text: 'fiz upper A hoje, mas subi o supino pra 32kg. na lateral peguei 8kg só hoje porque o ombro tava incomodando'
+expect:
+  exercises: ['supino inclinado', 'remada curvada', 'elevacao lateral']
+  work_sets: 10
+  warmup_sets: 0
+  new_exercises: 0
+  routine_loads:
+    'supino inclinado': 32
+    'remada curvada': 60
+    'elevacao lateral': 10
+  no_unconfirmed_write: true

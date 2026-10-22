@@ -86,14 +86,12 @@ export function startDashboardServer(
   port: number,
 ): Promise<RunningDashboard> {
   return new Promise((resolve) => {
-    const server: ServerType = serve(
-      { fetch: app.fetch, hostname: '127.0.0.1', port },
-      (info: AddressInfo) =>
-        resolve({
-          url: `http://127.0.0.1:${info.port}`,
-          port: info.port,
-          close: () => new Promise<void>((r) => server.close(() => r())),
-        }),
+    const server: ServerType = serve({ fetch: app.fetch, hostname: '127.0.0.1', port }, (info: AddressInfo) =>
+      resolve({
+        url: `http://127.0.0.1:${info.port}`,
+        port: info.port,
+        close: () => new Promise<void>((r) => server.close(() => r())),
+      }),
     );
   });
 }

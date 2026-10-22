@@ -81,11 +81,15 @@ function treino(ctx: CommandContext, args: string): CommandResult {
   const header = res.last_date
     ? `📋 Último ${res.routine} (${formatDayMonth(res.last_date)})`
     : `📋 ${res.routine} — ainda sem treino registrado`;
-  const lines = res.targets.map((x) =>
-    x.rule === 'first_time'
-      ? `• ${x.exercise}: primeira vez → registre a carga de referência`
-      : `• ${x.exercise}: ${x.last} → alvo: ${x.target}${x.rule === 'deload' ? ' (deload)' : ''}`,
-  );
+  const lines = res.targets.map((x) => {
+    const saved = x.saved ? ` salvo ${x.saved}` : '';
+    if (x.rule === 'first_time')
+      return saved
+        ? `• ${x.exercise}:${saved}`
+        : `• ${x.exercise}: primeira vez → registre a carga de referência`;
+    const last = saved ? `${saved} · último ${x.last}` : ` ${x.last}`;
+    return `• ${x.exercise}:${last} → alvo: ${x.target}${x.rule === 'deload' ? ' (deload)' : ''}`;
+  });
   return { text: [header, ...lines].join('\n') };
 }
 

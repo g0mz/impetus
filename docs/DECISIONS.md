@@ -255,6 +255,23 @@ DEPLOY.md §6, ficou a A: `tailscale serve --bg --https=443 http://127.0.0.1:878
   dispensaria a VPN, mas abriria a 443 para a internet com um endpoint protegido só pela `X-Api-Key`.
 - A `X-Api-Key` continua obrigatória: a tailnet é a primeira camada, não a única.
 
+### D-034 — Cargas salvas na rotina e "fiz upper A" (2026-10-21)
+Pedido do dono: deixar o treino predefinido e só dizer "estou fazendo upper A", mudando a carga só quando ela sobe ou cai.
+- `routine_exercises` ganha `weight_kg` e `reps` (migration 002). Não criamos uma tabela de "cargas atuais": a rotina já
+  é o lugar da prescrição, e o snapshot de undo da rotina cobre as duas colunas.
+- Tool nova `log_routine`: monta as séries a partir do salvo (função pura `plannedSets`), aplica só os ajustes do dia
+  e reaproveita a gravação do `log_workout` (sessão aberta, `vs_last`, PRs). Faltando dado salvo, devolve `VALIDATION`
+  com o que perguntar, em vez de inventar carga (regra 1 e "sem dados inventados").
+- **Regra de atualização:** a maior carga de trabalho do exercício no treino vira a carga salva quando difere dela (vale
+  para subir e para descer). Reps e número de séries **não** mudam sozinhos: variam de sessão para sessão na progressão
+  dupla; mudar o salvo é pedido explícito (`set_routine_loads`). "Só hoje" → `keep_loads: true`.
+- A carga salva é o que o usuário faz, não o alvo da progressão: `get_next_targets` e `/treino` mostram as duas.
+- Tudo entra no `/desfazer` (o `log_routine` audita a rotina com o snapshot anterior).
+- **Sem carga conhecida** (nem salva nem em treino anterior): a pedido do dono, o treino é anotado mesmo assim, com séries
+  e reps sem carga, e o coach avisa no início da resposta. Preferimos séries sem carga a uma sessão vazia porque dias de
+  treino e séries por músculo vêm das séries. Para não gerar "+50kg" ou 🏆 falsos depois, num exercício que leva carga
+  as séries sem carga ficam fora de `vs_last` e de PRs, e a carga de referência vem da última sessão **com** carga.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

@@ -4,6 +4,30 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Treino predefinido por rotina (2026-10-21)
+
+#### Adicionado
+- Carga e reps salvas por exercício da rotina (migration `002_routine_loads.sql`). `define_routine` aceita
+  `weight_kg` e `reps` ("meu upper A é: supino inclinado halter 3x10 30kg, …") e, ao redefinir, mantém a carga salva
+  de quem não veio com carga nova.
+- `log_routine`: "fiz upper A" registra a rotina inteira com o salvo; em `changes` vai só o que mudou (carga, reps,
+  séries, séries detalhadas, exercício pulado ou extra). Carga que sobe ou desce fica salva para o próximo treino
+  (`loads_updated`); `keep_loads` para "só hoje". Sem carga salva, pergunta em vez de inventar.
+- `set_routine_loads`: muda o salvo sem registrar treino.
+- `/treino <rotina>` e `get_next_targets` mostram a carga salva ao lado do último treino e do alvo.
+- Eval `workout_routine_loads` e asserção `routine_loads` no `scripts/eval.ts`.
+- `npm run routines:import [arquivo]`: grava rotinas de um YAML (padrão `seeds/routines.yaml`) pelas mesmas tools do
+  coach, num turno de comando (auditado, `/desfazer` volta). Cria exercício ausente quando o arquivo traz `create` e liga
+  o nome usado pelo dono como apelido.
+- `log_routine` sem carga salva usa a última carga registrada do exercício (e passa a salvá-la); exercício de peso
+  corporal (`equipment: bodyweight`, ex.: abdominal) não exige carga.
+- Sem nenhuma carga conhecida, `log_routine` anota séries e reps sem carga e devolve `without_load`; o coach avisa no
+  início da resposta e pede as cargas. Essas séries não geram `vs_last` nem PR falsos no treino seguinte.
+- `seeds/routines.yaml`: Upper A/B e Lower A/B do dono, revisados.
+
+#### Decidido
+- D-034: a maior carga de trabalho vira a carga salva quando muda; reps e séries só mudam por pedido explícito.
+
 ### Dashboard somente leitura (2026-10-17)
 
 #### Adicionado

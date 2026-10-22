@@ -33,6 +33,9 @@ type RoutineSnapshot = {
     target_sets: number | null;
     rep_min: number | null;
     rep_max: number | null;
+    /** Ausentes em snapshots anteriores à migration 002. */
+    weight_kg?: number | null;
+    reps?: number | null;
   }[];
 };
 
@@ -86,10 +89,20 @@ const HANDLERS: Record<string, UndoHandler> = {
       e.entity_id,
     );
     const ins = db.prepare(
-      'INSERT INTO routine_exercises (routine_id, position, exercise_id, target_sets, rep_min, rep_max) VALUES (?, ?, ?, ?, ?, ?)',
+      `INSERT INTO routine_exercises (routine_id, position, exercise_id, target_sets, rep_min, rep_max, weight_kg, reps)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     for (const x of before.exercises)
-      ins.run(e.entity_id, x.position, x.exercise_id, x.target_sets, x.rep_min, x.rep_max);
+      ins.run(
+        e.entity_id,
+        x.position,
+        x.exercise_id,
+        x.target_sets,
+        x.rep_min,
+        x.rep_max,
+        x.weight_kg ?? null,
+        x.reps ?? null,
+      );
   },
   meal: restoreOrSoftDelete('meals'),
   meal_item: restoreOrSoftDelete('meal_items', (db, id, now) => {
