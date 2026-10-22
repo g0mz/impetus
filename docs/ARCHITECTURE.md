@@ -159,7 +159,7 @@ Regras:
 - **Diretório de trabalho do processo filho:** `BRAIN_DIR` (padrão `~/.local/state/impetus/brain`), uma pasta vazia **fora do repositório**. O `claude` procura `CLAUDE.md` subindo a partir do cwd, então uma pasta dentro do repo herdaria o `CLAUDE.md` de desenvolvimento (D-004). `loadConfig` recusa `BRAIN_DIR` dentro do repo.
 - **Não usar `--bare`.** O modo bare lê apenas API key ou apiKeyHelper e não usa o token OAuth da assinatura. Verifique na documentação atual antes de mudar.
 - `--system-prompt-file` **substitui** o prompt padrão do Claude Code. O coach não é um agente de código; a documentação recomenda substituição nesse caso.
-- `--tools "Read"` deixa só o Read como ferramenta nativa, para ver as imagens. Sem Bash, Edit ou WebFetch.
+- `--tools "Read"` deixa só o Read como ferramenta nativa, para ver as imagens e ler `runtime/evidence/` (Fase 8e: `--add-dir` e regra `Read(...)` só para essa pasta; o caminho vai no fim do prompt como `<evidence_dir>`). Sem Bash, Edit ou WebFetch.
 - `dontAsk` nega qualquer coisa fora da allowlist, então a execução nunca trava esperando aprovação. Se a versão instalada não aceitar o curinga `mcp__fit__*`, use a regra por servidor `mcp__fit` (ver *permission rule syntax* na documentação).
 - **Imagens:** o prompt do turno referencia o caminho absoluto (`/…/data/media/2026/10/abc.jpg`) e o modelo usa `Read` para vê-la. A pasta entra via `--add-dir`.
 - **Saída:** parse do JSON. Campos esperados: `result`, `is_error`, `session_id`, `usage`, `total_cost_usd`, `num_turns`. Trate como opcionais e logue o que vier.

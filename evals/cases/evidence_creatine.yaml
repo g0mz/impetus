@@ -1,0 +1,8 @@
+id: evidence_creatine
+description: Creatina → vale, 3 a 5 g/dia, sem fase de carga obrigatória, sem citar autor (Fase 8e)
+now: '2026-10-21T11:00:00Z'
+steps:
+  - text: 'creatina vale a pena? quanto tomo?'
+expect:
+  reply_matches: ['3\s*(a|-|–)\s*5\s*g']
+  reply_not_matches: ['Kreider', 'ISSN', 'estudos mostram', 'posso ajudar']

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { createClaudeCliBrain } from './brain/claude-cli.ts';
-import { noneBrain, type Brain } from './brain/types.ts';
+import { createClaudeCliBrain, runPlainPrompt } from './brain/claude-cli.ts';
+import { noneBrain, type Brain, type PlainLlm } from './brain/types.ts';
 import { createTelegramChannel } from './channels/telegram.ts';
 import { createTerminalChannel } from './channels/terminal.ts';
 import { createWhatsAppChannel } from './channels/whatsapp-baileys.ts';
@@ -29,11 +29,28 @@ import { buildRegistry } from './tools/index.ts';
 import type { ToolSettings } from './tools/registry.ts';
 
 export const SYSTEM_PROMPT_FILE = path.join(REPO_ROOT, 'runtime', 'prompts', 'system.md');
+export const EVIDENCE_DIR = path.join(REPO_ROOT, 'runtime', 'evidence');
 
 export function isolationArgs(mode: Config['BRAIN_ISOLATION']): string[] {
   if (mode === 'setting-sources') return ['--setting-sources', ''];
   if (mode === 'safe-mode') return ['--safe-mode'];
   return [];
+}
+
+/** LLM sem tools do provider configurado (simulação de personas; Fase 8f). */
+export function createPlainLlm(config: Config): PlainLlm {
+  if (config.BRAIN_PROVIDER !== 'claude-cli')
+    throw new Error(`simulação exige BRAIN_PROVIDER=claude-cli (atual: ${config.BRAIN_PROVIDER})`);
+  return ({ system, prompt, model }) =>
+    runPlainPrompt({
+      bin: config.CLAUDE_BIN,
+      cwd: config.BRAIN_DIR,
+      model,
+      system,
+      prompt,
+      timeoutMs: config.BRAIN_TIMEOUT_MS,
+      isolationArgs: isolationArgs(config.BRAIN_ISOLATION),
+    });
 }
 
 export function createBrain(config: Config, mcpUrl: string, logger: Logger): Brain {
@@ -48,6 +65,7 @@ export function createBrain(config: Config, mcpUrl: string, logger: Logger): Bra
         mcpUrl,
         mcpServerName: MCP_SERVER_NAME,
         mediaDir: config.mediaDir,
+        evidenceDir: EVIDENCE_DIR,
         maxTurns: config.BRAIN_MAX_TURNS,
         timeoutMs: config.BRAIN_TIMEOUT_MS,
         isolationArgs: isolationArgs(config.BRAIN_ISOLATION),

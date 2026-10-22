@@ -1,0 +1,8 @@
+id: evidence_rest_interval
+description: Descanso entre séries → recomendação prática curta, mais longo nos compostos (Fase 8e)
+now: '2026-10-21T11:00:00Z'
+steps:
+  - text: 'quanto tempo devo descansar entre as séries de agachamento?'
+expect:
+  reply_matches: ['[23]\s*(a|-|–)?\s*[3-5]?\s*min|dois|tr[eê]s minutos']
+  reply_not_matches: ['Schoenfeld', 'Grgic', 'estudos mostram', 'posso ajudar']

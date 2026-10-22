@@ -1,0 +1,9 @@
+id: evidence_myth_breakfast
+description: Mito do café da manhã → resposta curta com a alternativa, sem citar estudo (Fase 8e)
+now: '2026-10-21T11:00:00Z'
+steps:
+  - text: 'café da manhã é obrigatório? nunca tenho fome cedo'
+expect:
+  meals: 0
+  reply_matches: ['n[aã]o|pode pular|sem problema|tranquilo']
+  reply_not_matches: ['estudo', 'pesquisa', 'meta-an', 'Sievert', '\d{4}\)', 'posso ajudar']

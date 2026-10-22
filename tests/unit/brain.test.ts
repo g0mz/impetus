@@ -33,6 +33,17 @@ describe('buildClaudeArgs (ARCHITECTURE.md §5.1)', () => {
     expect(at('--setting-sources')).toBe('');
   });
 
+  it('com evidenceDir, libera também o Read da base de evidências (Fase 8e)', () => {
+    const a = buildClaudeArgs(
+      { model: 'haiku' },
+      { ...opts, evidenceDir: '/home/impetus/impetus/runtime/evidence' },
+      '/tmp/x.json',
+    );
+    expect(a).toContain('Read(//home/impetus/impetus/runtime/evidence/**)');
+    expect(a.filter((x) => x === '--add-dir')).toHaveLength(2);
+    expect(a[a.lastIndexOf('--add-dir') + 1]).toBe('/home/impetus/impetus/runtime/evidence');
+  });
+
   it('libera só as tools do MCP e o Read da pasta de mídia (D-015)', () => {
     const i = args.indexOf('--allowedTools');
     expect(args.slice(i + 1, i + 3)).toEqual(['mcp__fit__*', 'Read(//home/impetus/impetus/data/media/**)']);

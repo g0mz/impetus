@@ -25,6 +25,9 @@ export type BrainResult = {
   durationMs: number;
 };
 
+/** LLM sem tools para prompts avulsos (simulação de personas e juiz; Fase 8f). */
+export type PlainLlm = (input: { system: string; prompt: string; model: string }) => Promise<BrainResult>;
+
 /** Cérebro plugável: nada fora de brain/ sabe que existe uma CLI `claude`. */
 export interface Brain {
   readonly name: string;

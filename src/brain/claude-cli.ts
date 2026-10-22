@@ -14,6 +14,8 @@ export type ClaudeCliOptions = {
   mcpUrl: string;
   mcpServerName: string;
   mediaDir: string;
+  /** Base de evidências (runtime/evidence), lida sob demanda com Read (Fase 8e). */
+  evidenceDir?: string;
   maxTurns: number;
   timeoutMs: number;
   /** Flags de isolamento (D-018), ex.: ['--setting-sources', '']. */
@@ -36,7 +38,13 @@ export function buildClaudeArgs(
   input: Pick<BrainInput, 'model'>,
   opts: Pick<
     ClaudeCliOptions,
-    'systemPromptFile' | 'mcpServerName' | 'mediaDir' | 'maxTurns' | 'isolationArgs' | 'fallbackModels'
+    | 'systemPromptFile'
+    | 'mcpServerName'
+    | 'mediaDir'
+    | 'evidenceDir'
+    | 'maxTurns'
+    | 'isolationArgs'
+    | 'fallbackModels'
   >,
   mcpConfigPath: string,
 ): string[] {
@@ -58,10 +66,12 @@ export function buildClaudeArgs(
     '--allowedTools',
     `mcp__${opts.mcpServerName}__*`,
     `Read(${permissionPath(opts.mediaDir)}/**)`,
+    ...(opts.evidenceDir ? [`Read(${permissionPath(opts.evidenceDir)}/**)`] : []),
     '--permission-mode',
     'dontAsk',
     '--add-dir',
     opts.mediaDir,
+    ...(opts.evidenceDir ? ['--add-dir', opts.evidenceDir] : []),
     '--max-turns',
     String(opts.maxTurns),
     '--no-session-persistence',
@@ -148,7 +158,10 @@ export function createClaudeCliBrain(opts: ClaudeCliOptions): Brain {
       try {
         const r = await execa(opts.bin, args, {
           cwd: opts.cwd,
-          input: input.prompt,
+          // o caminho da base de evidências só existe para esta CLI (Read); o prompt do turno não sabe dele
+          input: opts.evidenceDir
+            ? `${input.prompt}\n<evidence_dir>${opts.evidenceDir}</evidence_dir>`
+            : input.prompt,
           timeout: opts.timeoutMs,
           reject: false,
           extendEnv: false,
@@ -188,4 +201,56 @@ export function createClaudeCliBrain(opts: ClaudeCliOptions): Brain {
       }
     },
   };
+}
+
+/**
+ * Prompt avulso, sem tools nem MCP: o jogador de persona e o LLM-juiz da simulação (Fase 8f). Nunca usado no
+ * atendimento ao dono.
+ */
+export async function runPlainPrompt(opts: {
+  bin: string;
+  cwd: string;
+  model: string;
+  system: string;
+  prompt: string;
+  timeoutMs: number;
+  isolationArgs: string[];
+}): Promise<BrainResult> {
+  const args = [
+    '-p',
+    '--output-format',
+    'json',
+    '--model',
+    opts.model,
+    '--system-prompt',
+    opts.system,
+    '--tools',
+    '',
+    '--permission-mode',
+    'dontAsk',
+    '--max-turns',
+    '1',
+    '--no-session-persistence',
+    ...opts.isolationArgs,
+  ];
+  const started = Date.now();
+  const r = await execa(opts.bin, args, {
+    cwd: opts.cwd,
+    input: opts.prompt,
+    timeout: opts.timeoutMs,
+    reject: false,
+    extendEnv: false,
+    env: childEnv(),
+    stripFinalNewline: true,
+  });
+  const durationMs = Date.now() - started;
+  if (r.timedOut)
+    return {
+      ok: false,
+      text: '',
+      errorKind: 'timeout',
+      errorMessage: `timeout de ${opts.timeoutMs} ms`,
+      durationMs,
+    };
+  return parseCliOutput(String(r.stdout ?? ''), String(r.stderr ?? ''), durationMs);
 }

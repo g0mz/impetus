@@ -267,6 +267,19 @@ inverso. A Fase 8 adota a camada de coach e mantém a de dados.
   período do relatório agendado do `/relatorio semana` (que mostra a semana corrente). O jantar de domingo fica de
   fora do semanal, mas entra nas tendências da semana seguinte. Reavaliar depois de algumas semanas de check-in.
 
+### D-035 — Base de evidências conferida, mas ainda sem revisão do dono (2026-10-21, Fase 8e)
+- `runtime/evidence/` tem 8 arquivos (volume, intensidade, frequência, descanso, proteína, balanço energético,
+  suplementos, mitos) com 19 fontes. Todo DOI foi conferido no Crossref e todo número no abstract (OpenAlex ou
+  PubMed); a dose de creatina, no texto completo (PMC5469049).
+- Ficaram de fora, por falta de fonte conferida: progressão de carga, deload, seleção de exercícios, adesão e sono.
+  O prompt manda tratar esses temas como orientação geral, sem números.
+- Commitado por pedido explícito do dono ("vá commitando tudo"), contra a regra de pausar para revisão de dados com
+  julgamento. **Pendente: o dono revisar os 8 arquivos.**
+- O caminho da pasta chega ao modelo como `<evidence_dir>` anexado pelo `claude-cli.ts`, com `--add-dir` e
+  `Read(...)` liberado só para ela (o prompt do turno continua sem saber da CLI, regra 8).
+- Efeito colateral visto nos evals: com o prompt mais longo, o Haiku passou a marcar unidade caseira como
+  `user_stated`; a regra de origem virou o primeiro passo da nutrição, com exemplo.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não
