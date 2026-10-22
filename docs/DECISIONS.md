@@ -246,7 +246,32 @@ dia, do início do dia até o instante do sync** (`03:00Z → agora`), e o fim m
 - Os demais tipos (FC, HRV, SpO2, sono) seguem com `type|start|end`.
 - O botão "Test Webhook" manda dados fictícios com `test: true`: o ingest responde ok e não grava nada.
 
-### D-033 — Camada de coach inspirada no my-fitness-claw (2026-10-21, Fase 8, aprovada)
+### D-033 — Tailscale `serve` para a ingestão do HC, em vez de HTTPS público (2026-10-17, Fase 4)
+O ingest escuta só em 127.0.0.1 (ARCHITECTURE.md §9) e o celular precisa alcançá-lo. Entre as duas opções do
+DEPLOY.md §6, ficou a A: `tailscale serve --bg --https=443 http://127.0.0.1:8787` na VM, celular na mesma tailnet.
+- Nada é exposto na internet: a 8787 segue em loopback, a Security List da VCN e o iptables da imagem da OCI não
+  foram tocados (nenhuma porta aberta além da 22). Quem atravessa é o proxy do Tailscale, pelo WireGuard.
+- Custo: o celular precisa estar na tailnet no momento do sync (VPN sempre ativa). A opção B (Caddy + DuckDNS)
+  dispensaria a VPN, mas abriria a 443 para a internet com um endpoint protegido só pela `X-Api-Key`.
+- A `X-Api-Key` continua obrigatória: a tailnet é a primeira camada, não a única.
+
+### D-034 — Cargas salvas na rotina e "fiz upper A" (2026-10-21)
+Pedido do dono: deixar o treino predefinido e só dizer "estou fazendo upper A", mudando a carga só quando ela sobe ou cai.
+- `routine_exercises` ganha `weight_kg` e `reps` (migration 002). Não criamos uma tabela de "cargas atuais": a rotina já
+  é o lugar da prescrição, e o snapshot de undo da rotina cobre as duas colunas.
+- Tool nova `log_routine`: monta as séries a partir do salvo (função pura `plannedSets`), aplica só os ajustes do dia
+  e reaproveita a gravação do `log_workout` (sessão aberta, `vs_last`, PRs). Faltando dado salvo, devolve `VALIDATION`
+  com o que perguntar, em vez de inventar carga (regra 1 e "sem dados inventados").
+- **Regra de atualização:** a maior carga de trabalho do exercício no treino vira a carga salva quando difere dela (vale
+  para subir e para descer). Reps e número de séries **não** mudam sozinhos: variam de sessão para sessão na progressão
+  dupla; mudar o salvo é pedido explícito (`set_routine_loads`). "Só hoje" → `keep_loads: true`.
+- A carga salva é o que o usuário faz, não o alvo da progressão: `get_next_targets` e `/treino` mostram as duas.
+- Tudo entra no `/desfazer` (o `log_routine` audita a rotina com o snapshot anterior).
+- **Sem carga conhecida** (nem salva nem em treino anterior): a pedido do dono, o treino é anotado mesmo assim, com séries
+  e reps sem carga, e o coach avisa no início da resposta. Preferimos séries sem carga a uma sessão vazia porque dias de
+  treino e séries por músculo vêm das séries. Para não gerar "+50kg" ou 🏆 falsos depois, num exercício que leva carga
+  as séries sem carga ficam fora de `vs_last` e de PRs, e a carga de referência vem da última sessão **com** carga.
+### D-035 — Camada de coach inspirada no my-fitness-claw (2026-10-21, Fase 8, aprovada)
 O my-fitness-claw (Clawdino) guarda tudo em markdown e CSV: dados fracos, mas um coach forte. O Impetus tem o
 inverso. A Fase 8 adota a camada de coach e mantém a de dados.
 - **Adotado:** tom com exemplos e regras (número com significado, pessoa antes do dado, deslize sem compensação);
@@ -259,7 +284,7 @@ inverso. A Fase 8 adota a camada de coach e mantém a de dados.
 - **Recusado:** markdown e CSV como banco; níveis pupil/grinder/maxxer (com um usuário, o nível de detalhe é uma
   preferência em `coach_notes`); plano em PDF; instalação como plugin; Telegram sem BotFather.
 
-### D-034 — Check-in da manhã decidido no código; relatório semanal fica no domingo (2026-10-21, Fase 8d)
+### D-036 — Check-in da manhã decidido no código; relatório semanal fica no domingo (2026-10-21, Fase 8d)
 - O código decide se o check-in sai (sessão planejada, noite < 6 h ou evento de vida vencendo). Dado faltando de
   ontem, sozinho, não gera mensagem: seria cobrança diária. Dia sem nada a dizer não chama o cérebro.
 - O check-in usa `MODEL_REPORT`: sai uma vez por dia e o tom pesa mais que o custo.
@@ -267,7 +292,7 @@ inverso. A Fase 8 adota a camada de coach e mantém a de dados.
   período do relatório agendado do `/relatorio semana` (que mostra a semana corrente). O jantar de domingo fica de
   fora do semanal, mas entra nas tendências da semana seguinte. Reavaliar depois de algumas semanas de check-in.
 
-### D-035 — Base de evidências conferida, mas ainda sem revisão do dono (2026-10-21, Fase 8e)
+### D-037 — Base de evidências conferida, mas ainda sem revisão do dono (2026-10-21, Fase 8e)
 - `runtime/evidence/` tem 8 arquivos (volume, intensidade, frequência, descanso, proteína, balanço energético,
   suplementos, mitos) com 19 fontes. Todo DOI foi conferido no Crossref e todo número no abstract (OpenAlex ou
   PubMed); a dose de creatina, no texto completo (PMC5469049).

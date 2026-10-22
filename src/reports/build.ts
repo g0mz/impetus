@@ -79,7 +79,7 @@ function loadSets(db: Db, from: string, to: string): TrainingSet[] {
   }));
 }
 
-function loadNutrition(db: Db, p: Period): DayNutrition[] {
+export function loadNutrition(db: Db, p: Period): DayNutrition[] {
   const rows = db
     .prepare(
       `SELECT local_date, count(*) meals, sum(kcal) kcal, sum(protein_g) protein_g, sum(carbs_g) carbs_g, sum(fat_g) fat_g,
@@ -90,7 +90,7 @@ function loadNutrition(db: Db, p: Period): DayNutrition[] {
   return rows;
 }
 
-function loadHealth(db: Db, from: string, to: string): HealthDay[] {
+export function loadHealth(db: Db, from: string, to: string): HealthDay[] {
   return db
     .prepare(
       'SELECT local_date, steps, sleep_minutes, sleep_start, sleep_end, resting_hr FROM health_daily WHERE local_date BETWEEN ? AND ? ORDER BY local_date',
@@ -98,7 +98,7 @@ function loadHealth(db: Db, from: string, to: string): HealthDay[] {
     .all(from, to) as HealthDay[];
 }
 
-function loadWeights(db: Db, to: string) {
+export function loadWeights(db: Db, to: string) {
   return db
     .prepare(
       `SELECT local_date, weight_kg FROM body_metrics b1
@@ -144,7 +144,17 @@ export type ReportBrief = {
   comparisons: { vs_previous_period: Record<string, string> };
 };
 
-export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: string): ReportBrief {
+/**
+ * Monta os números do período. `persist` existe para quem só lê (o dashboard): por padrão o brief
+ * grava a estimativa de manutenção em `settings`, e uma página não pode escrever a cada visita.
+ */
+export function buildReportBrief(
+  db: Db,
+  kind: ReportKind,
+  period: Period,
+  now: string,
+  opts: { persist?: boolean } = {},
+): ReportBrief {
   const goals = getGoals(db);
   const n = days(period);
   const prevPeriod = { start: addDays(period.start, -n), end: addDays(period.start, -1) };
@@ -237,7 +247,8 @@ export function buildReportBrief(db: Db, kind: ReportKind, period: Period, now: 
     now,
     periodDays: n,
   });
-  if (kind !== 'daily' && maintenance !== null) setSetting(db, 'metrics.maintenance_estimate', maintenance);
+  if (opts.persist !== false && kind !== 'daily' && maintenance !== null)
+    setSetting(db, 'metrics.maintenance_estimate', maintenance);
 
   const cmp: Record<string, string> = {};
   const add = (k: string, a: number | null, b: number | null) => {

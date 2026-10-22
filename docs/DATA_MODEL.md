@@ -123,6 +123,8 @@ CREATE TABLE routine_exercises (
   target_sets INTEGER,
   rep_min INTEGER,
   rep_max INTEGER,
+  weight_kg REAL,                     -- carga salva (halter = por mão); NULL = sem carga/peso corporal (D-034)
+  reps INTEGER,                       -- reps salvas por série; NULL = usa rep_min (D-034)
   PRIMARY KEY (routine_id, position)
 );
 
@@ -371,7 +373,7 @@ CREATE TABLE job_runs (
 
 ## 7. Coach (Fase 8)
 
-Memória da pessoa (D-033), escrita só pelas tools `remember_note`, `resolve_note` e `forget_note`. Entra no prompt
+Memória da pessoa (D-035), escrita só pelas tools `remember_note`, `resolve_note` e `forget_note`. Entra no prompt
 do turno como `<coach_notes>` (ARCHITECTURE.md §5.2), com orçamento de ~1.500 caracteres.
 
 ```sql

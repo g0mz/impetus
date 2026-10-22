@@ -35,6 +35,10 @@ export type RoutineExerciseRow = {
   target_sets: number | null;
   rep_min: number | null;
   rep_max: number | null;
+  /** Carga salva (como o usuário fala: halter = por mão); NULL = sem carga ou peso corporal. */
+  weight_kg: number | null;
+  /** Reps salvas por série; NULL = usa rep_min. */
+  reps: number | null;
 };
 
 /** Rotina pelo nome (normalizado), inclusive apagada — o upsert a reaproveita. */
@@ -47,7 +51,7 @@ export function findRoutine(db: Db, name: string, includeDeleted = false): Routi
 export function getRoutineExercises(db: Db, routineId: number): RoutineExerciseRow[] {
   return db
     .prepare(
-      'SELECT position, exercise_id, target_sets, rep_min, rep_max FROM routine_exercises WHERE routine_id = ? ORDER BY position',
+      'SELECT position, exercise_id, target_sets, rep_min, rep_max, weight_kg, reps FROM routine_exercises WHERE routine_id = ? ORDER BY position',
     )
     .all(routineId) as RoutineExerciseRow[];
 }
@@ -55,7 +59,7 @@ export function getRoutineExercises(db: Db, routineId: number): RoutineExerciseR
 export function routineExercisesWithNames(db: Db, routineId: number) {
   return db
     .prepare(
-      `SELECT re.position, re.exercise_id, e.name_pt, re.target_sets, re.rep_min, re.rep_max
+      `SELECT re.position, re.exercise_id, e.name_pt, re.target_sets, re.rep_min, re.rep_max, re.weight_kg, re.reps
          FROM routine_exercises re JOIN exercises e ON e.id = re.exercise_id
         WHERE re.routine_id = ? ORDER BY re.position`,
     )
@@ -88,9 +92,24 @@ export function replaceRoutineExercises(
 ): void {
   db.prepare('DELETE FROM routine_exercises WHERE routine_id = ?').run(routineId);
   const ins = db.prepare(
-    'INSERT INTO routine_exercises (routine_id, position, exercise_id, target_sets, rep_min, rep_max) VALUES (?, ?, ?, ?, ?, ?)',
+    `INSERT INTO routine_exercises (routine_id, position, exercise_id, target_sets, rep_min, rep_max, weight_kg, reps)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
-  rows.forEach((r, i) => ins.run(routineId, i + 1, r.exercise_id, r.target_sets, r.rep_min, r.rep_max));
+  rows.forEach((r, i) =>
+    ins.run(routineId, i + 1, r.exercise_id, r.target_sets, r.rep_min, r.rep_max, r.weight_kg, r.reps),
+  );
+}
+
+/** Atualiza carga, reps e séries salvas de um exercício da rotina (posição). */
+export function updateRoutineExercise(
+  db: Db,
+  routineId: number,
+  position: number,
+  v: Pick<RoutineExerciseRow, 'weight_kg' | 'reps' | 'target_sets'>,
+): void {
+  db.prepare(
+    'UPDATE routine_exercises SET weight_kg = ?, reps = ?, target_sets = ? WHERE routine_id = ? AND position = ?',
+  ).run(v.weight_kg, v.reps, v.target_sets, routineId, position);
 }
 
 // ── Sessões e séries ─────────────────────────────────────────────────────────────────────
@@ -281,4 +300,23 @@ export function insertCardio(
       )
       .run(c).lastInsertRowid,
   );
+}
+
+/** Exercícios com séries no período, do mais treinado ao menos: alimenta o seletor do dashboard. */
+export function trainedExercises(
+  db: Db,
+  from: string,
+  to: string,
+): { id: number; name_pt: string; sessions: number }[] {
+  return db
+    .prepare(
+      `SELECT e.id, e.name_pt, count(DISTINCT ws.id) AS sessions
+         FROM sets s
+         JOIN workout_sessions ws ON ws.id = s.session_id AND ws.deleted_at IS NULL
+         JOIN exercises e ON e.id = s.exercise_id
+        WHERE s.deleted_at IS NULL AND ws.local_date BETWEEN ? AND ?
+        GROUP BY e.id, e.name_pt
+        ORDER BY sessions DESC, e.name_pt`,
+    )
+    .all(from, to) as { id: number; name_pt: string; sessions: number }[];
 }

@@ -29,7 +29,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Personas `semana_tipica`, `viagem_e_dor` e `sumico` (`evals/personas/`); parser com testes.
 - `runPlainPrompt` / `createPlainLlm`: chamada sem tools nem MCP, usada só pela simulação.
 
-### Fase 8e — Base de evidências (2026-10-21, D-035)
+### Fase 8e — Base de evidências (2026-10-21, D-037)
 
 #### Adicionado
 - `runtime/evidence/`: 8 arquivos em PT-BR (volume, intensidade, frequência, descanso, proteína, balanço
@@ -43,7 +43,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   depois); datas e dias da semana vêm das tools, não de conta de cabeça.
 - Regra de origem dos itens de refeição em destaque: unidade caseira é `text_estimate`, nunca `user_stated`.
 
-### Fase 8d — Check-in diário (2026-10-21, D-034)
+### Fase 8d — Check-in diário (2026-10-21, D-036)
 
 #### Adicionado
 - `reports/checkin.ts`: brief determinístico (sessão planejada, alvos, sono, eventos de vida, faltas de ontem),
@@ -58,10 +58,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - `.gitignore` ignorava `src/tools/` (regra `tools/` sem âncora); `src/tools/coach.ts` da 8b não tinha entrado no
   commit.
 
-### Fase 8c — Agenda semanal e ajustes temporários (2026-10-21, D-033)
+### Fase 8c — Agenda semanal e ajustes temporários (2026-10-21, D-035)
 
 #### Adicionado
-- Tabelas `routine_schedule` e `plan_overrides` (migration 003) e a função pura `plannedFor` / `plannedWeek`
+- Tabelas `routine_schedule` e `plan_overrides` (migration 004) e a função pura `plannedFor` / `plannedWeek`
   (`domain/training/schedule.ts`): agenda semanal com ajustes por cima; o ajuste mais recente vence.
 - Tools `set_weekly_schedule`, `set_plan_override` (até 60 dias; muda sessões, nunca metas), `end_plan_override`
   e `get_week_plan`; `get_next_targets` sem `routine_name` usa a rotina planejada de hoje.
@@ -70,10 +70,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Evals: asserções `schedule_days`, `plan_overrides` e `planned`; casos `plan_schedule_define` e
   `plan_override_move`.
 
-### Fase 8b — Memória da pessoa (2026-10-21, D-033)
+### Fase 8b — Memória da pessoa (2026-10-21, D-035)
 
 #### Adicionado
-- Tabela `coach_notes` (migration 002): preferências, observações e eventos de vida com data.
+- Tabela `coach_notes` (migration 003): preferências, observações e eventos de vida com data.
 - Tools `remember_note` (com `replaces_id`), `resolve_note` (desfecho vira observação) e `forget_note`, com
   auditoria e `/desfazer`.
 - Bloco `<coach_notes>` no prompt do turno (função pura `notesForContext`, ~1.500 caracteres): todas as
@@ -83,7 +83,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Evals: `now` por passo, asserções `coach_notes` e `notes_resolved`; casos `coach_memory_preference` e
   `coach_memory_life`.
 
-### Fase 8a — Tom do coach (2026-10-21, D-033)
+### Fase 8a — Tom do coach (2026-10-21, D-035)
 
 #### Adicionado
 - Seção `# Tom` no `system.md` com regras (número com significado, pessoa antes do dado, deslize sem compensação,
@@ -93,6 +93,75 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   no WhatsApp, Telegram e terminal), guardada como mensagem `kind = 'reaction'` para o `<recent_turns>`.
 - Evals: asserções `reply_matches`, `reply_not_matches`, `reaction`, `body_metrics` e `sql` de fixture; casos
   `coach_thanks`, `coach_weight_noise`, `coach_slip` e `coach_life_first`.
+### Treino predefinido por rotina (2026-10-21)
+
+#### Adicionado
+- Carga e reps salvas por exercício da rotina (migration `002_routine_loads.sql`). `define_routine` aceita
+  `weight_kg` e `reps` ("meu upper A é: supino inclinado halter 3x10 30kg, …") e, ao redefinir, mantém a carga salva
+  de quem não veio com carga nova.
+- `log_routine`: "fiz upper A" registra a rotina inteira com o salvo; em `changes` vai só o que mudou (carga, reps,
+  séries, séries detalhadas, exercício pulado ou extra). Carga que sobe ou desce fica salva para o próximo treino
+  (`loads_updated`); `keep_loads` para "só hoje". Sem carga salva, pergunta em vez de inventar.
+- `set_routine_loads`: muda o salvo sem registrar treino.
+- `/treino <rotina>` e `get_next_targets` mostram a carga salva ao lado do último treino e do alvo.
+- Eval `workout_routine_loads` e asserção `routine_loads` no `scripts/eval.ts`.
+- `npm run routines:import [arquivo]`: grava rotinas de um YAML (padrão `seeds/routines.yaml`) pelas mesmas tools do
+  coach, num turno de comando (auditado, `/desfazer` volta). Cria exercício ausente quando o arquivo traz `create` e liga
+  o nome usado pelo dono como apelido.
+- `log_routine` sem carga salva usa a última carga registrada do exercício (e passa a salvá-la); exercício de peso
+  corporal (`equipment: bodyweight`, ex.: abdominal) não exige carga.
+- Sem nenhuma carga conhecida, `log_routine` anota séries e reps sem carga e devolve `without_load`; o coach avisa no
+  início da resposta e pede as cargas. Essas séries não geram `vs_last` nem PR falsos no treino seguinte.
+- `seeds/routines.yaml`: Upper A/B e Lower A/B do dono, revisados.
+
+#### Decidido
+- D-034: a maior carga de trabalho vira a carga salva quando muda; reps e séries só mudam por pedido explícito.
+
+### Dashboard somente leitura (2026-10-17)
+
+#### Adicionado
+- Seis páginas no celular, servidas pela própria VM na tailnet (`DASHBOARD=true`, porta 8789 em loopback,
+  atravessada por `tailscale serve --https=8443`): resumo, peso, nutrição, treino, exercício e sono/atividade,
+  com recortes de 7, 30, 90 dias e 1 ano.
+- Zero JavaScript: HTML montado no servidor, troca de recorte por querystring e `<form method=get>`. Gráficos são
+  SVG do mesmo pipeline Vega-Lite dos relatórios, parando antes do rasterizador — o que permite o modo escuro
+  reestilizar os gráficos sem re-renderizar (`tokenizeSvg` troca os hex do sistema por `var(--token)`).
+- Elemento visual recorrente: a faixa de meta atrás de cada gráfico, vinda das metas em `settings`, para a tela
+  responder "estou dentro?" antes de qualquer número ser lido.
+- Cache de página em memória invalidado por `max(audit_log.id)` **e** `max(health_daily.updated_at)`: os dados do
+  relógio entram sem passar pelo `audit_log`, e só a primeira fonte deixaria passos e sono velhos na tela.
+- Degradação por métrica: sem dado do relógio, a tela diz o que habilitar no HC Webhook em vez de mostrar gráfico
+  vazio; com poucos pontos, diz quantos dias faltam para a tendência ter sentido.
+- `trainedExercises` (exercícios treinados num período) e specs web de peso, volume, e1RM, kcal/proteína, passos e
+  sono.
+
+#### Corrigido
+- `buildReportBrief` gravava `metrics.maintenance_estimate` em toda chamada com `kind != 'daily'`. Como o dashboard
+  monta o brief a cada página, isso seria uma escrita por visita; agora aceita `{ persist: false }` e um teste de
+  integração garante que nenhuma das seis rotas escreve no banco.
+
+#### Medido na VM (E2.1.Micro, 1 GB)
+- Primeira carga por rota: 3 ms a 292 ms (a mais cara é `/treino`, que calcula volume e PRs); com cache, 1,4 ms.
+  `/treino?p=ano` ficou em 199 ms, bem abaixo do limite de 3 s que a spec estabeleceu para repensar o recorte.
+  Memória do serviço: 180 MB.
+- No ar em `https://impetus.<tailnet>.ts.net:8443/`, numa porta HTTPS própria da tailnet: a raiz do host continua
+  sendo do ingest, então a URL do HC Webhook no celular não mudou.
+
+#### Decidido
+- Spec e plano em `docs/superpowers/specs/2026-10-17-dashboard-design.md` e
+  `docs/superpowers/plans/2026-10-17-dashboard.md`.
+
+### Rede da ingestão do Health Connect na VM (2026-10-17)
+
+#### Adicionado
+- Tailscale 1.104.1 na VM (`impetus` na tailnet) com `tailscale serve --bg --https=443 http://127.0.0.1:8787`
+  (decisão D-033). A ingestão fica em `https://impetus.<tailnet>.ts.net/ingest/health`, só de dentro da tailnet.
+- Validado por POST real do payload do botão "Test Webhook" (`{"test":true}`): `200 {"ok":true,"test":true}` com a
+  `X-Api-Key` e `{"ok":false,"error":"unauthorized"}` sem ela; `/healthz` responde 200 pela URL da tailnet.
+- Nenhuma porta aberta: a 8787 segue só em loopback, a 8787 pública não responde e o iptables/Security List não
+  foram alterados.
+- **Fase 4 ponta a ponta:** primeiro sync real do HC Webhook pelo celular na tailnet (conexão direta, sem relay) —
+  dois payloads processados (19 e 3 amostras, dias 2026-10-16 e 17, nada ignorado).
 
 ### Deploy independente do shape da VM (2026-10-17)
 
@@ -107,9 +176,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
   `MemorySwapMax=3G`): o `MemoryMax=1500M` da unit é maior que a RAM da E2.1.Micro, e o `claude` de um turno
   pede ~300 MB — melhor paginar do que ser morto pelo OOM.
 
-#### Em andamento
-- Deploy na E2.1.Micro (x86_64, 954 MB, Ubuntu 24.04.5): swap, Node 24.22, build, banco e `wa-auth` migrados do
-  notebook, Claude Code 2.1.302 instalado. Falta o `CLAUDE_CODE_OAUTH_TOKEN` e subir o serviço.
+#### Fase 6 — deploy feito (E2.1.Micro, 2026-10-17)
+- VM: x86_64, 954 MB, Ubuntu 24.04.5, Node 24.22, Claude Code 2.1.302, swap de 4 GB. Repo privado clonado por
+  deploy key (somente leitura) do usuário `impetus`; banco (integrity ok) e `wa-auth` migrados do notebook.
+- No ar pelo WhatsApp com a sessão migrada, sem novo vínculo: `/status` do celular respondido em ~1 s.
+- **Reboot:** serviço volta sozinho (`enabled`) e o WhatsApp reconecta 3 s após o start; swap persiste pelo fstab.
+- **Restore:** `npm run restore` de um backup gerado na própria VM → 35 tabelas, 18 séries, `integrity_check` ok.
+- **Memória:** 241 MB de RSS do serviço em repouso, com `MemoryMax=900M`. Falta a leitura após 24 h de uso.
+- Ponta solta: dois turnos `command` de 15/10 ficaram `running` (o processo do notebook morreu no meio).
 
 ### Primeiro sync real do Health Connect (2026-10-16)
 

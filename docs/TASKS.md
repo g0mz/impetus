@@ -139,11 +139,11 @@ impetus/
 
 ## Fase 6 — Deploy e operação
 
-- [ ] Build e teste na VM, linux-arm64 ou x86_64 (`better-sqlite3`, `sharp`, `@resvg/resvg-js`).
-- [x] `deploy/setup-vm.sh` idempotente (DEPLOY.md §2–4) e unit do systemd. *(escrito; rodar na VM)*
+- [x] Build e teste na VM, linux-arm64 ou x86_64 (`better-sqlite3`, `sharp`, `@resvg/resvg-js`). *(E2.1.Micro x86_64, 2026-10-17)*
+- [x] `deploy/setup-vm.sh` idempotente (DEPLOY.md §2–4) e unit do systemd. *(rodado na VM em 2026-10-17)*
 - [x] Backup (`src/ops/backup.ts` + job) e **teste de restore documentado** (automatizado em `ops.test.ts`).
 - [x] Alertas: token Claude expirando, backup falho, `hc_stale`, turnos falhos repetidos.
-- [ ] Medição: RSS do processo após 24 h, latência p50/p90 por tipo de turno. *(no `/status`; falta a leitura de 24 h na VM)*
+- [ ] Medição: RSS do processo após 24 h, latência p50/p90 por tipo de turno. *(241 MB em repouso na VM; falta a leitura após 24 h de uso)*
 
 **Aceite:** VM reiniciada → serviço volta sozinho e o WhatsApp reconecta; restore completo em menos de 30 min seguindo o runbook; RSS < 400 MB.
 
@@ -152,12 +152,12 @@ impetus/
 - [x] Adaptador Telegram (plano B do canal).
 - [ ] `AnthropicApiBrain` e/ou `GeminiBrain` reutilizando `tools/registry` (plano B da cobrança).
 - [x] Transcrição de áudio (Whisper local `whisper.cpp` em ARM, modelo pequeno) para registrar treino por voz. *(D-030)*
-- [ ] Dashboard web somente leitura, servido via Tailscale.
+- [x] Dashboard web somente leitura, servido via Tailscale. *(2026-10-17, seis telas, zero JS)*
 - [ ] Importação do CSV de outro app de treino (Strong ou Hevy) para histórico antigo.
 
 ## Fase 8 — Coach: tom, memória e iniciativa
 
-Inspirada no my-fitness-claw (D-033). O Impetus continua dono dos dados (banco, tools, contas no código); esta fase dá ao coach tom, memória da pessoa e iniciativa. Subfases na ordem abaixo, cada uma fechando com `npm run check` e os evals afetados. DATA_MODEL, TOOLS e ARCHITECTURE são atualizados junto com cada subfase que mexe neles.
+Inspirada no my-fitness-claw (D-035). O Impetus continua dono dos dados (banco, tools, contas no código); esta fase dá ao coach tom, memória da pessoa e iniciativa. Subfases na ordem abaixo, cada uma fechando com `npm run check` e os evals afetados. DATA_MODEL, TOOLS e ARCHITECTURE são atualizados junto com cada subfase que mexe neles.
 
 ### 8a — Tom do coach (prompt + gateway)
 
@@ -192,13 +192,13 @@ Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 - [x] `reports/checkin.ts` monta um brief determinístico: sessão planejada (com override), alvos, sono da noite, `life_event` vencendo hoje, dado faltando de ontem. Sem sessão, sem sono ruim e sem nota vencendo → **não envia nada** e não chama o cérebro.
 - [x] Turno `mode: 'checkin'`, `toolScope: 'read'`, `runtime/prompts/checkin.md`: 1 a 3 linhas; sono < 6 h → manter cargas e cortar a última série se pesar.
 - [x] Fallback sem LLM ("Hoje: <rotina> · <exercício> <alvo>…") com snapshot test.
-- [x] Pendência do relatório de domingo 20:00: mantido (D-034).
+- [x] Pendência do relatório de domingo 20:00: mantido (D-036).
 
 ### 8e — Base de evidências
 
 - [x] `runtime/evidence/*.md` em PT-BR: volume, intensidade e esforço, frequência, descanso, proteína (com timing), balanço energético (com carboidrato e gordura), suplementos e `mitos.md`.
-- [ ] Progressão, deload, seleção de exercícios e adesão: sem fonte conferida ainda (D-035). Formato: conclusão, força da evidência (forte | moderada | fraca), padrão, ressalvas, fontes com DOI.
-- [x] Regra 10: cada DOI conferido no Crossref ou OpenAlex e cada número no abstract ou texto completo; afirmação sem fonte conferida não entra. Commitado por pedido do dono; **revisão do dono pendente** (D-035).
+- [ ] Progressão, deload, seleção de exercícios e adesão: sem fonte conferida ainda (D-037). Formato: conclusão, força da evidência (forte | moderada | fraca), padrão, ressalvas, fontes com DOI.
+- [x] Regra 10: cada DOI conferido no Crossref ou OpenAlex e cada número no abstract ou texto completo; afirmação sem fonte conferida não entra. Commitado por pedido do dono; **revisão do dono pendente** (D-037).
 - [x] O cérebro lê sob demanda com `Read` (`--add-dir runtime/evidence`; atualizar ARCHITECTURE §5.1) e um índice de uma linha por arquivo no `system.md`. A evidência fica nos bastidores: nada de "estudos mostram", salvo se perguntarem por quê.
 - [x] Evals: `evidence_myth_breakfast`, `evidence_creatine`, `evidence_rest_interval` (resposta curta, sem citar autor, coerente com o arquivo).
 

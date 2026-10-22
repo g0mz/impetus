@@ -2,7 +2,7 @@
 export const t = {
   help: [
     '🤖 *Impetus* — comandos:',
-    '• /treino [rotina] — última sessão e alvos (sem rotina: a planejada para hoje)',
+    '• /treino [rotina] — cargas salvas, última sessão e alvos (sem rotina: a planejada para hoje)',
     '• /ultimo <exercício> — últimas 3 sessões do exercício',
     '• /metas — metas atuais · /meta <chave> <valor> — define (ou "remover")',
     '  chaves: kcal, proteina, passos, sono, treinos, ritmo_peso, peso_alvo',
@@ -16,7 +16,8 @@ export const t = {
     '• /ajuda — esta lista',
     '',
     'Ou escreva livremente, por exemplo:',
-    '• "meu upper B é: supino inclinado halter 3x8-12, remada curvada 4x6-10"',
+    '• "meu upper B é: supino inclinado halter 3x10 30kg, remada curvada 4x8 60kg"',
+    '• "fiz upper B" (usa as cargas salvas) · "fiz upper B, supino subi pra 32"',
     '• "upper B: supino inclinado halter 3x10 30kg, remada curvada 4x8 60kg"',
     '• "supino 32kg 10 9 8" (anexa ao treino em andamento)',
     '• "30 min esteira"',
@@ -70,3 +71,35 @@ export const GOAL_LABELS: Record<string, { label: string; unit: string }> = {
   weight_rate_kg_wk: { label: 'ritmo de peso', unit: 'kg/semana' },
   weight_target_kg: { label: 'peso alvo', unit: 'kg' },
 };
+
+/** Dashboard somente leitura (DASHBOARD=true), lido no celular pela tailnet. */
+export const dash = {
+  app: 'Impetus',
+  nav: {
+    peso: 'peso',
+    nutricao: 'nutrição',
+    treino: 'treino',
+    exercicio: 'exercício',
+    sono: 'sono',
+  },
+  titulo: {
+    resumo: 'Resumo',
+    peso: 'Peso',
+    nutricao: 'Nutrição',
+    treino: 'Treino',
+    exercicio: 'Exercício',
+    sono: 'Sono e atividade',
+  },
+  periodo: { '7d': '7 dias', '30d': '30 dias', '90d': '90 dias', ano: '1 ano' },
+  semDadosSaude:
+    'Nada do relógio ainda. Ligue os tipos no app HC Webhook (passos, sono, frequência cardíaca) e os dados aparecem aqui no próximo sync.',
+  semSono: 'Sono não está sendo enviado pelo relógio. Habilite "Sleep" no app HC Webhook.',
+  semPeso: 'Nenhuma pesagem no período. Mande o peso no WhatsApp para a tendência começar.',
+  semRefeicoes: 'Nenhuma refeição registrada no período.',
+  semTreino: 'Nenhum treino registrado no período.',
+  poucosDados: (faltam: number) => `Poucos dados: mais ${faltam} dia(s) e a tendência ganha sentido.`,
+  escolhaExercicio: 'Escolha um exercício',
+  verTodos: 'ver',
+  metaLabel: 'meta',
+  mediaLabel: 'média',
+} as const;

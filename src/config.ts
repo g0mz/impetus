@@ -41,6 +41,8 @@ const schema = z
     MCP_PORT: int(8788),
     INGEST_PORT: int(8787),
     INGEST_API_KEY: z.string().min(64, 'use 32+ bytes aleatórios em hex (openssl rand -hex 32)').optional(),
+    DASHBOARD: bool.default(false),
+    DASHBOARD_PORT: int(8789),
 
     DEBOUNCE_MS: int(4000),
     DEBOUNCE_IMAGE_MS: int(20_000),

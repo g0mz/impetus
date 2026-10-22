@@ -45,9 +45,32 @@ in:  { exercise_id: number; alias: string }
 ```
 
 ### `define_routine` (write, upsert por nome)
+Ao redefinir, exercício sem `weight_kg`/`reps` mantém o que já estava salvo.
 ```ts
-in:  { name: string; exercises: { exercise_id; target_sets?; rep_min?; rep_max? }[] }
-out: { routine_id; name; exercises: { position; name_pt; target_sets; rep_min; rep_max }[] }
+in:  { name: string; exercises: { exercise_id; target_sets?; rep_min?; rep_max?; weight_kg?; reps? }[] }
+out: { routine_id; name; exercises: { position; exercise_id; name_pt; target_sets?; rep_min?; rep_max?; saved? /* "30kg 3×10" */ }[] }
+```
+
+### `log_routine` (write) — D-034
+"Fiz upper A": registra a rotina inteira com as cargas, séries e reps salvas (reps salvas, senão `rep_min`). Em `changes`
+vai só o que foi diferente. Depois de gravar (mesma lógica de sessão do `log_workout`), a maior carga de trabalho de cada
+exercício da rotina vira a carga salva quando difere dela, salvo `keep_loads`. Exercício fora da rotina entra só no treino.
+Sem carga salva, usa a carga da sessão mais recente do exercício que teve carga. Sem nenhuma, anota séries e reps sem
+carga e devolve `without_load` (o coach avisa no início da resposta); essas séries não entram em `vs_last` nem em PRs.
+Faltou séries ou reps → `VALIDATION` com a lista do que perguntar, nada gravado.
+```ts
+in: {
+  routine_name: string; performed_at?: string; new_session?: boolean; keep_loads?: boolean; notes?: string;
+  changes?: { exercise_id; weight_kg?; reps?; n_sets?; sets?: Set[] /* como log_workout */; skip?: boolean }[];
+}
+out: log_workout.out & { loads_updated?: { exercise; from?: string; to: string }[]; skipped?: string[]; without_load?: string[] }
+```
+
+### `set_routine_loads` (write) — D-034
+Muda carga, reps ou séries salvas sem registrar treino.
+```ts
+in:  { routine_name: string; loads: { exercise_id; weight_kg?: number | null; reps?; target_sets? }[] }
+out: { routine; exercises: define_routine.out.exercises }
 ```
 
 ### `log_workout` (write)
@@ -82,7 +105,7 @@ out: { sessions: { session_id; local_date; routine?; exercises: { name; sets_com
 Alvos para a próxima sessão da rotina, pela regra de progressão (REPORTS.md §2.4).
 ```ts
 in:  { routine_name: string }
-out: { last_date; targets: { exercise; last: string; target: string; rule: 'increase'|'hold'|'deload'|'first_time'; reason } [] }
+out: { last_date; targets: { exercise; saved?: string; last: string; target: string; rule: 'increase'|'hold'|'deload'|'first_time'; reason } [] }
 ```
 
 ### `log_cardio` (write)

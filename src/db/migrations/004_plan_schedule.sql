@@ -1,4 +1,4 @@
--- Fase 8c: agenda semanal das rotinas e ajustes temporários do plano (D-033).
+-- Fase 8c: agenda semanal das rotinas e ajustes temporários do plano (D-035).
 CREATE TABLE routine_schedule (
   weekday INTEGER PRIMARY KEY CHECK (weekday BETWEEN 0 AND 6), -- 0 = domingo; dia ausente = descanso
   routine_id INTEGER NOT NULL REFERENCES routines(id),

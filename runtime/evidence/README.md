@@ -11,7 +11,7 @@ mudanças no plano. Fica nos bastidores: o coach não cita autor nem "estudos mo
   como fraco.
 - Força da evidência: **forte** (meta-análise ou posicionamento consistente), **moderada** (meta-análise com
   ressalvas, ou poucos estudos), **fraca** (estudo isolado ou dados indiretos).
-- Conferido em 2026-10-21. Revisão do dono pendente (D-035).
+- Conferido em 2026-10-21. Revisão do dono pendente (D-037).
 
 ## Índice
 

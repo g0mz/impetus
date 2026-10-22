@@ -57,6 +57,8 @@ type Case = {
     /** Hora local de início da sessão (HH:MM). */
     session_start?: string;
     cardio_km?: Range;
+    /** Carga salva na rotina por exercício (regex do nome → kg; D-034). */
+    routine_loads?: Record<string, number>;
     /** A última resposta não pode afirmar registro sem escrita (aviso da trava D-031). */
     no_unconfirmed_write?: boolean;
     // ── tom (Fase 8a) ──
@@ -273,6 +275,19 @@ function checkTraining(db: Db, c: Case): string[] {
     if (m === null || !inRange(m / 1000, e.cardio_km))
       fails.push(
         `cardio ${m === null ? 'sem distância' : `${m / 1000} km`} (esperado ${fmtRange(e.cardio_km)})`,
+      );
+  }
+  for (const [name, kg] of Object.entries(e.routine_loads ?? {})) {
+    const saved = db
+      .prepare(
+        `SELECT e.name_pt, re.weight_kg FROM routine_exercises re JOIN exercises e ON e.id = re.exercise_id
+          JOIN routines r ON r.id = re.routine_id WHERE r.deleted_at IS NULL`,
+      )
+      .all() as { name_pt: string; weight_kg: number | null }[];
+    const hit = saved.find((x) => new RegExp(name, 'i').test(normalize(x.name_pt)));
+    if (hit?.weight_kg !== kg)
+      fails.push(
+        `carga salva /${name}/: ${hit ? (hit.weight_kg ?? 'nenhuma') : 'fora da rotina'} (esperado ${kg})`,
       );
   }
   if (e.no_unconfirmed_write) {

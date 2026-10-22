@@ -1,4 +1,4 @@
--- Fase 8b: memória da pessoa (D-033). Escrita só pelas tools remember_note / resolve_note / forget_note.
+-- Fase 8b: memória da pessoa (D-035). Escrita só pelas tools remember_note / resolve_note / forget_note.
 CREATE TABLE coach_notes (
   id INTEGER PRIMARY KEY,
   kind TEXT NOT NULL CHECK (kind IN ('preference','observation','life_event')),

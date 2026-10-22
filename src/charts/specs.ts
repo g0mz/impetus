@@ -86,3 +86,169 @@ export function e1rmSpec(points: { local_date: string; exercise: string; e1rm: n
     },
   } as TopLevelSpec;
 }
+
+// ─── Tema web (dashboard) ─────────────────────────────────────────────────────
+// O THEME acima serve o PNG de 1080 px do WhatsApp. O dashboard é tela de celular:
+// largura menor, fundo claro e as cores do sistema de tokens (src/charts/render.ts).
+
+const WEB_WIDTH = 360;
+const DADO = '#1F3A5F';
+const META = '#C3D1B4';
+
+export const WEB_THEME: Pick<TopLevelSpec, 'background' | 'padding' | 'config'> = {
+  background: '#FBFAF7',
+  padding: 8,
+  config: {
+    font: 'system-ui, sans-serif',
+    view: { stroke: null },
+    locale: { number: { decimal: ',', thousands: '.', grouping: [3], currency: ['R$ ', ''] } },
+    axis: {
+      labelColor: '#8A8F98',
+      titleColor: '#8A8F98',
+      gridColor: '#8A8F98',
+      gridOpacity: 0.15,
+      domainColor: '#8A8F98',
+      tickColor: '#8A8F98',
+      labelFontSize: 11,
+      titleFontSize: 11,
+    },
+    legend: { labelColor: '#16181B', titleColor: '#8A8F98', labelFontSize: 11 },
+  },
+};
+
+/**
+ * Faixa de meta: o elemento-assinatura do dashboard, a mesma gramática em todo gráfico.
+ * Desenha a tolerância em volta do alvo, com o dado por cima.
+ */
+function goalBand(goal: number, tolerance = 0.05) {
+  return {
+    data: { values: [{ lo: goal * (1 - tolerance), hi: goal * (1 + tolerance) }] },
+    mark: { type: 'rect' as const, fill: META, opacity: 0.45 },
+    encoding: {
+      y: { field: 'lo', type: 'quantitative' as const },
+      y2: { field: 'hi' as const },
+    },
+  };
+}
+
+/**
+ * Barras por dia. O eixo é ordinal com `timeUnit`: em escala temporal pura as barras viram fios,
+ * porque não existe banda para ocupar.
+ */
+const webBars = (yField: string) => ({
+  mark: { type: 'bar' as const, fill: DADO, cornerRadiusEnd: 2, width: { band: 0.65 } },
+  encoding: {
+    x: {
+      field: 'local_date',
+      type: 'ordinal' as const,
+      timeUnit: 'monthdate' as const,
+      axis: { format: '%d/%m', title: null, labelAngle: 0, labelOverlap: 'greedy' as const },
+    },
+    y: { field: yField, type: 'quantitative' as const, axis: { title: null } },
+  },
+});
+
+export type NutritionDay = { local_date: string; kcal: number; protein_g: number };
+
+/** Calorias e proteína por dia, cada uma com sua faixa de meta (gráficos empilhados). */
+export function kcalProteinSpec(
+  rows: NutritionDay[],
+  goals: { kcal?: number; protein_g?: number },
+): TopLevelSpec {
+  const values = noon(rows);
+  const panel = (field: string, goal: number | undefined, title: string) => ({
+    width: WEB_WIDTH,
+    height: 120,
+    title,
+    data: { values },
+    layer: [...(goal ? [goalBand(goal)] : []), webBars(field)],
+  });
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    vconcat: [panel('kcal', goals.kcal, 'kcal'), panel('protein_g', goals.protein_g, 'proteína (g)')],
+  } as TopLevelSpec;
+}
+
+/** Passos por dia, com a faixa da meta diária. */
+export function stepsSpec(rows: { local_date: string; steps: number }[], goal?: number): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 140,
+    data: { values: noon(rows) },
+    layer: [...(goal ? [goalBand(goal)] : []), webBars('steps')],
+  } as TopLevelSpec;
+}
+
+/** Horas de sono por noite, com a faixa da meta. */
+export function sleepSpec(rows: { local_date: string; hours: number }[], goalH?: number): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 140,
+    data: { values: noon(rows) },
+    layer: [...(goalH ? [goalBand(goalH, 0.08)] : []), webBars('hours')],
+  } as TopLevelSpec;
+}
+
+/** Peso: pesagens como pontos, tendência como linha, faixa do peso alvo quando houver. */
+export function weightWebSpec(points: WeightPoint[], targetKg?: number): TopLevelSpec {
+  const values = noon(points);
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 160,
+    layer: [
+      ...(targetKg
+        ? [{ ...goalBand(targetKg, 0.01), data: { values: [{ lo: targetKg * 0.99, hi: targetKg * 1.01 }] } }]
+        : []),
+      {
+        data: { values },
+        mark: { type: 'point', filled: true, size: 22, fill: '#8A8F98', opacity: 0.8 },
+        encoding: {
+          x: { field: 'local_date', type: 'temporal', axis: { format: '%d/%m', title: null, labelAngle: 0 } },
+          y: { field: 'weight_kg', type: 'quantitative', scale: { zero: false }, axis: { title: 'kg' } },
+        },
+      },
+      {
+        data: { values },
+        mark: { type: 'line', stroke: DADO, strokeWidth: 2 },
+        encoding: {
+          x: { field: 'local_date', type: 'temporal' },
+          y: { field: 'trend_kg', type: 'quantitative', scale: { zero: false } },
+        },
+      },
+    ],
+  } as TopLevelSpec;
+}
+
+/** Séries por grupo muscular: barras horizontais, a leitura mais rápida de volume. */
+export function setsByMuscleWebSpec(rows: { muscle: string; sets: number }[]): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: Math.max(120, rows.length * 22),
+    data: { values: rows },
+    mark: { type: 'bar', fill: DADO, cornerRadiusEnd: 2 },
+    encoding: {
+      y: { field: 'muscle', type: 'nominal', sort: '-x', axis: { title: null } },
+      x: { field: 'sets', type: 'quantitative', axis: { title: null, format: 'd', tickMinStep: 1 } },
+    },
+  } as TopLevelSpec;
+}
+
+/** e1RM de um exercício ao longo do tempo. */
+export function e1rmWebSpec(points: { local_date: string; e1rm: number }[]): TopLevelSpec {
+  return {
+    ...WEB_THEME,
+    width: WEB_WIDTH,
+    height: 160,
+    data: { values: noon(points) },
+    mark: { type: 'line', stroke: DADO, strokeWidth: 2, point: { filled: true, size: 40, fill: DADO } },
+    encoding: {
+      x: { field: 'local_date', type: 'temporal', axis: { format: '%d/%m', title: null, labelAngle: 0 } },
+      y: { field: 'e1rm', type: 'quantitative', scale: { zero: false }, axis: { title: 'kg' } },
+    },
+  } as TopLevelSpec;
+}
