@@ -16,6 +16,7 @@ Node 24 LTS (TypeScript nativo, sem tsx) · TypeScript 6 ESM estrito · better-s
 - `npm run check`: typecheck + lint + testes (**deve passar antes de concluir qualquer tarefa**)
 - `npm run db:migrate` / `npm run db:seed`
 - `npm run eval`: evals contra o cérebro real (consome cota; rode só quando pedido ou ao fechar a Fase 3/5)
+- `npm run simulate -- evals/personas/<nome>.md`: persona simulada por dias + rubrica de tom por LLM-juiz (consome cota; só quando pedido)
 - `npm run wa:link`: vincula o número do bot (pairing code ou QR)
 
 TypeScript roda direto no Node (type stripping): imports relativos com `.ts`, `import type` para tipos, sem `enum`/`namespace`/parameter properties (ver `docs/DECISIONS.md` D-003).

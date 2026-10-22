@@ -196,15 +196,16 @@ Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 
 ### 8e — Base de evidências
 
-- [ ] `runtime/evidence/*.md` em PT-BR: volume, intensidade e esforço, progressão, frequência, descanso, deload, seleção de exercícios, proteína, balanço energético, carboidrato e gordura, timing, suplementos, adesão e `mitos.md`. Formato: conclusão, força da evidência (forte | moderada | fraca), padrão, ressalvas, fontes com DOI.
-- [ ] Regra 10: cada DOI conferido no Crossref ou OpenAlex e cada número no abstract ou texto completo; afirmação sem fonte conferida não entra. **Parar para revisão do dono antes de commitar.**
-- [ ] O cérebro lê sob demanda com `Read` (`--add-dir runtime/evidence`; atualizar ARCHITECTURE §5.1) e um índice de uma linha por arquivo no `system.md`. A evidência fica nos bastidores: nada de "estudos mostram", salvo se perguntarem por quê.
-- [ ] Evals: `coach_myth_breakfast`, `coach_creatine`, `coach_rest_interval` (resposta curta, sem citar autor, coerente com o arquivo).
+- [x] `runtime/evidence/*.md` em PT-BR: volume, intensidade e esforço, frequência, descanso, proteína (com timing), balanço energético (com carboidrato e gordura), suplementos e `mitos.md`.
+- [ ] Progressão, deload, seleção de exercícios e adesão: sem fonte conferida ainda (D-035). Formato: conclusão, força da evidência (forte | moderada | fraca), padrão, ressalvas, fontes com DOI.
+- [x] Regra 10: cada DOI conferido no Crossref ou OpenAlex e cada número no abstract ou texto completo; afirmação sem fonte conferida não entra. Commitado por pedido do dono; **revisão do dono pendente** (D-035).
+- [x] O cérebro lê sob demanda com `Read` (`--add-dir runtime/evidence`; atualizar ARCHITECTURE §5.1) e um índice de uma linha por arquivo no `system.md`. A evidência fica nos bastidores: nada de "estudos mostram", salvo se perguntarem por quê.
+- [x] Evals: `evidence_myth_breakfast`, `evidence_creatine`, `evidence_rest_interval` (resposta curta, sem citar autor, coerente com o arquivo).
 
 ### 8f — Simulação por personas (sob demanda)
 
-- [ ] `now` injetável no turn-runner e no `ContextBuilder` (relógio simulado).
-- [ ] `evals/personas/*.md`: semana típica do dono; semana com viagem e dor; sumiço de 5 dias e volta.
-- [ ] `scripts/simulate.ts`: um modelo faz a persona pelo canal terminal, com banco temporário e relógio avançando entre momentos; no fim, asserções no banco e rubrica de tom (critérios da 8a) avaliada por LLM-juiz. Consome cota: só quando pedido.
+- [x] `now` injetável no turn-runner e no `ContextBuilder` (relógio simulado).
+- [x] `evals/personas/*.md`: semana típica do dono; semana com viagem e dor; sumiço de 5 dias e volta.
+- [x] `scripts/simulate.ts` (`npm run simulate`): um modelo faz a persona pelo canal terminal, com banco temporário e relógio avançando entre momentos (inclui check-ins); no fim, turnos com falha e rubrica de tom (critérios da 8a) avaliada por LLM-juiz; transcrição em `data/logs/simulate/`. Consome cota: só quando pedido.
 
 **Aceite:** "pesei 74,8" um dia depois de 74,0 responde com a tendência, sem alarme; "viajo até sexta, só academia de hotel" cria um override e o check-in de quarta reflete isso, e o de sábado volta ao normal; em dia de descanso sem novidade o check-in não envia nada; "para de usar emoji" vale nos turnos seguintes e aparece em `/notas`; "café da manhã é obrigatório?" responde em até 2 linhas, coerente com `mitos.md`; evals 8a–8e verdes.

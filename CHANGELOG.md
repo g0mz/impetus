@@ -4,6 +4,30 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Fase 8f — Simulação por personas (2026-10-21)
+
+#### Adicionado
+- `npm run simulate -- evals/personas/<nome>.md`: um LLM faz o papel do dono ao longo de dias (mensagens e
+  check-ins) contra o gateway real, com banco em memória e relógio simulado; um LLM-juiz dá nota de 1 a 5 em 8
+  critérios de tom e memória. Transcrição e notas em `data/logs/simulate/`. Sai com erro se houver turno com falha
+  ou nota ≤ 2.
+- Personas `semana_tipica`, `viagem_e_dor` e `sumico` (`evals/personas/`); parser com testes.
+- `runPlainPrompt` / `createPlainLlm`: chamada sem tools nem MCP, usada só pela simulação.
+
+### Fase 8e — Base de evidências (2026-10-21, D-035)
+
+#### Adicionado
+- `runtime/evidence/`: 8 arquivos em PT-BR (volume, intensidade, frequência, descanso, proteína, balanço
+  energético, suplementos, mitos) com 19 fontes; DOIs conferidos no Crossref e números nos abstracts.
+- O coach lê a base sob demanda com `Read` (`--add-dir` e regra `Read(...)` só para essa pasta; caminho em
+  `<evidence_dir>`); seção `# Evidência (bastidores)` no `system.md`: resposta curta, sem citar autor.
+- Evals `evidence_myth_breakfast`, `evidence_creatine` e `evidence_rest_interval`.
+
+#### Corrigido
+- Viagem ou dor agora gera ajuste do plano **e** nota de evento (o coach só criava o ajuste e não perguntava
+  depois); datas e dias da semana vêm das tools, não de conta de cabeça.
+- Regra de origem dos itens de refeição em destaque: unidade caseira é `text_estimate`, nunca `user_stated`.
+
 ### Fase 8d — Check-in diário (2026-10-21, D-034)
 
 #### Adicionado

@@ -19,6 +19,7 @@
     "db:seed": "node scripts/db-seed.ts",
     "chat": "node --env-file-if-exists=.env scripts/chat.ts",
     "eval": "node --env-file-if-exists=.env scripts/eval.ts",
+    "simulate": "node --env-file-if-exists=.env scripts/simulate.ts",
     "eval:report": "node scripts/eval-report.ts",
     "wa:link": "node --env-file-if-exists=.env scripts/wa-link.ts",
     "restore": "node scripts/restore.ts",
