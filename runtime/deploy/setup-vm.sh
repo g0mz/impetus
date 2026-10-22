@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Prepara a VM (Ubuntu 24.04 arm64) para o Impetus — DEPLOY.md §2–4. Idempotente: pode rodar de novo.
+# Prepara a VM (Ubuntu 24.04, arm64 ou x86_64) para o Impetus — DEPLOY.md §2–4. Idempotente: pode rodar de novo.
+# Em VM de pouca memória (E2.1.Micro, 1 GB) cria swap e reduz a paralelização do build.
 # Uso (como um usuário com sudo):  REPO_URL=https://github.com/<você>/impetus.git bash setup-vm.sh
 set -euo pipefail
 
@@ -10,6 +11,26 @@ APP_HOME="/home/$APP_USER"
 APP_DIR="$APP_HOME/impetus"
 
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
+
+ARCH="$(uname -m)"
+RAM_MB="$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)"
+LOW_MEM=0
+[[ "$RAM_MB" -lt 2048 ]] && LOW_MEM=1
+log "shape: $ARCH, ${RAM_MB} MB de RAM$([[ $LOW_MEM == 1 ]] && echo ' (modo pouca memória)')"
+
+# Sem swap, 1 GB não aguenta `npm ci` nem o build do whisper.cpp.
+if [[ $LOW_MEM == 1 && "$(awk 'NR>1 {s+=$3} END {print s+0}' /proc/swaps)" -lt 1048576 ]]; then
+  log "swap de 4 GB"
+  if [[ ! -f /swapfile ]]; then
+    sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+  fi
+  sudo swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+  echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf >/dev/null
+  sudo sysctl -q -p /etc/sysctl.d/99-swap.conf
+fi
 
 log "pacotes do sistema"
 sudo apt-get update -y
@@ -46,18 +67,31 @@ sudo -u "$APP_USER" bash -lc "cd '$APP_DIR' && npm ci --no-audit --no-fund && np
 sudo -u "$APP_USER" mkdir -p "$APP_HOME/.local/state/impetus/brain" "$APP_DIR/data"
 sudo chmod 700 "$APP_DIR/data"
 
+# Compilar o whisper leva horas numa E2.1.Micro (1/8 OCPU): WHISPER=0 pula e deixa a voz desligada.
+WHISPER="${WHISPER:-1}"
+if [[ "$WHISPER" == 0 ]]; then
+  log "whisper.cpp: pulado (WHISPER=0) — deixe TRANSCRIBE desligado em env.app"
+else
 log "whisper.cpp (mensagens de voz)"
 WHISPER_TAG="${WHISPER_TAG:-v1.9.5}"
 WHISPER_DIR="$APP_HOME/whisper.cpp"
-WHISPER_MODEL_NAME="${WHISPER_MODEL_NAME:-ggml-small-q5_1.bin}"
+# Em 1 GB, o small-q5_1 (~190 MB em RAM) concorre com o node e o claude: usa o base.
+if [[ $LOW_MEM == 1 ]]; then
+  WHISPER_MODEL_NAME="${WHISPER_MODEL_NAME:-ggml-base-q5_1.bin}"
+  WHISPER_JOBS="-j1"
+else
+  WHISPER_MODEL_NAME="${WHISPER_MODEL_NAME:-ggml-small-q5_1.bin}"
+  WHISPER_JOBS="-j"
+fi
 if [[ ! -x "$WHISPER_DIR/build/bin/whisper-cli" ]]; then
   [[ -d "$WHISPER_DIR/.git" ]] || sudo -u "$APP_USER" git clone --depth 1 --branch "$WHISPER_TAG" https://github.com/ggml-org/whisper.cpp "$WHISPER_DIR"
-  sudo -u "$APP_USER" bash -lc "cd '$WHISPER_DIR' && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF && cmake --build build -j --config Release --target whisper-cli"
+  sudo -u "$APP_USER" bash -lc "cd '$WHISPER_DIR' && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF && cmake --build build $WHISPER_JOBS --config Release --target whisper-cli"
 fi
 if [[ ! -f "$WHISPER_DIR/models/$WHISPER_MODEL_NAME" ]]; then
   sudo -u "$APP_USER" curl -fL -o "$WHISPER_DIR/models/$WHISPER_MODEL_NAME"     "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$WHISPER_MODEL_NAME"
 fi
 echo "   TRANSCRIBE=whisper-cpp  WHISPER_BIN=$WHISPER_DIR/build/bin/whisper-cli  WHISPER_MODEL=$WHISPER_DIR/models/$WHISPER_MODEL_NAME"
+fi
 
 log "Claude Code"
 if ! sudo -u "$APP_USER" bash -lc 'command -v claude' >/dev/null; then
@@ -66,6 +100,16 @@ fi
 
 log "serviço systemd"
 sudo install -m 644 "$APP_DIR/runtime/deploy/impetus.service" /etc/systemd/system/impetus.service
+# O MemoryMax da unit vale para a A1. Em 1 GB, deixa o turno usar swap em vez de ser morto pelo OOM
+# (o `claude` do turno sozinho pede ~300 MB).
+if [[ $LOW_MEM == 1 ]]; then
+  sudo mkdir -p /etc/systemd/system/impetus.service.d
+  sudo tee /etc/systemd/system/impetus.service.d/lowmem.conf >/dev/null <<'CONF'
+[Service]
+MemoryMax=900M
+MemorySwapMax=3G
+CONF
+fi
 sudo systemctl daemon-reload
 sudo systemctl enable impetus >/dev/null
 
@@ -77,3 +121,10 @@ Pronto. Próximos passos:
   3. Banco do PC (opcional): pare o app do PC e copie data/impetus.db para $APP_DIR/data/
   4. sudo systemctl restart impetus && journalctl -u impetus -f
 MSG
+
+if [[ $LOW_MEM == 1 ]]; then
+  cat <<'MSG'
+VM de pouca memória: em /etc/impetus/env.app use MODEL_FAST=haiku e REPORT_CHARTS=false
+(o render dos gráficos é o pico de memória).
+MSG
+fi
