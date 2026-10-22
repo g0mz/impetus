@@ -65,3 +65,17 @@ export function plannedWeek(
 ): PlannedDay[] {
   return Array.from({ length: days }, (_, i) => plannedFor(addDays(localDate, i), schedule, overrides));
 }
+
+/** Primeiro dia com treino depois de `localDate` (exclusive), em até `horizon` dias; null se não houver. */
+export function nextTrainingAfter(
+  localDate: string,
+  schedule: WeeklySchedule,
+  overrides: PlanOverride[],
+  horizon = 14,
+): PlannedDay | null {
+  for (let i = 1; i <= horizon; i++) {
+    const d = plannedFor(addDays(localDate, i), schedule, overrides);
+    if (d.routine) return d;
+  }
+  return null;
+}

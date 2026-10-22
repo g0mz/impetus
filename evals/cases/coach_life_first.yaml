@@ -8,4 +8,4 @@ steps:
 expect:
   body_metrics: 1
   reply_matches: ['filho|febre|melhor|tudo bem|ele est']
-  reply_not_matches: ['compens', 'posso ajudar', 'qualquer coisa']
+  reply_not_matches: ['(?<!nada (?:para|pra) )compens', 'posso ajudar', 'qualquer coisa']

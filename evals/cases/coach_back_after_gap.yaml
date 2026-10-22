@@ -1,0 +1,10 @@
+id: coach_back_after_gap
+description: >
+  Volta depois de dias sumido, semana caótica: o coach acolhe e termina perguntando sobre ele, sem já empurrar
+  plano nem compensação (achado da simulação "sumico", Fase 8f).
+now: '2026-10-27T00:30:00Z'
+steps:
+  - text: 'e aí, desculpa o sumiço. semana foi um caos total, não treinei nenhum dia e comi muita porcaria'
+expect:
+  reply_matches: ['\?\s*$']
+  reply_not_matches: ['(?<!nada (?:para|pra) )compens', 'posso ajudar', 'qualquer coisa']

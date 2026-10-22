@@ -114,7 +114,11 @@ describe('agenda semanal e ajustes temporários (Fase 8c)', () => {
     const prompt = (now: string) =>
       buildTurnPrompt(db, { now, settings: SETTINGS, userText: 'oi', images: [], recentTurns: 0 });
     expect(prompt(WED)).toContain(`- [${o.override_id}] 21/10–25/10: semana corrida, upper A na sexta`);
-    expect(prompt(WED)).toContain('plano de hoje: descanso');
+    expect(prompt(WED)).toContain('plano de hoje: descanso · amanhã (quinta 22/10): Lower A');
+    // amanhã já tem treino: a linha "próximo treino" não repete a informação
+    expect(prompt(WED)).not.toContain('próximo treino');
+    // quinta: amanhã é sexta com upper A (ajuste)
+    expect(prompt('2026-10-22T13:00:00Z')).toContain('amanhã (sexta 23/10): Upper A');
     expect(prompt('2026-10-28T13:00:00Z')).not.toContain('<plan_overrides>');
 
     data(call('end_plan_override', { override_id: o.override_id }));

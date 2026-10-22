@@ -18,4 +18,4 @@ steps:
 expect:
   body_metrics: 8
   reply_matches: ['m[eé]dia|tend[eê]ncia']
-  reply_not_matches: ['compens', 'jejum', 'posso ajudar', 'qualquer coisa', 'estou aqui']
+  reply_not_matches: ['(?<!nada (?:para|pra) )compens', 'jejum', 'posso ajudar', 'qualquer coisa', 'estou aqui']

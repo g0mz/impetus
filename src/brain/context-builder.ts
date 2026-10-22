@@ -1,15 +1,24 @@
 import type { Db } from '../db/index.ts';
 import { activeNotes } from '../db/repos/coach-notes.ts';
-import { activeOverrides } from '../db/repos/plan.ts';
+import { activeOverrides, loadSchedule } from '../db/repos/plan.ts';
 import { lastChatSession, sessionSets } from '../db/repos/training.ts';
 import { notesForContext } from '../domain/coach/notes.ts';
 import { setsCompact } from '../domain/training/format.ts';
+import { nextTrainingAfter, plannedFor } from '../domain/training/schedule.ts';
 import { isSessionOpen } from '../domain/training/types.ts';
 import { daySummary } from '../tools/body.ts';
 import { getMeal, gramsCorrections, mealItems, pendingQuestionMeal } from '../db/repos/nutrition.ts';
 import { MEAL_TYPE_PT, type MealType } from '../domain/nutrition/meal-type.ts';
 import { detectBias } from '../domain/nutrition/priors.ts';
-import { formatDayMonth, formatLocalIso, toLocalDate, weekdayPt, wallClock } from '../time.ts';
+import {
+  addDays,
+  formatDateTimeBR,
+  formatDayMonth,
+  formatLocalIso,
+  toLocalDate,
+  weekdayPt,
+  wallClock,
+} from '../time.ts';
 import type { ToolSettings } from '../tools/registry.ts';
 
 export type QuotedEntity = { entity: string; entity_id: number };
@@ -42,7 +51,21 @@ function snapshot(db: Db, localDate: string): string {
       ? `treino: ${d.workout.routine ?? 'registrado'} (${d.workout.work_sets} séries)`
       : 'treino: nenhum registrado',
   ];
-  if (d.planned) parts.push(`plano de hoje: ${d.planned.routine ?? 'descanso'}`);
+  if (d.planned) {
+    // datas resolvidas no código: o modelo errava "amanhã" e o dia da semana quando calculava sozinho
+    parts.push(`plano de hoje: ${d.planned.routine ?? 'descanso'}`);
+    const schedule = loadSchedule(db);
+    const overrides = activeOverrides(db, localDate);
+    const tomorrow = plannedFor(addDays(localDate, 1), schedule, overrides);
+    parts.push(
+      `amanhã (${weekdayPt(tomorrow.local_date)} ${formatDayMonth(tomorrow.local_date)}): ${tomorrow.routine?.name ?? 'descanso'}`,
+    );
+    const next = nextTrainingAfter(localDate, schedule, overrides);
+    if (next && next.local_date !== tomorrow.local_date)
+      parts.push(
+        `próximo treino: ${weekdayPt(next.local_date)} ${formatDayMonth(next.local_date)} (${next.routine!.name})`,
+      );
+  }
   if (d.cardio?.length) parts.push(`cardio: ${d.cardio.map((c) => c.activity).join(', ')}`);
   if (d.health?.steps != null)
     parts.push(`passos ${fmtInt(d.health.steps)}${g.steps !== undefined ? `/${fmtInt(g.steps)}` : ''}`);
@@ -106,15 +129,17 @@ const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1
 
 /**
  * Últimos turnos com a mensagem do usuário, o que foi gravado e a resposta do coach. Os 2 mais recentes
- * vão quase inteiros (é onde mora a pergunta pendente e os dados que o usuário "já mandou").
+ * vão quase inteiros (é onde mora a pergunta pendente e os dados que o usuário "já mandou"). Cada linha leva
+ * dia da semana, data e hora: sem isso, um "hoje é segunda" de ontem parecia valer para hoje.
  */
-function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
+function recentTurns(db: Db, limit: number, settings: ToolSettings, excludeTurnId?: number): string[] {
   const turns = db
     .prepare(
-      `SELECT id, kind FROM turns WHERE kind IN ('chat','command','checkin') AND status = 'done' AND id != ? ORDER BY id DESC LIMIT ?`,
+      `SELECT id, kind, started_at FROM turns WHERE kind IN ('chat','command','checkin') AND status = 'done' AND id != ? ORDER BY id DESC LIMIT ?`,
     )
-    .all(excludeTurnId ?? -1, limit) as { id: number; kind: string }[];
-  return turns.reverse().map(({ id, kind }, i, all) => {
+    .all(excludeTurnId ?? -1, limit) as { id: number; kind: string; started_at: string }[];
+  return turns.reverse().map(({ id, kind, started_at }, i, all) => {
+    const when = `[${weekdayPt(toLocalDate(started_at, 0, settings.timeZone)).slice(0, 3)} ${formatDateTimeBR(started_at, settings.timeZone)}]`;
     const fresh = i >= all.length - 2;
     const msg = (dir: 'in' | 'out') =>
       (db
@@ -144,10 +169,10 @@ function recentTurns(db: Db, limit: number, excludeTurnId?: number): string[] {
     if (updates) parts.push(`alterou ${updates} registro(s)`);
     const what = parts.length ? parts.join('; ') : undone ? 'desfeito' : 'nada gravado';
     if (kind === 'checkin')
-      return `- check-in da manhã (enviado por você): "${clip(msg('out').replace(/\s+/g, ' '), 400)}"`;
+      return `- ${when} check-in da manhã (enviado por você): "${clip(msg('out').replace(/\s+/g, ' '), 400)}"`;
     const user = clip(msg('in').replace(/\s+/g, ' '), fresh ? 1200 : 240);
     const bot = clip(msg('out').replace(/\s+/g, ' '), fresh ? 600 : 160);
-    return `- usuário: "${user}" → [${what}]${bot ? ` → coach: "${bot}"` : ''}`;
+    return `- ${when} usuário: "${user}" → [${what}]${bot ? ` → coach: "${bot}"` : ''}`;
   });
 }
 
@@ -200,7 +225,7 @@ export function buildTurnPrompt(db: Db, input: TurnContextInput): string {
   const { now, settings } = input;
   const localDate = toLocalDate(now, settings.cutoffHour, settings.timeZone);
   const blocks: string[] = [
-    `<now>${formatLocalIso(now, settings.timeZone)} (${weekdayPt(localDate)}) — dia contábil ${localDate}</now>`,
+    `<now>hoje é ${weekdayPt(localDate)}, ${formatDayMonth(localDate)} · ${formatLocalIso(now, settings.timeZone)} — dia contábil ${localDate}</now>`,
     `<today_snapshot>\n${snapshot(db, localDate)}\n</today_snapshot>`,
   ];
   const open = openSession(db, now, settings);
@@ -215,7 +240,7 @@ export function buildTurnPrompt(db: Db, input: TurnContextInput): string {
     );
     blocks.push(`<plan_overrides>\n${lines.join('\n')}\n</plan_overrides>`);
   }
-  const recent = recentTurns(db, input.recentTurns, input.currentTurnId);
+  const recent = recentTurns(db, input.recentTurns, settings, input.currentTurnId);
   if (recent.length) blocks.push(`<recent_turns>\n${recent.join('\n')}\n</recent_turns>`);
   blocks.push(...nutritionContext(db, now, localDate));
   if (input.quoted?.length) blocks.push(quotedBlock(db, input.quoted));

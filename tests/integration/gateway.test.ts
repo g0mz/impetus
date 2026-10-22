@@ -214,7 +214,9 @@ describe('gateway ponta a ponta (cérebro falso via MCP)', () => {
     g.setNow('2026-10-13T21:30:00Z');
     await g.say('supino 32kg 10 9 8');
     const p = g.prompts.at(-1)!;
-    expect(p).toContain('<now>2026-10-13T18:30:00-03:00 (terça) — dia contábil 2026-10-13</now>');
+    expect(p).toContain(
+      '<now>hoje é terça, 13/10 · 2026-10-13T18:30:00-03:00 — dia contábil 2026-10-13</now>',
+    );
     expect(p).toMatch(/<today_snapshot>\nkcal 0\/— · proteína 0\/— g · treino: Upper B \(10 séries\)/);
     expect(p.replace(/exercise_id \d+/g, 'exercise_id N')).toContain(
       [
@@ -224,8 +226,9 @@ describe('gateway ponta a ponta (cérebro falso via MCP)', () => {
         '- Elevação lateral com halteres (exercise_id N): 10kg 3×15 · set_id 8,9,10</open_session>',
       ].join('\n'),
     );
-    expect(p).toContain(
-      '- usuário: "upper B: …" → [registrou 1 sessão de treino, 10 séries] → coach: "✅ registrado (10 séries)"',
+    // cada linha do histórico leva dia da semana, data e hora (o "hoje" de um turno antigo não vale para agora)
+    expect(p).toMatch(
+      /- \[ter 13\/10 \d{2}:\d{2}\] usuário: "upper B: …" → \[registrou 1 sessão de treino, 10 séries\] → coach: "✅ registrado \(10 séries\)"/,
     );
     expect(p).toContain('<user_message>\nsupino 32kg 10 9 8\n</user_message>');
   });

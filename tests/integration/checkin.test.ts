@@ -126,7 +126,7 @@ describe('check-in diário (Fase 8d)', () => {
       images: [],
       recentTurns: 8,
     });
-    expect(p).toContain('- check-in da manhã (enviado por você): "Bom dia! Upper A hoje."');
+    expect(p).toContain('- [qua 21/10 07:30] check-in da manhã (enviado por você): "Bom dia! Upper A hoje."');
   });
 
   it('job: respeita /pausar e CHECKIN_ENABLED; um por dia', async () => {

@@ -4,6 +4,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Ajustes de tom achados pela simulação (2026-10-21)
+
+#### Corrigido
+- Dia da semana errado: as linhas do `<recent_turns>` não tinham data, e um "hoje é segunda" de ontem parecia valer
+  para hoje. Agora cada linha leva `[ter 27/10 07:40]`; o `<now>` começa com "hoje é terça, 27/10"; e o snapshot
+  traz "amanhã" e "próximo treino" já resolvidos no código (`nextTrainingAfter`). O modelo errava "amanhã" quando
+  calculava sozinho.
+- Semana ruim ou desânimo: o coach acolhe e faz **uma** pergunta sobre ele antes de aconselhar; não repete a
+  pergunta se ele não responder, não interpreta o estado emocional e responde em até 3 linhas. Um exemplo do
+  prompt que dava conselho direto foi trocado.
+- Pesagem nunca vira prova pela diferença entre dois dias.
+- Evals `coach_back_after_gap` e `coach_weekday_next_day` reproduzem os dois casos; regex de "compensar" não pune
+  mais "nada para compensar".
+- Simulação `sumico`: média 3,9 → 4,0, com 5/5 em "pessoa antes do dado" e "pergunta antes de aconselhar".
+
 ### Fase 8f — Simulação por personas (2026-10-21)
 
 #### Adicionado

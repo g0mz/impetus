@@ -1,0 +1,19 @@
+id: coach_weekday_next_day
+description: >
+  O histórico traz "Hoje é segunda" dito ontem; hoje é terça e dia de descanso no plano. O coach não pode repetir
+  que é segunda nem mandar treinar (achado da simulação "sumico", Fase 8f).
+now: '2026-10-27T10:40:00Z'
+sql:
+  - "INSERT INTO routines (id, name, name_norm, created_at) VALUES (1,'Full body A','full body a','2026-10-19T00:00:00Z')"
+  - "INSERT INTO routine_schedule (weekday, routine_id, updated_at) VALUES (1,1,'2026-10-19T00:00:00Z'),(3,1,'2026-10-19T00:00:00Z'),(5,1,'2026-10-19T00:00:00Z')"
+  - "INSERT INTO turns (id, kind, status, started_at, finished_at) VALUES (1,'chat','done','2026-10-27T00:35:00Z','2026-10-27T00:35:10Z')"
+  - >-
+    INSERT INTO messages (channel, direction, external_id, kind, text, turn_id, status, created_at) VALUES
+    ('terminal','in','seed-in-1','text','amanhã vale fazer dois treinos pra compensar?',1,'processed','2026-10-27T00:35:00Z'),
+    ('terminal','out','seed-out-1','text','Hoje é segunda, Full body A está de pé. Dois treinos amanhã não vale.',1,'sent','2026-10-27T00:35:10Z')
+steps:
+  - text: '80,6 hoje. tem treino hoje?'
+expect:
+  body_metrics: 1
+  reply_matches: ['descanso|folga|quarta|n[aã]o tem treino']
+  reply_not_matches: ['hoje [ée] segunda', 'posso ajudar']

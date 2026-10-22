@@ -85,3 +85,17 @@ describe('plannedWeek', () => {
     expect(w.map((d) => d.routine?.name ?? '—')).toEqual(['Upper A', '—', '—', 'Upper B', '—', '—', '—']);
   });
 });
+
+describe('nextTrainingAfter', () => {
+  it('pula descanso e ajustes; null sem treino no horizonte', async () => {
+    const { nextTrainingAfter } = await import('../../src/domain/training/schedule.ts');
+    // segunda 19/10 → próximo é terça (lower A); terça cancelada por ajuste → quinta (upper B)
+    expect(nextTrainingAfter('2026-10-19', schedule, [])?.local_date).toBe('2026-10-20');
+    const off = ov(1, '2026-10-20', '2026-10-20', [[2, null]]);
+    expect(nextTrainingAfter('2026-10-19', schedule, [off])).toMatchObject({
+      local_date: '2026-10-22',
+      routine: upperB,
+    });
+    expect(nextTrainingAfter('2026-10-19', new Map(), [])).toBeNull();
+  });
+});
