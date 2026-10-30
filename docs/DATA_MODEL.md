@@ -25,7 +25,7 @@ CREATE TABLE settings (               -- metas, preferências, estado do sistema
 -- (turns é definida abaixo; crie-a antes de messages na migration)
 CREATE TABLE messages (
   id INTEGER PRIMARY KEY,
-  channel TEXT NOT NULL,              -- 'whatsapp' | 'terminal' | 'telegram'
+  channel TEXT NOT NULL,              -- 'telegram' | 'terminal' | 'whatsapp' (legado)
   direction TEXT NOT NULL CHECK (direction IN ('in','out')),
   external_id TEXT,                   -- id da mensagem no canal
   quoted_external_id TEXT,            -- se for resposta citando outra

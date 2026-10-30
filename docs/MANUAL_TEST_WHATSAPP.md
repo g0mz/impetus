@@ -1,4 +1,4 @@
-# Roteiro de teste manual — WhatsApp (aceite da Fase 2)
+# Roteiro de teste manual — WhatsApp (LEGADO: canal abandonado, ver D-038)
 
 Tudo o que não depende do WhatsApp real já é coberto por testes automáticos (parsing das mensagens, allowlist,
 pareamento, debounce, fila, divisão de mensagens, normalização de imagens). Este roteiro cobre o resto.

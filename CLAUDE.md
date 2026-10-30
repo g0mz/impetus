@@ -1,6 +1,6 @@
 # CLAUDE.md — Impetus (memória do projeto para desenvolvimento)
 
-Assistente pessoal de treino, nutrição e saúde via WhatsApp para **um usuário**. Roda numa VM Oracle A1 (arm64) gratuita. O "cérebro" em produção é o Claude Code headless (`claude -p`), que acessa dados apenas por tools MCP deste app.
+Assistente pessoal de treino, nutrição e saúde via Telegram para **um usuário**. Roda numa VM Oracle A1 (arm64) gratuita. O "cérebro" em produção é o Claude Code headless (`claude -p`), que acessa dados apenas por tools MCP deste app.
 
 > Este arquivo orienta **você, Claude Code, desenvolvendo o projeto**. Ele **não** é lido pelo coach em produção (o coach roda com cwd `BRAIN_DIR`, fora do repositório, e `--system-prompt-file runtime/prompts/system.md`).
 
@@ -8,7 +8,7 @@ Assistente pessoal de treino, nutrição e saúde via WhatsApp para **um usuári
 Leia antes de implementar qualquer fase e siga à risca. Em conflito, a ordem de precedência é: `docs/TASKS.md` (escopo da fase) > `docs/ARCHITECTURE.md` > `docs/DATA_MODEL.md` / `docs/TOOLS.md` > `docs/SPEC.md`. Se uma spec estiver errada ou inviável, **pare e explique** antes de desviar; registre a decisão em `docs/DECISIONS.md`.
 
 ## Stack
-Node 24 LTS (TypeScript nativo, sem tsx) · TypeScript 6 ESM estrito · better-sqlite3 (WAL) · zod · @modelcontextprotocol/sdk (streamable HTTP) · hono · baileys (versão fixada) · croner · p-queue · execa · sharp · pino · vitest.
+Node 24 LTS (TypeScript nativo, sem tsx) · TypeScript 6 ESM estrito · better-sqlite3 (WAL) · zod · @modelcontextprotocol/sdk (streamable HTTP) · hono · Telegram Bot API (long polling) · baileys (legado, versão fixada) · croner · p-queue · execa · sharp · pino · vitest.
 
 ## Comandos
 - `npm run dev`: app com canal definido em `CHANNEL` (use `terminal` localmente)
@@ -17,7 +17,7 @@ Node 24 LTS (TypeScript nativo, sem tsx) · TypeScript 6 ESM estrito · better-s
 - `npm run db:migrate` / `npm run db:seed`
 - `npm run eval`: evals contra o cérebro real (consome cota; rode só quando pedido ou ao fechar a Fase 3/5)
 - `npm run simulate -- evals/personas/<nome>.md`: persona simulada por dias + rubrica de tom por LLM-juiz (consome cota; só quando pedido)
-- `npm run wa:link`: vincula o número do bot (pairing code ou QR)
+- `npm run wa:link`: legado (canal WhatsApp/Baileys, não usado em produção)
 
 TypeScript roda direto no Node (type stripping): imports relativos com `.ts`, `import type` para tipos, sem `enum`/`namespace`/parameter properties (ver `docs/DECISIONS.md` D-003).
 
@@ -28,7 +28,7 @@ TypeScript roda direto no Node (type stripping): imports relativos com `.ts`, `i
 4. **Tempo:** armazene UTC ISO; agregue por `local_date` (fuso America/Sao_Paulo, virada às `DAY_CUTOFF_HOUR`). Use `src/time.ts`, nunca `new Date().toISOString().slice(0,10)` para o dia.
 5. **Unidades fixas:** kg, m, kcal, g, s. Conversões só nas bordas.
 6. **Soft delete** (`deleted_at`) e filtro padrão nos repositórios.
-7. **Canal abstrato:** nada fora de `channels/` importa `baileys`.
+7. **Canal abstrato:** nada fora de `channels/` importa `baileys` nem fala com a API do Telegram. Produção: `CHANNEL=telegram`.
 8. **Cérebro plugável:** nada fora de `brain/` sabe que existe uma CLI `claude`.
 9. **Segurança:** MCP e ingest só em 127.0.0.1; token de turno obrigatório; allowlist do dono; sem segredos em logs (redija tokens, chaves e conteúdo de `wa-auth`).
 10. **Sem dados inventados nos seeds.** TACO e medidas caseiras vêm das fontes oficiais; valor não confirmado não entra.

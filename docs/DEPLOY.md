@@ -1,4 +1,4 @@
-# DEPLOY — Oracle Cloud + Claude Code + WhatsApp
+# DEPLOY — Oracle Cloud + Claude Code + Telegram
 
 > Verifique os limites e políticas atuais antes de cada passo. Oracle e Anthropic mudaram regras várias vezes em 2026.
 
@@ -33,7 +33,7 @@ Ajuste você mesmo em `/etc/impetus/env.app`: `MODEL_FAST=haiku` e `REPORT_CHART
 pico de memória).
 
 Para trocar de shape depois (A1 liberando capacidade): rode o `setup-vm.sh` na VM nova e siga a migração do §7
-(copiar `data/wa-auth` e `data/impetus.db` com o app parado).
+(copiar `data/impetus.db` com o app parado).
 
 ## 2. Preparação do sistema
 
@@ -87,27 +87,20 @@ sudo systemctl daemon-reload && sudo systemctl enable --now impetus
 journalctl -u impetus -f
 ```
 
-## 5. WhatsApp (Baileys)
+## 5. Telegram
 
-### Número do bot
-- **Chip secundário** com WhatsApp (ou WhatsApp Business) num celular qualquer. Esse número vira o bot.
-- Nunca use seu número principal.
-
-### Vincular o bot (uma vez)
-`npm run wa:link -- --phone 55DDNNNNNNNNN` pede um **código de pareamento** ao Baileys (`requestPairingCode`). No celular do chip: WhatsApp → Aparelhos conectados → Conectar com número de telefone → digite o código. Sem esse método, use o QR exibido no terminal (`npm run wa:link -- --qr`).
-
-A sessão fica em `data/wa-auth/`. Essa pasta é credencial: permissões 700 e **fora** do backup em nuvem.
+### Criar o bot (uma vez)
+1. No Telegram, converse com `@BotFather` → `/newbot` → guarde o **token**.
+2. Em `/etc/impetus/env` (modo 600): `TELEGRAM_BOT_TOKEN=<token>`. Em `/etc/impetus/env.app`: `CHANNEL=telegram`.
+3. O canal usa long polling: nada é exposto à internet, sem webhook nem domínio.
 
 ### Pareamento do dono (allowlist)
-No primeiro start sem dono definido, o app gera um código de 6 dígitos e o mostra no log. Do **seu número pessoal**, envie ao bot `PAREAR 123456`. O app grava os identificadores do remetente (JID e LID) em `settings.owner.ids`. A partir daí, só esses remetentes são atendidos.
+No primeiro start sem dono definido, o app gera um código de 6 dígitos e o mostra no log. Da **sua conta**, envie ao bot `PAREAR 123456`. O app grava o remetente em `settings.owner.ids`; a partir daí só ele é atendido.
 
-Isso evita fixar o número no código. Números brasileiros podem ter JID com ou sem o 9º dígito, e o WhatsApp vem migrando para identificadores LID.
-
-### Boas práticas anti-ban
-- Responder só ao dono; não entrar em grupos; não mandar mensagem a terceiros.
-- Sem rajadas: fila serial e pausa mínima de 1 s entre mensagens enviadas.
-- Atualizar o Baileys só após ler o changelog; manter a versão fixada.
-- Não instalar pacotes "anti-ban" de terceiros.
+### Boas práticas
+- O token é credencial: fora de logs e do backup em nuvem. Se vazar, `/revoke` no BotFather.
+- Responder só ao dono; sem grupos.
+- Legado WhatsApp (Baileys): ver D-038 e `docs/MANUAL_TEST_WHATSAPP.md`.
 
 ## 6. Ingestão do Health Connect
 
@@ -174,7 +167,7 @@ Job `backup` (diário 03:30, `src/ops/backup.ts`, decisão D-028):
 - Cópia consistente do SQLite pela API de backup do `better-sqlite3` (segura com WAL e com o app rodando) →
   `DATA_DIR/backups/impetus-AAAA-MM-DD.db.gz`; retenção local de `BACKUP_KEEP_DAYS` (padrão 14).
 - Com `BACKUP_REMOTE` (ex.: `gcrypt:impetus`): `rclone copy` dos backups das últimas 48 h para `<remote>/db/` e,
-  aos domingos, `rclone sync` de `data/media` para `<remote>/media/`. Falha → alerta crítico no WhatsApp.
+  aos domingos, `rclone sync` de `data/media` para `<remote>/media/`. Falha → alerta crítico no Telegram.
 - `gcrypt` é um remote **rclone crypt** sobre o Google Drive (`rclone config`: crie `gdrive` e depois `gcrypt`
   apontando para `gdrive:impetus-enc`). Guarde a senha do crypt fora da VM.
 - `data/wa-auth` (credencial) **nunca** entra no backup.
@@ -198,7 +191,7 @@ sudo systemctl start impetus                     # refaça o wa:link se a pasta 
 | Tarefa | Como |
 |---|---|
 | Logs | `journalctl -u impetus -f` (pino JSON; `npm run logs:pretty` formata) |
-| Saúde | `/status` no WhatsApp; `GET 127.0.0.1:8787/healthz` |
+| Saúde | `/status` no Telegram; `GET 127.0.0.1:8787/healthz` |
 | Atualizar | `git pull && npm ci && npm run build && npm run db:migrate && sudo systemctl restart impetus` |
 | Renovar token Claude | `claude setup-token` no PC → atualizar `/etc/impetus/env` → `systemctl restart impetus` |
 | Revincular WhatsApp | `systemctl stop impetus` → apagar `data/wa-auth/` → `npm run wa:link` → start |

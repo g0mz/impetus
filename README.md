@@ -1,6 +1,6 @@
 # Impetus — Spec Kit
 
-Assistente pessoal de treino, nutrição e saúde via WhatsApp, para **um único usuário**, com **custo zero** além da assinatura do Claude que você já paga.
+Assistente pessoal de treino, nutrição e saúde via Telegram, para **um único usuário**, com **custo zero** além da assinatura do Claude que você já paga.
 
 Este kit é o pacote de especificação que você entrega ao Claude Code para desenvolver o projeto do zero.
 
@@ -32,8 +32,8 @@ Este kit é o pacote de especificação que você entrega ao Claude Code para de
 
 | Tema | Decisão | Motivo |
 |---|---|---|
-| Canal | WhatsApp via **Baileys** (número secundário), com adaptador de canal abstrato | Gratuito, permite mensagens proativas sem janela de 24h; API oficial exige templates pagos para lembretes |
-| Cérebro | **`claude -p`** (headless) chamado pelo gateway a cada turno, com provider plugável | Usa a sua assinatura; Channels oficiais ainda são *research preview* e não suportam WhatsApp |
+| Canal | **Telegram** (Bot API, long polling), com adaptador de canal abstrato | Gratuito, sem número/chip dedicado, mensagens proativas sem janela de 24h. WhatsApp (Baileys) foi abandonado: o chip pré-pago exigia renovação a cada 15 dias (D-038) |
+| Cérebro | **`claude -p`** (headless) chamado pelo gateway a cada turno, com provider plugável | Usa a sua assinatura; Channels oficiais ainda são *research preview* e não suportam WhatsApp (por isso o gateway próprio) |
 | Tools | Servidor **MCP HTTP local** dentro do próprio processo | Um processo só, sem spawn por chamada; o gateway sabe a qual turno cada escrita pertence (undo, correções) |
 | Dados | **SQLite** (WAL) + arquivos de mídia locais | Zero infraestrutura, backup é copiar um arquivo |
 | Nutrição | Protocolo em 2 etapas + **TACO** + priors pessoais | Estudos mostram ~36% de erro médio de LLMs só com foto; decompor e aterrar numa tabela reduz o erro |
@@ -46,13 +46,13 @@ Este kit é o pacote de especificação que você entrega ao Claude Code para de
 | Item | Custo |
 |---|---|
 | Oracle A1 dentro do Always Free | R$ 0 |
-| WhatsApp via Baileys | R$ 0 (risco de ban do número secundário) |
+| Telegram Bot API | R$ 0 |
 | HC Webhook, TACO, free-exercise-db, Open Food Facts | R$ 0 |
 | Claude | Consome a cota da sua assinatura atual |
 | Chip secundário | O que você já pagar no plano pré |
 
 ## Riscos que você está aceitando
 
-- **Ban do número do bot:** Baileys não é oficial. Use um chip secundário, nunca o número principal.
+- **Token do bot:** `TELEGRAM_BOT_TOKEN` é credencial; fica só no ambiente da VM e nunca em logs. Só o dono pareado é atendido.
 - **Regras de cobrança do `claude -p`:** a Anthropic anunciou e depois suspendeu em 2026 a separação do uso programático da cota da assinatura. Hoje o `-p` consome a assinatura, mas o cérebro é plugável (API ou Gemini) caso isso mude.
 - **Precisão nutricional:** estimativa por foto serve para tendência, não para medida exata. O protocolo minimiza o erro, não o elimina.

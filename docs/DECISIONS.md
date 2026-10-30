@@ -305,6 +305,15 @@ inverso. A Fase 8 adota a camada de coach e mantém a de dados.
 - Efeito colateral visto nos evals: com o prompt mais longo, o Haiku passou a marcar unidade caseira como
   `user_stated`; a regra de origem virou o primeiro passo da nutrição, com exemplo.
 
+### D-038 — Telegram vira o canal de produção; WhatsApp/Baileys fica como legado (2026-10-30)
+- Motivo: o número usado no WhatsApp era um chip pré-pago (Claro) que precisava de renovação a cada 15 dias.
+  Substitui D-028; D-026 (Cloud API) segue descartada.
+- Produção: `CHANNEL=telegram`, definido no ambiente da VM (`/etc/impetus/env.app`), não no repositório. O default
+  em `src/config.ts` continua `terminal` (desenvolvimento).
+- O código do canal Baileys e `wa:link` ficam no repositório, sem uso. Remover é decisão futura.
+- Docs atualizados: README, CLAUDE.md, SPEC, ARCHITECTURE (visão geral), DEPLOY (§5). Entradas históricas
+  (D-020, D-026, D-028), CHANGELOG, TASKS e REFERENCES descrevem o que foi feito na época e não foram reescritos.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

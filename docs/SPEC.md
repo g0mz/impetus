@@ -2,7 +2,7 @@
 
 ## 1. Visão
 
-Um coach pessoal no WhatsApp que **registra** treino, alimentação e métricas corporais por mensagens naturais (texto, foto, ou ambos), **consulta** o histórico sob demanda e **gera relatórios com insights** cruzando treino, nutrição, sono e atividade.
+Um coach pessoal no Telegram que **registra** treino, alimentação e métricas corporais por mensagens naturais (texto, foto, ou ambos), **consulta** o histórico sob demanda e **gera relatórios com insights** cruzando treino, nutrição, sono e atividade.
 
 Usuário único (o dono). Prioridades, nesta ordem: **praticidade de registro**, **custo zero**, **confiabilidade dos dados**, **qualidade dos insights**.
 
@@ -19,7 +19,7 @@ Usuário único (o dono). Prioridades, nesta ordem: **praticidade de registro**,
 ## 3. Não-objetivos
 
 - Multiusuário, cadastro, autenticação de terceiros.
-- App mobile ou web completo. O WhatsApp é a interface; um dashboard web somente-leitura é opcional (Fase 7).
+- App mobile ou web completo. O Telegram é a interface; um dashboard web somente-leitura é opcional (Fase 7).
 - Precisão nutricional de laboratório.
 - Prescrição médica ou nutricional. O bot sugere e informa, não prescreve.
 - Integração com Hevy ou outros apps pagos.
@@ -66,7 +66,7 @@ Usuário único (o dono). Prioridades, nesta ordem: **praticidade de registro**,
 - Insights gerados por detectores determinísticos com evidência e tamanho de amostra. O LLM escolhe e redige (REPORTS.md).
 
 ### 5.5 Operação
-- `/status`: conexão do WhatsApp, último sync de saúde, último backup, uso do LLM no dia.
+- `/status`: conexão do canal (Telegram), último sync de saúde, último backup, uso do LLM no dia.
 - `/desfazer`: reverte o último registro.
 - `/ajuda`: lista de comandos e exemplos.
 - Alertas proativos de falha: sync de saúde parado há mais de 48 h, backup falhou, token do Claude expirando em até 30 dias.
@@ -163,7 +163,7 @@ Bot:  Nas últimas 8 semanas (19 sessões com dado de sono): após noites <6h, s
 | Latência de mensagem livre (texto) | < 25 s (p90) |
 | Latência de refeição com foto | < 45 s (p90) |
 | Indicador de processamento | Reação 👀 na mensagem e "digitando…" enquanto o LLM roda |
-| Disponibilidade | Reinício automático (systemd); reconexão automática do WhatsApp |
+| Disponibilidade | Reinício automático (systemd); reconexão automática do canal |
 | Perda de dados | No máximo 24 h (backup diário) |
 | Memória do processo | < 400 MB RSS (para caber até numa E2.1.Micro com swap) |
 | Privacidade | Dados só na VPS e no backup criptografado; nenhum terceiro além do LLM |

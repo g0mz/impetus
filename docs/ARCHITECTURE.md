@@ -7,9 +7,9 @@ Um único processo Node.js (`impetus`) roda na VPS sob systemd. O "cérebro" é 
 ```
  Celular (dono)                         VPS Oracle A1 (Ubuntu 24.04 arm64)
  ┌──────────────┐                 ┌────────────────────────────────────────────────────┐
- │ WhatsApp     │◄──── WA Web ───►│ impetus (Node 24, 1 processo)                      │
- │ (seu número) │   (Baileys)     │                                                    │
- └──────────────┘                 │  channels/whatsapp ─► gateway/inbox ─► debounce     │
+ │ Telegram     │◄── Bot API ────►│ impetus (Node 24, 1 processo)                      │
+ │ (sua conta)  │ (long polling)  │                                                    │
+ └──────────────┘                 │  channels/telegram ─► gateway/inbox ─► debounce     │
                                   │                            │                       │
  ┌──────────────┐                 │              ┌─────────────┴─────────────┐         │
  │ Redmi Watch  │                 │              ▼                           ▼         │
@@ -33,7 +33,7 @@ Um único processo Node.js (`impetus`) roda na VPS sob systemd. O "cérebro" é 
 
 | Módulo | Responsabilidade |
 |---|---|
-| `channels/` | Interface `Channel` (receber, enviar texto e imagem, reagir, "digitando", baixar mídia). Implementações: `whatsapp-baileys` (produção) e `terminal` (desenvolvimento e testes). `telegram` é opcional (Fase 7). |
+| `channels/` | Interface `Channel` (receber, enviar texto e imagem, reagir, "digitando", baixar mídia). Implementações: `telegram` (produção), `terminal` (desenvolvimento e testes) e `whatsapp-baileys` (legado, D-038). |
 | `gateway/inbox` | Persiste toda mensagem recebida (idempotente pelo id externo), aplica a allowlist do dono e encaminha. |
 | `gateway/debounce` | Agrupa mensagens próximas num único **turno** (§4.2). |
 | `gateway/commands` | Parser e handlers dos comandos `/`, sem LLM. |
@@ -53,7 +53,7 @@ Um único processo Node.js (`impetus`) roda na VPS sob systemd. O "cérebro" é 
 | Camada | Escolha |
 |---|---|
 | Runtime | Node.js 24 LTS, TypeScript (ESM) executado nativamente em dev e scripts, `tsc` no build (D-003) |
-| WhatsApp | `baileys` (WhiskeySockets), **versão fixada** no lockfile |
+| Canal | Telegram Bot API (long polling, sem dependência extra); `baileys` fixado só para o canal legado |
 | DB | `better-sqlite3` com WAL, `busy_timeout=5000`, `foreign_keys=ON`, FTS5 |
 | Validação | `zod` |
 | MCP | `@modelcontextprotocol/sdk` (servidor streamable HTTP) |
@@ -72,7 +72,7 @@ Todas as dependências nativas (`better-sqlite3`, `sharp`, `@resvg/resvg-js`) t�
 
 ### 4.1 Mensagem recebida
 
-1. O Baileys entrega a mensagem. Se o remetente não está na allowlist, ela é **descartada em silêncio** (só log em nível debug).
+1. O canal (Telegram) entrega a mensagem. Se o remetente não está na allowlist, ela é **descartada em silêncio** (só log em nível debug).
 2. `inbox` grava em `messages` (`direction='in'`), deduplicando por `external_id`.
 3. Se houver imagem: baixa, normaliza (lado maior ≤ 1568 px, JPEG q85, remove EXIF) e salva em `data/media/YYYY/MM/<uuid>.jpg`.
 4. Se o texto começa com `/`, o comando executa na hora e o fluxo termina.
