@@ -209,3 +209,12 @@ Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 - [x] `scripts/simulate.ts` (`npm run simulate`): um modelo faz a persona pelo canal terminal, com banco temporário e relógio avançando entre momentos (inclui check-ins); no fim, turnos com falha e rubrica de tom (critérios da 8a) avaliada por LLM-juiz; transcrição em `data/logs/simulate/`. Consome cota: só quando pedido.
 
 **Aceite:** "pesei 74,8" um dia depois de 74,0 responde com a tendência, sem alarme; "viajo até sexta, só academia de hotel" cria um override e o check-in de quarta reflete isso, e o de sábado volta ao normal; em dia de descanso sem novidade o check-in não envia nada; "para de usar emoji" vale nos turnos seguintes e aparece em `/notas`; "café da manhã é obrigatório?" responde em até 2 linhas, coerente com `mitos.md`; evals 8a–8e verdes.
+
+## Fase 9 — Cofre Obsidian (segundo cérebro)
+
+Spec: `docs/superpowers/specs/2026-10-30-vault-second-brain-design.md` (rascunho, aguarda revisão do dono).
+
+- [ ] 9a — MVP: log diário Telegram → `Diario/Log/` com links automáticos (`src/vault/`).
+- [ ] 9b — Cofre → bot: tools `vault_search` e `vault_read` (somente leitura).
+- [ ] 9c — Banco → cofre: notas geradas de treino e nutrição.
+- [ ] 9d — Revisão semanal e sugestão de links por LLM.
