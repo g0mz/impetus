@@ -1,5 +1,5 @@
 [Unit]
-Description=Impetus — assistente pessoal (WhatsApp + Claude)
+Description=Impetus — assistente pessoal (Telegram + Claude)
 After=network-online.target
 Wants=network-online.target
 

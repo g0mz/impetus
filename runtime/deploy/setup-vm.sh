@@ -116,7 +116,7 @@ sudo systemctl enable impetus >/dev/null
 cat <<MSG
 
 Pronto. Próximos passos:
-  1. sudo nano /etc/impetus/env       (segredos)   ·  sudo nano /etc/impetus/env.app (CHANNEL=whatsapp, NODE_ENV=production, DATA_DIR=$APP_DIR/data, BRAIN_DIR=$APP_HOME/.local/state/impetus/brain)
+  1. sudo nano /etc/impetus/env       (segredos)   ·  sudo nano /etc/impetus/env.app (CHANNEL=telegram, NODE_ENV=production, DATA_DIR=$APP_DIR/data, BRAIN_DIR=$APP_HOME/.local/state/impetus/brain)
   2. WhatsApp: copie data/wa-auth do PC (com o app do PC PARADO) para $APP_DIR/data/wa-auth  —  ou rode wa:link aqui
   3. Banco do PC (opcional): pare o app do PC e copie data/impetus.db para $APP_DIR/data/
   4. sudo systemctl restart impetus && journalctl -u impetus -f
