@@ -17,6 +17,12 @@ export const err = (code: ErrorCode, message: string, candidates?: unknown[]): E
 
 export type ToolScope = 'read' | 'write';
 
+/** Escopo do token do turno: `vault` enxerga só as tools do grupo `vault`; os demais nunca as enxergam. */
+export type ToolScopeGrant = 'all' | 'read' | 'vault';
+
+export const visibleInScope = (def: Pick<ToolDef, 'group'>, scope: ToolScopeGrant): boolean =>
+  (def.group === 'vault') === (scope === 'vault');
+
 export type ToolSettings = {
   cutoffHour: number;
   timeZone: string;
@@ -45,6 +51,8 @@ export type ToolDef<S extends z.ZodType = z.ZodType> = {
   name: string;
   description: string;
   scope: ToolScope;
+  /** `vault` = só aparece em turnos de organização do cofre (escopo `vault`), nunca no chat. */
+  group?: 'vault';
   input: S;
   handler: (ctx: ToolContext, input: z.infer<S>) => Envelope;
   /** Etapa assíncrona opcional (rede) executada fora da transação, antes do handler. */
@@ -85,11 +93,14 @@ export function formatZodError(error: z.ZodError): string {
  * Executa uma tool: escopo, validação zod, transação (erro esperado desfaz as escritas da
  * chamada) e auditoria com o `turn_id` do turno. Nunca lança: devolve sempre o envelope.
  */
-type CallBase = Omit<ToolContext, 'audit'> & { toolScope: 'all' | 'read'; logger?: Logger };
+type CallBase = Omit<ToolContext, 'audit'> & { toolScope: ToolScopeGrant; logger?: Logger };
 
 export function callTool(registry: Registry, name: string, rawInput: unknown, base: CallBase): Envelope {
   const def = registry.get(name);
   if (!def) return err('NOT_FOUND', `tool desconhecida: ${name}`);
+  if (!visibleInScope(def, base.toolScope)) {
+    return err('FORBIDDEN', `${name} não está disponível neste turno`);
+  }
   if (def.scope === 'write' && base.toolScope === 'read') {
     return err('FORBIDDEN', `${name} grava dados e não está disponível neste turno (somente leitura)`);
   }

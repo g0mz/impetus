@@ -1,7 +1,7 @@
 import type { Db } from '../index.ts';
 import { nowUtcIso } from '../../time.ts';
 
-export type TurnKind = 'chat' | 'report' | 'command' | 'checkin';
+export type TurnKind = 'chat' | 'report' | 'command' | 'checkin' | 'organize';
 export type TurnStatus = 'running' | 'done' | 'failed' | 'deferred';
 
 export function createTurn(db: Db, kind: TurnKind, now = nowUtcIso()): number {

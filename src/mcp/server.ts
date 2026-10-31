@@ -6,11 +6,18 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { Hono } from 'hono';
 import type { Db } from '../db/index.ts';
 import type { Logger } from '../logger.ts';
-import { callToolAsync, type PrepareEnv, type Registry, type ToolSettings } from '../tools/registry.ts';
+import {
+  callToolAsync,
+  visibleInScope,
+  type PrepareEnv,
+  type Registry,
+  type ToolScopeGrant,
+  type ToolSettings,
+} from '../tools/registry.ts';
 
 export const MCP_SERVER_NAME = 'fit';
 
-export type TurnGrant = { turnId: number; toolScope: 'all' | 'read'; now: string };
+export type TurnGrant = { turnId: number; toolScope: ToolScopeGrant; now: string };
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -58,6 +65,7 @@ function buildServer(deps: McpDeps, grant: TurnGrant): McpServer {
     cb: (args: unknown) => Promise<{ content: { type: 'text'; text: string }[]; isError: boolean }>,
   ) => void;
   for (const def of deps.registry.values()) {
+    if (!visibleInScope(def, grant.toolScope)) continue;
     register(def.name, { description: def.description, inputSchema: def.input }, async (args) => {
       const started = Date.now();
       const env = await callToolAsync(deps.registry, def.name, args, {

@@ -1,5 +1,5 @@
-export type BrainMode = 'turn' | 'report' | 'checkin';
-export type ToolScopeName = 'all' | 'read';
+export type BrainMode = 'turn' | 'report' | 'checkin' | 'organize';
+export type ToolScopeName = 'all' | 'read' | 'vault';
 
 export type BrainInput = {
   prompt: string;
