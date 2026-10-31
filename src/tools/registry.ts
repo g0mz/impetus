@@ -138,6 +138,7 @@ export async function callToolAsync(
 ): Promise<Envelope> {
   const def = registry.get(name);
   if (!def?.prepare) return callTool(registry, name, rawInput, base);
+  if (!visibleInScope(def, base.toolScope)) return callTool(registry, name, rawInput, base);
   if (def.scope === 'write' && base.toolScope === 'read') return callTool(registry, name, rawInput, base);
   const parsed = def.input.safeParse(rawInput ?? {});
   if (!parsed.success) return err('VALIDATION', formatZodError(parsed.error));
