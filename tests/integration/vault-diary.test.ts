@@ -140,4 +140,45 @@ describe('writeDiary / syncDiary / messageDays', () => {
     expect(messageDays(db, O)).toEqual(['2026-10-28', '2026-10-29', '2026-10-30']);
     expect(messageDays(db0(), O)).toEqual([]);
   });
+
+  it('resposta longa dividida em partes (mesmo turno e mesmo texto) aparece uma vez', () => {
+    const db = db0();
+    const turnId = createTurn(db, 'chat', '2026-10-30T10:41:00Z');
+    setMessagesTurn(db, [say(db, 'in', 'me conta tudo', '2026-10-30T10:41:00Z')], turnId, 'processed');
+    say(db, 'out', 'resposta longa', '2026-10-30T10:41:20Z', { turn_id: turnId });
+    say(db, 'out', 'resposta longa', '2026-10-30T10:41:21Z', { turn_id: turnId });
+    finishTurn(db, turnId, { status: 'done' }, '2026-10-30T10:41:21Z');
+    const lines = diaryEntries(db, '2026-10-30', O).filter((l) => l.includes('**bot:**'));
+    expect(lines).toEqual(['- 07:41 **bot:** resposta longa']);
+  });
+
+  it('saídas do mesmo turno com textos diferentes são mantidas', () => {
+    const db = db0();
+    const turnId = createTurn(db, 'chat', '2026-10-30T10:41:00Z');
+    setMessagesTurn(db, [say(db, 'in', 'oi', '2026-10-30T10:41:00Z')], turnId, 'processed');
+    say(db, 'out', 'primeira parte', '2026-10-30T10:41:20Z', { turn_id: turnId });
+    say(db, 'out', 'segunda parte', '2026-10-30T10:41:21Z', { turn_id: turnId });
+    finishTurn(db, turnId, { status: 'done' }, '2026-10-30T10:41:21Z');
+    expect(diaryEntries(db, '2026-10-30', O).filter((l) => l.includes('**bot:**'))).toEqual([
+      '- 07:41 **bot:** primeira parte',
+      '- 07:41 **bot:** segunda parte',
+    ]);
+  });
+
+  it('reação ao fim da linha anterior, sem linha própria', () => {
+    const db = db0();
+    const turnId = createTurn(db, 'chat', '2026-10-30T10:41:00Z');
+    setMessagesTurn(db, [say(db, 'in', 'valeu', '2026-10-30T10:41:00Z')], turnId, 'processed');
+    say(db, 'out', '👍', '2026-10-30T10:41:05Z', { turn_id: turnId, kind: 'reaction' });
+    finishTurn(db, turnId, { status: 'done' }, '2026-10-30T10:41:05Z');
+    expect(diaryEntries(db, '2026-10-30', O)).toEqual(['- 07:41 **eu:** valeu 👍']);
+  });
+
+  it('reação sem entrada anterior no dia é descartada', () => {
+    const db = db0();
+    const turnId = createTurn(db, 'chat', '2026-10-30T10:41:00Z');
+    say(db, 'out', '👍', '2026-10-30T10:41:05Z', { turn_id: turnId, kind: 'reaction' });
+    finishTurn(db, turnId, { status: 'done' }, '2026-10-30T10:41:05Z');
+    expect(diaryEntries(db, '2026-10-30', O)).toEqual([]);
+  });
 });

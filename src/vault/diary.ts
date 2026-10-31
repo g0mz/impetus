@@ -77,12 +77,33 @@ function entry(r: Row, timeZone: string): string {
   return [head, ...rest.map((l) => `  ${l}`.trimEnd())].join('\n');
 }
 
-/** Uma entrada por mensagem do dia contábil `day` (a resposta segue o dia da pergunta). */
+/**
+ * Uma entrada por mensagem do dia contábil `day` (a resposta segue o dia da pergunta).
+ * Resposta longa é quebrada pelo canal em várias linhas `messages` com o mesmo texto: mostra uma só.
+ * Reação (kind `reaction`) não vira linha: o emoji vai para o fim da primeira linha da entrada anterior.
+ */
 export function diaryEntries(db: Db, day: string, o: DiaryOpts): string[] {
-  return rowsAround(db, day, o)
-    .filter((r) => keep(r) && toLocalDate(r.anchor_at ?? r.created_at, o.cutoffHour, o.timeZone) === day)
-    .filter((r) => body(r) !== '')
-    .map((r) => entry(r, o.timeZone));
+  const out: string[] = [];
+  let prevOut: Row | null = null;
+  for (const r of rowsAround(db, day, o)) {
+    if (!keep(r) || toLocalDate(r.anchor_at ?? r.created_at, o.cutoffHour, o.timeZone) !== day) continue;
+    if (body(r) === '') continue;
+    if (r.kind === 'reaction') {
+      const last = out.length - 1;
+      if (last >= 0) {
+        const cur = out[last]!;
+        const nl = cur.indexOf('\n');
+        out[last] = nl < 0 ? `${cur} ${body(r)}` : `${cur.slice(0, nl)} ${body(r)}${cur.slice(nl)}`;
+      }
+      continue;
+    }
+    if (r.direction === 'out') {
+      if (prevOut && prevOut.turn_id === r.turn_id && prevOut.text === r.text) continue;
+      prevOut = r;
+    }
+    out.push(entry(r, o.timeZone));
+  }
+  return out;
 }
 
 export function renderDiary(day: string, entries: string[]): string {
