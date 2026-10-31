@@ -21,6 +21,7 @@
     "chat": "node --env-file-if-exists=.env scripts/chat.ts",
     "eval": "node --env-file-if-exists=.env scripts/eval.ts",
     "simulate": "node --env-file-if-exists=.env scripts/simulate.ts",
+    "vault:backfill": "node --env-file-if-exists=.env scripts/vault-backfill.ts",
     "eval:report": "node scripts/eval-report.ts",
     "wa:link": "node --env-file-if-exists=.env scripts/wa-link.ts",
     "restore": "node scripts/restore.ts",

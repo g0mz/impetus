@@ -9,6 +9,7 @@ import { reportPeriod, type ReportKind } from '../reports/build.ts';
 import { runBackup } from '../ops/backup.ts';
 import { pruneNotes } from '../db/repos/coach-notes.ts';
 import { toLocalDate, nowUtcIso, weekdayPt } from '../time.ts';
+import { syncDiary } from '../vault/diary.ts';
 
 export type Notify = (text: string, opts?: { critical?: boolean }) => Promise<void>;
 
@@ -89,6 +90,7 @@ export type JobsInput = SchedulerDeps & {
     DATA_DIR: string;
     BACKUP_REMOTE?: string | undefined;
     BACKUP_KEEP_DAYS?: number;
+    VAULT_DIR?: string | undefined;
   };
 };
 
@@ -287,5 +289,15 @@ export function buildJobs(i: JobsInput): JobDef[] {
       },
     },
   ];
+
+  if (i.config.VAULT_DIR) {
+    const vaultDir = i.config.VAULT_DIR;
+    jobs.push({
+      // diário bruto do cofre (Fase 9a): derivado de `messages`, sem IA; só reescreve se chegou mensagem nova
+      name: 'vault.diary',
+      cron: '*/5 * * * *',
+      run: async (now) => syncDiary(i.db, vaultDir, now, { cutoffHour: i.cutoffHour, timeZone: i.timeZone }),
+    });
+  }
   return jobs;
 }

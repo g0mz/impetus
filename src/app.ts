@@ -99,6 +99,9 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     cutoffHour: config.DAY_CUTOFF_HOUR,
     timeZone: config.TZ,
     openSessionHours: config.OPEN_SESSION_HOURS,
+    ...(config.VAULT_DIR
+      ? { vaultDir: config.VAULT_DIR, vaultMaxNotes: config.VAULT_ORGANIZE_MAX_NOTES }
+      : {}),
   };
   const registry = buildRegistry();
   const tokens = createTokenStore();
