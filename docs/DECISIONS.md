@@ -314,6 +314,27 @@ inverso. A Fase 8 adota a camada de coach e mantém a de dados.
 - Docs atualizados: README, CLAUDE.md, SPEC, ARCHITECTURE (visão geral), DEPLOY (§5). Entradas históricas
   (D-020, D-026, D-028), CHANGELOG, TASKS e REFERENCES descrevem o que foi feito na época e não foram reescritos.
 
+### D-039 — Cofre Obsidian: diário gerado e organização noturna por escopo `vault` (2026-10-31, Fase 9)
+
+- **Diário** (`impetus/diario/AAAA-MM-DD.md`) é derivado de `messages` por um job de 5 min, em código, sem IA, e
+  **não passa pelo registry** (é projeção do banco, regenerável; escrita atômica e só quando muda). A resposta fica
+  no dia da pergunta (âncora no `turn_id`), então um turno que cruza a virada das 04:00 não se parte.
+- **Organização** é um turno do coach por noite (`vault.organize`, 04:30), com um escopo de token novo, `vault`: o
+  turno enxerga só `vault_list`/`vault_read`/`vault_upsert` e o chat nunca as enxerga. As tools só acrescentam em
+  notas com `origem: impetus` e só em `metas`, `objetivos`, `estudos`, `projetos`, `ideias`.
+- `audit_log` guarda `entity = 'vault_note'`, `entity_id = 0` e o caminho em `after_json` (notas são arquivos). Não
+  há undo para essa entidade; desfazer fica para uma fase seguinte.
+- **Privacidade:** o cofre sincroniza (Syncthing) com PC e celular, então dados de saúde ditos no chat ficam em texto
+  puro nesses aparelhos, enquanto o backup do banco é cifrado. Tokens e chaves são redigidos antes de gravar.
+- **Fora do diário:** comandos e as respostas deles (turno `command`), pareamento, relatórios agendados (saem sem
+  `insertMessage`) e respostas de turno falho ou adiado. Check-ins entram (são mensagens do coach).
+- **Robustez:** `/desfazer` ignora `vault_note`; o limite de notas novas vale por dia; um dia que falha duas
+  noites seguidas é pulado com aviso, para não travar os seguintes; o modo `organize` do `claude-cli` tem prompt
+  de sistema, `--max-turns` e timeout próprios.
+- **Limites aceitos no MVP:** turno adiado respondido depois de mais de um dia não reabre o diário antigo (use
+  `npm run vault:backfill`); `vault.diary` grava uma linha em `job_runs` a cada 5 min (podar depois); o custo do
+  turno `organize` não aparece no `/status`.
+
 ## Pendentes (decidir na fase indicada)
 
 - **Fase 3 — `query_sql` não consegue respeitar o timeout de 2 s em processo.** O better-sqlite3 é síncrono e não

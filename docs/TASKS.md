@@ -214,7 +214,7 @@ Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 
 Spec: `docs/superpowers/specs/2026-10-30-vault-second-brain-design.md` (aprovado em conversa; aguarda leitura do dono).
 
-- [ ] 9a — Diário bruto: job que gera `impetus/diario/AAAA-MM-DD.md` a partir de `messages` (`src/vault/`), `VAULT_DIR`, backfill.
-- [ ] 9b — Organização noturna: tools `vault_list`, `vault_read`, `vault_upsert` (só em `impetus/`) e job `vault.organize`.
+- [x] 9a — Diário bruto: job que gera `impetus/diario/AAAA-MM-DD.md` a partir de `messages` (`src/vault/`), `VAULT_DIR`, backfill.
+- [x] 9b — Organização noturna: tools `vault_list`, `vault_read`, `vault_upsert` (só em `impetus/`) e job `vault.organize`.
 - [ ] 9c — Syncthing na VM, pareado com PC e Android (mexe em produção: confirmar antes).
 - [ ] 9d — Depois: cofre → bot nas conversas, banco → cofre (treino e nutrição), revisão semanal, ocultar mensagem.

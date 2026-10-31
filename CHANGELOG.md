@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Unreleased]
 
+### Cofre Obsidian (Fase 9a e 9b)
+
+#### Adicionado
+- Diário bruto em `<VAULT_DIR>/impetus/diario/AAAA-MM-DD.md`, gerado a cada 5 min a partir de `messages`
+  (`vault.diary`), com `npm run vault:backfill` para os dias antigos.
+- Organização noturna (`vault.organize`, 04:30): o coach cria e acrescenta notas em `metas`, `objetivos`, `estudos`,
+  `projetos` e `ideias` pelas tools `vault_list`, `vault_read` e `vault_upsert`, num escopo de tools separado do chat.
+- Variáveis `VAULT_DIR`, `VAULT_ORGANIZE_MAX_NOTES` e `VAULT_ORGANIZE_CRON`. Sem `VAULT_DIR` nada disso liga.
+
 ### Ajustes de tom achados pela simulação (2026-10-21)
 
 #### Corrigido

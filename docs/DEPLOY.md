@@ -196,3 +196,16 @@ sudo systemctl start impetus                     # refaça o wa:link se a pasta 
 | Renovar token Claude | `claude setup-token` no PC → atualizar `/etc/impetus/env` → `systemctl restart impetus` |
 | Revincular WhatsApp | `systemctl stop impetus` → apagar `data/wa-auth/` → `npm run wa:link` → start |
 | Recuperação de ociosidade | Instâncias Always Free ociosas podem ser recuperadas pela Oracle; PAYG fica isento. Confira a política atual |
+
+## 9. Cofre Obsidian (opcional)
+
+Sem `VAULT_DIR` o cofre fica desligado. Para ligar, em `/etc/impetus/env.app`:
+
+```bash
+VAULT_DIR=/home/impetus/vault
+# opcionais (padrões: 10 notas novas por dia; organização às 04:30)
+VAULT_ORGANIZE_MAX_NOTES=10
+VAULT_ORGANIZE_CRON="30 4 * * *"
+```
+
+O cofre sincroniza com o PC e o celular (Syncthing, fase 9c). Seu `.stignore` deve ter `*.tmp` e `.obsidian/workspace*`.
