@@ -68,7 +68,13 @@ export function createOrganizer(deps: {
       usage: r.usage,
       error: r.ok ? null : `${r.errorKind}: ${r.errorMessage ?? ''}`.slice(0, 500),
     });
-    if (!r.ok) throw new Error(`organização de ${day} falhou (${r.errorKind}): ${r.errorMessage ?? ''}`);
+    if (!r.ok)
+      throw Object.assign(
+        new Error(`organização de ${day} falhou (${r.errorKind}): ${r.errorMessage ?? ''}`),
+        {
+          errorKind: r.errorKind,
+        },
+      );
     deps.logger.info({ turnId, day, summary: r.text.slice(0, 200) }, 'cofre organizado');
     return true;
   }
@@ -92,6 +98,9 @@ export function createOrganizer(deps: {
       try {
         if (await organizeDay(day, now)) done++;
       } catch (e) {
+        // falha de conta/cota/CLI não é do dia: não conta para o limite e não pula a noite
+        const kind = (e as { errorKind?: string }).errorKind;
+        if (kind === 'auth' || kind === 'usage_limit' || kind === 'unavailable') throw e;
         const key = `vault.organize.fails:${day}`;
         const fails = (getSetting<number>(deps.db, key) ?? 0) + 1;
         setSetting(deps.db, key, fails);

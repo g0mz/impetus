@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Brain, BrainInput } from '../../src/brain/types.ts';
+import type { Brain, BrainErrorKind, BrainInput } from '../../src/brain/types.ts';
 import { openDb } from '../../src/db/index.ts';
 import { migrate } from '../../src/db/migrate.ts';
 import { insertMessage } from '../../src/db/repos/messages.ts';
@@ -18,6 +18,7 @@ const registry = buildRegistry();
 
 function setup(
   brainRun: (input: BrainInput, call: (name: string, input: unknown) => unknown) => Promise<boolean>,
+  failKind: BrainErrorKind = 'error',
 ) {
   const vaultDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vault-org-'));
   const db = openDb(':memory:');
@@ -45,7 +46,7 @@ function setup(
       const ok = await brainRun(input, call);
       return ok
         ? { ok: true, text: 'feito', durationMs: 1 }
-        : { ok: false, text: '', errorKind: 'error', errorMessage: 'boom', durationMs: 1 };
+        : { ok: false, text: '', errorKind: failKind, errorMessage: 'boom', durationMs: 1 };
     },
   };
   const organize = createOrganizer({
@@ -128,6 +129,17 @@ describe('createOrganizer', () => {
       db.prepare("SELECT count(*) FROM turns WHERE kind = 'organize' AND status = 'failed'").pluck().get(),
     ).toBe(2);
   });
+
+  it.each(['auth', 'usage_limit', 'unavailable'] as const)(
+    'falha de %s não conta para o limite e não avança o dia',
+    async (kind) => {
+      const { db, organize, say } = setup(async () => false, kind);
+      say('oi', '2026-10-30T15:00:00Z', 'd1');
+      for (let night = 0; night < 3; night++) await expect(organize(NOW)).rejects.toThrow(/2026-10-30/);
+      expect(getSetting(db, 'vault.organized_through')).toBeUndefined();
+      expect(getSetting(db, 'vault.organize.fails:2026-10-30')).toBeUndefined();
+    },
+  );
 
   it('recupera até 3 noites perdidas por execução', async () => {
     const days: string[] = [];
