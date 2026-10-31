@@ -76,6 +76,8 @@ export type JobsInput = SchedulerDeps & {
   retryTurn: (turnId: number) => Promise<boolean>;
   /** Gera e envia o check-in da manhã; devolve o resumo para job_runs (Fase 8d). */
   checkin?: () => Promise<string>;
+  /** Organização noturna do cofre (Fase 9b); devolve o resumo para job_runs. */
+  organize?: (now: string) => Promise<string>;
   /** Espera o canal ficar pronto para enviar; false = desistiu (não gera o relatório, não gasta cota). */
   waitChannel?: () => Promise<boolean>;
   config: {
@@ -91,6 +93,7 @@ export type JobsInput = SchedulerDeps & {
     BACKUP_REMOTE?: string | undefined;
     BACKUP_KEEP_DAYS?: number;
     VAULT_DIR?: string | undefined;
+    VAULT_ORGANIZE_CRON?: string;
   };
 };
 
@@ -298,6 +301,16 @@ export function buildJobs(i: JobsInput): JobDef[] {
       cron: '*/5 * * * *',
       run: async (now) => syncDiary(i.db, vaultDir, now, { cutoffHour: i.cutoffHour, timeZone: i.timeZone }),
     });
+    if (i.organize) {
+      const organize = i.organize;
+      jobs.push({
+        // uma chamada ao coach por noite (Fase 9b); noite que falha é recuperada na seguinte
+        name: 'vault.organize',
+        cron: i.config.VAULT_ORGANIZE_CRON ?? '30 4 * * *',
+        periodKey: local,
+        run: (now) => organize(now),
+      });
+    }
   }
   return jobs;
 }

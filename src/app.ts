@@ -22,6 +22,7 @@ import { createWhisperCppTranscriber } from './media/transcribe.ts';
 import { acquireInstanceLock } from './ops/lock.ts';
 import { generateCheckin, sendCheckin } from './reports/checkin.ts';
 import { generateReport } from './reports/service.ts';
+import { createOrganizer, ORGANIZE_PROMPT_FILE } from './vault/organize.ts';
 import { buildJobs, startScheduler, type Notify } from './scheduler/jobs.ts';
 import { nowUtcIso } from './time.ts';
 import { MCP_SERVER_NAME, createTokenStore, startMcpServer } from './mcp/server.ts';
@@ -71,6 +72,9 @@ export function createBrain(config: Config, mcpUrl: string, logger: Logger): Bra
         timeoutMs: config.BRAIN_TIMEOUT_MS,
         isolationArgs: isolationArgs(config.BRAIN_ISOLATION),
         fallbackModels: { [config.MODEL_FAST]: config.MODEL_VISION },
+        modeOverrides: {
+          organize: { systemPromptFile: ORGANIZE_PROMPT_FILE, maxTurns: 30, timeoutMs: 300_000 },
+        },
         logger: logger.child({ mod: 'brain' }),
       });
     default:
@@ -211,6 +215,18 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
     if (!opts?.critical && getSetting<boolean>(db, 'proactive.paused')) return;
     await channel.send(text);
   };
+  const organize =
+    config.VAULT_DIR && brain.name !== 'none'
+      ? createOrganizer({
+          db,
+          brain,
+          tokens,
+          model: config.MODEL_REPORT,
+          cutoffHour: config.DAY_CUTOFF_HOUR,
+          timeZone: config.TZ,
+          logger: logger.child({ mod: 'vault' }),
+        })
+      : undefined;
   const scheduler = startScheduler(
     {
       db,
@@ -231,6 +247,7 @@ export async function startApp(config: Config, logger: Logger, channelOverride?:
       },
       retryTurn: handle.retryTurn,
       checkin,
+      ...(organize ? { organize } : {}),
       waitChannel: () => waitChannelOpen(channel),
       config,
     }),

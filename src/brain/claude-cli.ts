@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execa } from 'execa';
 import type { Logger } from '../logger.ts';
-import type { Brain, BrainErrorKind, BrainInput, BrainResult } from './types.ts';
+import type { Brain, BrainErrorKind, BrainInput, BrainMode, BrainResult } from './types.ts';
 
 export type ClaudeCliOptions = {
   bin: string;
@@ -22,6 +22,10 @@ export type ClaudeCliOptions = {
   isolationArgs: string[];
   /** Modelo de reserva por modelo principal (ex.: haiku → sonnet). */
   fallbackModels?: Record<string, string>;
+  /** Ajustes por modo (ex.: `organize` usa outro prompt de sistema, mais turnos e mais tempo). */
+  modeOverrides?: Partial<
+    Record<BrainMode, { systemPromptFile?: string; maxTurns?: number; timeoutMs?: number }>
+  >;
   logger: Logger;
 };
 
@@ -133,10 +137,17 @@ function childEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
+/** Opções efetivas de um modo: as base, com os ajustes de `modeOverrides[mode]` por cima. */
+export function optionsForMode(opts: ClaudeCliOptions, mode: BrainMode): ClaudeCliOptions {
+  const o = opts.modeOverrides?.[mode];
+  return o ? { ...opts, ...o } : opts;
+}
+
 export function createClaudeCliBrain(opts: ClaudeCliOptions): Brain {
   return {
     name: 'claude-cli',
     async run(input: BrainInput): Promise<BrainResult> {
+      const eff = optionsForMode(opts, input.mode);
       fs.mkdirSync(opts.cwd, { recursive: true });
       // D-016: config MCP com o token num arquivo 600, apagado ao fim (fora da linha de comando)
       const mcpConfigPath = path.join(os.tmpdir(), `impetus-mcp-${randomBytes(8).toString('hex')}.json`);
@@ -153,16 +164,16 @@ export function createClaudeCliBrain(opts: ClaudeCliOptions): Brain {
         }),
         { mode: 0o600 },
       );
-      const args = buildClaudeArgs(input, opts, mcpConfigPath);
+      const args = buildClaudeArgs(input, eff, mcpConfigPath);
       const started = Date.now();
       try {
         const r = await execa(opts.bin, args, {
           cwd: opts.cwd,
           // o caminho da base de evidências só existe para esta CLI (Read); o prompt do turno não sabe dele
-          input: opts.evidenceDir
-            ? `${input.prompt}\n<evidence_dir>${opts.evidenceDir}</evidence_dir>`
+          input: eff.evidenceDir
+            ? `${input.prompt}\n<evidence_dir>${eff.evidenceDir}</evidence_dir>`
             : input.prompt,
-          timeout: opts.timeoutMs,
+          timeout: eff.timeoutMs,
           reject: false,
           extendEnv: false,
           env: childEnv(),
@@ -174,7 +185,7 @@ export function createClaudeCliBrain(opts: ClaudeCliOptions): Brain {
             ok: false,
             text: '',
             errorKind: 'timeout',
-            errorMessage: `timeout de ${opts.timeoutMs} ms`,
+            errorMessage: `timeout de ${eff.timeoutMs} ms`,
             durationMs,
           };
         }
