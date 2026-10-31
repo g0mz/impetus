@@ -49,7 +49,7 @@ export function pendingAuditForTurn(db: Db, turnId: number): AuditEntry[] {
 export function lastTurnWithPendingWrites(db: Db): number | undefined {
   return db
     .prepare(
-      'SELECT turn_id FROM audit_log WHERE undone_at IS NULL AND turn_id IS NOT NULL ORDER BY id DESC LIMIT 1',
+      "SELECT turn_id FROM audit_log WHERE undone_at IS NULL AND turn_id IS NOT NULL AND entity <> 'vault_note' ORDER BY id DESC LIMIT 1",
     )
     .pluck()
     .get() as number | undefined;

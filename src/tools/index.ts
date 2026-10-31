@@ -5,6 +5,7 @@ import { planTools } from './plan.ts';
 import { createRegistry, type Registry, type ToolDef } from './registry.ts';
 import { nutritionTools } from './nutrition.ts';
 import { trainingTools } from './training.ts';
+import { vaultTools } from './vault.ts';
 
 /** Registro único das tools servidas pelo MCP (e reutilizáveis por providers de API). */
 export function buildRegistry(): Registry {
@@ -15,5 +16,6 @@ export function buildRegistry(): Registry {
     ...analysisTools,
     ...coachTools,
     ...planTools,
+    ...vaultTools,
   ] as unknown as ToolDef[]);
 }
