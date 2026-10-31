@@ -80,7 +80,7 @@ export const vaultUpsertTool = defineTool({
     const file = resolveNotePath(dir, rel);
     if (!file) return err('VALIDATION', BAD_PATH);
 
-    const line = `- ${day} — ${redactSecrets(entry.replace(/\s*\n\s*/g, ' '))} · [[diario/${day}]]`;
+    const line = `- ${day} — ${redactSecrets(entry.replace(/\s*[\r\n]+\s*/g, ' '))} · [[diario/${day}]]`;
     if (fs.existsSync(file)) {
       const cur = fs.readFileSync(file, 'utf8');
       if (parseNote(cur).owner !== 'impetus') return err('FORBIDDEN', `${rel} é do dono (sem origem: impetus); não edite`);

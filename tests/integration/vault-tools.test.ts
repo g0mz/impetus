@@ -84,6 +84,13 @@ describe('vault_upsert', () => {
     expect(md).toContain('- 2026-10-30 — pesou 74,8 kg · [[diario/2026-10-30]]');
   });
 
+  it('um retorno de carro solto na entrada não quebra a linha da nota', () => {
+    const { vaultDir, call } = mk();
+    call('vault_upsert', { ...input, entry: 'a\rb' });
+    const md = fs.readFileSync(path.join(vaultDir, 'impetus', 'metas', 'emagrecer.md'), 'utf8');
+    expect(md.split('\n')).toContain('- 2026-10-30 — a b · [[diario/2026-10-30]]');
+  });
+
   it('acrescenta em nota do bot, sem duplicar a mesma entrada', () => {
     const { vaultDir, call } = mk();
     call('vault_upsert', input);

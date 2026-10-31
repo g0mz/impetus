@@ -29,7 +29,7 @@ export type ToolSettings = {
   openSessionHours: number;
   /** Cofre do Obsidian (Fase 9); ausente = tools `vault_*` recusam. */
   vaultDir?: string | undefined;
-  /** Máximo de notas novas por turno de organização. */
+  /** Máximo de notas novas por dia (vale para o dia que a organização noturna processa). */
   vaultMaxNotes?: number | undefined;
 };
 

@@ -26,6 +26,12 @@ describe('VAULT_DIR', () => {
     expect(() => loadConfig({ VAULT_DIR: path.join(REPO_ROOT, 'vault') })).toThrow(/VAULT_DIR/);
   });
 
+  it('recusa caminho que contém o repositório', () => {
+    expect(() => loadConfig({ VAULT_DIR: path.dirname(REPO_ROOT), DATA_DIR: abs('data') })).toThrow(
+      /não pode conter o repositório/,
+    );
+  });
+
   it('recusa caminho dentro do DATA_DIR (e DATA_DIR dentro do cofre)', () => {
     expect(() => loadConfig({ VAULT_DIR: abs('data', 'vault'), DATA_DIR: abs('data') })).toThrow(/VAULT_DIR/);
     expect(() => loadConfig({ VAULT_DIR: abs('vault'), DATA_DIR: abs('vault', 'data') })).toThrow(

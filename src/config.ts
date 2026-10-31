@@ -144,9 +144,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       ? 'precisa ser um caminho absoluto'
       : isInside(vaultDir, REPO_ROOT)
         ? `precisa ficar fora do repositório (${REPO_ROOT})`
-        : isInside(vaultDir, dataDir) || isInside(dataDir, vaultDir)
-          ? 'não pode ficar dentro do DATA_DIR (nem conter o DATA_DIR)'
-          : null;
+        : isInside(REPO_ROOT, vaultDir)
+          ? `não pode conter o repositório (${REPO_ROOT})`
+          : isInside(vaultDir, dataDir) || isInside(dataDir, vaultDir)
+            ? 'não pode ficar dentro do DATA_DIR (nem conter o DATA_DIR)'
+            : null;
     if (why)
       throw new ConfigError(`Configuração inválida:
   - VAULT_DIR: ${why}`);
