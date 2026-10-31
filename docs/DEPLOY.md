@@ -209,3 +209,14 @@ VAULT_ORGANIZE_CRON="30 4 * * *"
 ```
 
 O cofre sincroniza com o PC e o celular (Syncthing, fase 9c). Seu `.stignore` deve ter `*.tmp` e `.obsidian/workspace*`.
+
+**Regras de operação na VM:**
+
+- `VAULT_DIR` precisa ficar sob `/home/impetus`: a unit do systemd usa `ProtectSystem=strict` com `ReadWritePaths=/home/impetus`, e qualquer outro caminho falha com `EROFS`. Crie-o como o usuário de serviço: `sudo -u impetus mkdir -p /home/impetus/vault`.
+- Backfill (`npm run vault:backfill`) sempre como `impetus`. Rodar como root cria arquivos de dono root, e os jobs de 5 em 5 minutos passam a falhar com `EACCES`. O script do npm só carrega um `.env` local, que a VM não tem; por isso carregue os arquivos de ambiente explicitamente:
+
+  ```bash
+  sudo -u impetus bash -lc 'set -a; . /etc/impetus/env; . /etc/impetus/env.app; set +a; cd ~/impetus && node scripts/vault-backfill.ts'
+  ```
+
+- Syncthing (fase 9c) também como `impetus`: os arquivos saem com modo 644 (umask 022), e um Syncthing de root deixaria o cofre com dono errado.
