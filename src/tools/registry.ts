@@ -17,7 +17,15 @@ export const err = (code: ErrorCode, message: string, candidates?: unknown[]): E
 
 export type ToolScope = 'read' | 'write';
 
-export type ToolSettings = { cutoffHour: number; timeZone: string; openSessionHours: number };
+export type ToolSettings = {
+  cutoffHour: number;
+  timeZone: string;
+  openSessionHours: number;
+  /** Cofre do Obsidian (Fase 9); ausente = tools `vault_*` recusam. */
+  vaultDir?: string | undefined;
+  /** Máximo de notas novas por turno de organização. */
+  vaultMaxNotes?: number | undefined;
+};
 
 export type ToolContext = {
   db: Db;

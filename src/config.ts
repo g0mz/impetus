@@ -69,6 +69,10 @@ const schema = z
     /** Remote rclone para o backup (ex.: gcrypt:impetus). Vazio = só backup local. */
     BACKUP_REMOTE: z.string().min(1).optional(),
     BACKUP_KEEP_DAYS: int(14),
+    /** Cofre do Obsidian (Fase 9). Sem ele, diário e organização ficam desligados. */
+    VAULT_DIR: z.string().min(1).optional(),
+    VAULT_ORGANIZE_MAX_NOTES: int(10),
+    VAULT_ORGANIZE_CRON: z.string().default('30 4 * * *'),
   })
   .superRefine((c, ctx) => {
     if (c.BRAIN_PROVIDER === 'anthropic-api' && !c.IMPETUS_ANTHROPIC_API_KEY) {
@@ -133,11 +137,27 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       `Configuração inválida:\n  - BRAIN_DIR: precisa ficar fora do repositório (${REPO_ROOT}), senão o coach herda o CLAUDE.md de desenvolvimento`,
     );
   }
+  let vaultDir: string | undefined;
+  if (c.VAULT_DIR) {
+    vaultDir = path.resolve(c.VAULT_DIR);
+    const why = !path.isAbsolute(c.VAULT_DIR)
+      ? 'precisa ser um caminho absoluto'
+      : isInside(vaultDir, REPO_ROOT)
+        ? `precisa ficar fora do repositório (${REPO_ROOT})`
+        : isInside(vaultDir, dataDir) || isInside(dataDir, vaultDir)
+          ? 'não pode ficar dentro do DATA_DIR (nem conter o DATA_DIR)'
+          : null;
+    if (why)
+      throw new ConfigError(`Configuração inválida:
+  - VAULT_DIR: ${why}`);
+  }
+
   return {
     ...c,
     DATA_DIR: dataDir,
     dbPath: path.join(dataDir, 'impetus.db'),
     BRAIN_DIR: brainDir,
+    ...(vaultDir ? { VAULT_DIR: vaultDir } : {}),
     mediaDir: path.join(dataDir, 'media'),
     waAuthDir: path.join(dataDir, 'wa-auth'),
   };
