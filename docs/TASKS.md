@@ -212,9 +212,9 @@ Pré-requisito do check-in: hoje as rotinas não têm dia da semana.
 
 ## Fase 9 — Cofre Obsidian (segundo cérebro)
 
-Spec: `docs/superpowers/specs/2026-10-30-vault-second-brain-design.md` (rascunho, aguarda revisão do dono).
+Spec: `docs/superpowers/specs/2026-10-30-vault-second-brain-design.md` (aprovado em conversa; aguarda leitura do dono).
 
-- [ ] 9a — MVP: log diário Telegram → `Diario/Log/` com links automáticos (`src/vault/`).
-- [ ] 9b — Cofre → bot: tools `vault_search` e `vault_read` (somente leitura).
-- [ ] 9c — Banco → cofre: notas geradas de treino e nutrição.
-- [ ] 9d — Revisão semanal e sugestão de links por LLM.
+- [ ] 9a — Diário bruto: job que gera `impetus/diario/AAAA-MM-DD.md` a partir de `messages` (`src/vault/`), `VAULT_DIR`, backfill.
+- [ ] 9b — Organização noturna: tools `vault_list`, `vault_read`, `vault_upsert` (só em `impetus/`) e job `vault.organize`.
+- [ ] 9c — Syncthing na VM, pareado com PC e Android (mexe em produção: confirmar antes).
+- [ ] 9d — Depois: cofre → bot nas conversas, banco → cofre (treino e nutrição), revisão semanal, ocultar mensagem.

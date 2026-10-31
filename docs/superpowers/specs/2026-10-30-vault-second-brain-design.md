@@ -1,108 +1,118 @@
 # Cofre Obsidian como segundo cérebro — design
 
-**Data:** 2026-10-30 · **Fase:** 9 · **Estado:** rascunho para revisão do dono
+**Data:** 2026-10-30 · **Fase:** 9 · **Estado:** aprovado pelo dono em conversa; aguarda leitura do spec escrito
+
+Este documento unifica o rascunho anterior (`fd28298`) com as decisões da sessão de brainstorming de 2026-10-30
+e a revisão técnica (Opus, esforço alto). Onde houve conflito, valem as decisões desta versão.
 
 ## Problema
 
 O Impetus guarda treino, nutrição e saúde em SQLite, mas o resto da vida do dono (metas, estudos, projetos, ideias)
-não tem lugar. O objetivo é um assistente pessoal único: **tudo o que é dito no Telegram fica salvo e entra no
-Obsidian**, ligado ao que já se sabe (projetos, matérias, metas), com o grafo do Obsidian como forma de revisar e
-navegar. O dono também escreve no Obsidian, e o bot precisa conseguir consultar isso.
+não tem lugar. Objetivo: um assistente pessoal único. **Tudo o que é dito no Telegram fica salvo e entra no
+Obsidian**, ligado ao que já se sabe, com o grafo do Obsidian como forma de revisar e navegar. Um usuário.
 
-Um usuário. Telegram para o dia a dia, Obsidian para ver, escrever e revisar.
+## Decisões
 
-## Decisões (confirmadas pelo dono em 2026-10-30)
-
-| Decisão | Alternativas descartadas |
+| Decisão | Descartado |
 |---|---|
-| **Todas** as mensagens do Telegram entram num log bruto do dia; o cérebro liga o que for relevante | Só o classificado como nota; só com `/nota` |
-| Cofre de produção na **VM Oracle**, sincronizado por Syncthing com PC e celular | Cofre no PC; repositório git privado |
-| O bot lê o cofre **sob demanda** (tools de busca e leitura), sem importar para o banco | Importar tudo para o SQLite; importar só notas marcadas |
-| MVP: **só Telegram → log diário com links automáticos** | Começar por cofre → bot ou por notas geradas do banco |
+| Cofre na **VM**, sincronizado com PC e Android por **Syncthing** (grátis; iPhone não suportado) | Obsidian Sync (pago), Git |
+| Captura = **diário bruto sempre** + **notas organizadas** por cima | Só bruto; só organizado |
+| Organização **uma vez por noite** (job), não a cada mensagem | A cada mensagem; sob demanda |
+| Nomes de pasta e arquivo em **minúsculas e sem acento**; texto das notas normal | `Diario/Log/` com maiúsculas |
+| Diário **gerado em código** (sem IA); organização pelo coach via tools MCP restritas | Coach escrevendo direto nos arquivos; banco regenerando o cofre |
+| Sem gancho no gateway: **job periódico** refaz o diário | Gancho no `turn-runner` |
 
 ## Princípios
 
-1. **SQLite segue sendo a fonte de verdade dos dados estruturados** (refeições, treinos, peso, notas do coach). O
-   cofre guarda texto e conhecimento; não duplica números do banco. O `.db` nunca entra na pasta sincronizada.
-2. **Cada arquivo tem um dono.** Arquivos do bot só o bot escreve; arquivos do dono só o dono escreve. Isso evita
-   conflito no Syncthing. O bot nunca edita texto do dono.
-3. Toda escrita no cofre passa por um módulo único (`src/vault/`), com `audit_log` e `turn_id` (regra 2 do
-   CLAUDE.md). `domain/` continua sem I/O.
-4. Ligações automáticas são **código determinístico**, não LLM, no MVP.
+1. SQLite continua sendo a fonte de verdade dos dados estruturados. O `.db` nunca entra na pasta sincronizada.
+2. **Cada arquivo tem um dono.** Diário: só o bot (gerado). Notas com `origem: impetus`: só o bot, só acrescentando.
+   Todo o resto do cofre: só o dono. O bot nunca edita texto do dono.
+3. Escrita no cofre só por `src/vault/` (borda fina de I/O) com render puro; as tools de organização passam por
+   `tools/registry` com zod, `audit_log` e `turn_id` (regra 2). `domain/` continua sem I/O.
+4. Falha no cofre nunca derruba turno nem job do bot: loga aviso e segue.
+5. Sem `VAULT_DIR`, o cofre inteiro fica desligado e o bot se comporta como hoje.
 
-## Estrutura do cofre
+## Estrutura
 
 ```
-Impetus Vault/
-├── Diario/
-│   ├── Log/AAAA-MM-DD.md   # DONO: bot (append-only). Mensagens do dia.
-│   └── AAAA-MM-DD.md       # DONO: usuário. Nota diária; linka o log do dia.
-├── 00-Inbox/               # usuário e bot (arquivos novos, nunca edição cruzada)
-├── 10-Disciplinas/  20-Projetos/  30-Wiki/  40-Referencias/  Perfil/  Templates/
+<VAULT_DIR>/impetus/
+├── diario/AAAA-MM-DD.md     # gerado, só o bot
+├── metas/  objetivos/  estudos/  projetos/  ideias/      # notas organizadas (Fase 9b)
+└── treino/  nutricao/  corpo/                            # geradas do banco (fase posterior)
 ```
 
-## MVP — Telegram → log diário
+O dono pode ter outras pastas fora de `impetus/`; o bot não as escreve.
 
-### Formato do log (`Diario/Log/AAAA-MM-DD.md`)
+## 9a — Diário bruto
 
-```markdown
----
-type: log
-date: 2026-10-30
-tags: [log]
----
-# Log 2026-10-30
-- 07:41 **eu:** acordei 7h, vou treinar [[Lower A]] hoje
-- 07:41 **bot:** Bom treino! ...
-- 14:05 **eu:** ideia pro [[Impetus]]: ligar o [[Hackathon Nort Hub 2026]] ...
-```
+`src/vault/diary.ts` (render puro) e `src/vault/fs.ts` (escrita). Lê `messages` e gera `impetus/diario/AAAA-MM-DD.md`.
 
-- O "dia" segue `local_date` (America/Sao_Paulo, virada em `DAY_CUTOFF_HOUR`), via `src/time.ts`.
-- Entram mensagens do dono e a resposta final do bot. Foto vira `[foto]`, áudio entra como a transcrição.
-- Resposta do bot longa é truncada no log (limite configurável); o texto completo continua em `messages`.
-- Comandos `/` não entram no log, exceto `/nota` quando existir.
+- **Quando:** job a cada 5 min (`vault.diary`) refaz hoje e ontem, mas só se `max(messages.id)` mudou desde a última
+  execução. Sem gancho no gateway. O dia segue `local_date` (America/Sao_Paulo, virada às `DAY_CUTOFF_HOUR`) via
+  `src/time.ts`. A resposta fica no dia da primeira mensagem de entrada do mesmo `turn_id`, para um turno que cruza a
+  virada não ser partido.
+- **Conteúdo:** uma linha por mensagem (`- 07:41 **eu:** ...` / `**bot:**`). Áudio vira `[áudio] <transcrição>`,
+  foto vira `[foto] <legenda>`; `media_path` nunca aparece. Reação vira o emoji no fim da linha anterior.
+- **Fora do diário:** entradas que começam com `/`, a mensagem de pareamento, respostas de turnos `failed` ou
+  `deferred`, saídas com `turn_id` nulo e relatórios agendados (saem por `notify`, sem `insertMessage`; limitação
+  aceita no MVP).
+- **Arquivo gerado:** frontmatter `gerado: true`, `tags: [diario]`. Texto do usuário é escapado (`# [ ] |`, `[[`),
+  continuações de várias linhas indentadas, e o arquivo nunca começa com `---` fora do frontmatter. O render aplica ao
+  texto a mesma redação de tokens e chaves do logger.
+- **Escrita:** grava em arquivo temporário no mesmo diretório e faz `rename`; só escreve se o hash do conteúdo mudou
+  (não mexe no `mtime`, não dispara o Syncthing à toa). `.stignore` exclui `*.tmp`.
+- **Backfill:** `npm run vault:backfill` gera os diários dos dias já existentes no banco.
 
-### Links automáticos
+## 9b — Organização noturna
 
-`src/vault/linker.ts` indexa título e `aliases` (frontmatter) das notas de `Perfil/`, `10-Disciplinas/`,
-`20-Projetos/` e `30-Wiki/`, e envolve em `[[ ]]` a primeira ocorrência de cada termo por linha. Regras:
-sem diferenciar maiúsculas, palavra inteira, nunca dentro de código ou de link existente, termos com menos de 3
-letras ignorados. O índice é recarregado quando o `mtime` de uma pasta muda.
+- **Job** `vault.organize` às 04:30 (`VAULT_ORGANIZE_CRON`), uma chamada ao coach por noite com `MODEL_REPORT`.
+  O setting `vault.organized_through` guarda o último dia organizado; noite falha é recuperada na seguinte.
+- **Entrada:** diário do dia fechado + índice das notas de `impetus/` (título, aliases, caminho). O diário entra em
+  tag própria, tratado como dado, nunca como instrução. Prompt em `runtime/prompts/vault-organize.md`.
+- **Tools** (só em `impetus/`; recusam `..`, caminho absoluto e pastas fora da lista):
+  - `vault_list`: índice de notas.
+  - `vault_read`: lê uma nota.
+  - `vault_upsert`: cria nota (frontmatter com `origem: impetus`) ou **acrescenta** uma entrada datada em nota que
+    tenha `origem: impetus`. Cada entrada linka `[[diario/AAAA-MM-DD]]` e as notas relacionadas.
+- **Posse:** nota sem `origem: impetus` é do dono; o coach não toca, só cita no resumo. O dono assume uma nota do bot
+  apagando essa linha.
+- **Limites:** máximo `VAULT_ORGANIZE_MAX_NOTES` notas novas por noite (padrão 10) e tamanho máximo por nota.
+- **Controle:** cada alteração vai para o `audit_log`. Um comando `/cofre` listando o da última noite é desejável;
+  desfazer fica para depois.
+- Escreve em `metas`, `objetivos`, `estudos`, `projetos`, `ideias`. `treino`, `nutricao` e `corpo` ficam para a fase
+  em que o banco gera notas.
 
-### Arquivos novos
+## 9c — Sincronização
 
-- `src/vault/log.ts`: `appendLog({ at, who, text, turnId })`. Cria o arquivo do dia com frontmatter se não existir.
-  Escrita por `appendFile` (atômica o bastante para linha única). Falha no cofre **nunca** derruba o turno: loga
-  aviso e segue.
-- `src/vault/linker.ts`: indexação e `linkText(text)`. Puro, com testes.
-- Config: `VAULT_DIR` (opcional; sem ele, tudo isto fica desligado) e `VAULT_LOG_MAX_REPLY` (padrão 400).
-- Gancho no `turn-runner` depois do envio da resposta.
+Instalar Syncthing na VM (memória: dezenas de MB; hoje há ~490 MB livres com `MemoryMax=900M`), parear com PC e
+Android, `.stignore` com `*.tmp` e `.obsidian/workspace*`. É a única etapa que mexe em produção: exige confirmação
+do dono antes. Validar `VAULT_DIR`: absoluto, fora do repositório e do `DATA_DIR` (como `BRAIN_DIR`).
 
-### Testes
+## Fases seguintes
 
-Unit: linker (casos de borda acima). Integration: turno no canal `terminal` com `VAULT_DIR` temporário gera o log
-esperado; cofre indisponível não quebra o turno; virada do dia respeita `DAY_CUTOFF_HOUR`.
+1. **Cofre → bot:** tools de busca e leitura nas conversas, só leitura, citando a nota usada.
+2. **Banco → cofre:** notas geradas de treino e nutrição, regeneráveis.
+3. **Revisão semanal:** job que propõe notas permanentes e conexões.
+4. **Ocultar mensagem:** `messages.hidden_at` e comando, para o dono tirar algo do diário (hoje não há soft delete
+   em `messages`).
 
-## Fases seguintes (fora do MVP)
+## Configuração
 
-1. **Cofre → bot:** tools MCP de leitura (`vault_search`, `vault_read`), restritas a `VAULT_DIR`, só leitura, sem
-   `Privado/`. Entram no prompt como mais uma fonte; o cérebro cita a nota usada.
-2. **Banco → cofre:** notas geradas (resumo semanal de treino e nutrição, progressão de carga) em `30-Wiki/gerado/`,
-   regeneráveis, marcadas `<!-- agente -->`.
-3. **Revisão:** job semanal que lê o log, propõe notas permanentes e conexões e deixa o resultado no Inbox.
-4. **Ligação por LLM:** sugerir links e tags que o linker determinístico não pega.
+`VAULT_DIR` (opcional), `VAULT_ORGANIZE_MAX_NOTES` (10), `VAULT_ORGANIZE_CRON` (`30 4 * * *`).
+
+## Testes
+
+- Unit: render do diário (snapshot), filtros, virada das 4h, escape de markdown, redação de tokens.
+- Integration (banco `:memory:` + pasta temporária): só regrava quando muda; tools recusam caminho fora de
+  `impetus/` e nota sem `origem: impetus`; job noturno recupera noite perdida; cofre indisponível não quebra turno.
+- Eval do coach para a organização, só sob pedido (consome cota).
 
 ## Riscos
 
 | Risco | Mitigação |
 |---|---|
-| Conflito de Syncthing | Donos separados por arquivo; log só com append; `.stignore` já exclui workspace e cache |
-| Saúde e família sincronizadas com VM e celular | Pasta `Privado/` fora do Syncthing e fora das tools de leitura; **decidir o que vai nela** |
-| Log vira ruído | Só texto curto; revisão semanal promove o que importa |
-| Cofre cheio de links falsos | Primeira ocorrência por linha, lista de termos curta e revisável |
-| Prompt injection via notas do cofre (fase 1) | Conteúdo lido entra em tag própria, tratado como dado; escrita só por tools do registry |
-
-## Perguntas em aberto
-
-- O log inclui dados de saúde ditos no chat (peso, sono)? Proposta: sim, o cofre é privado; revisar quando houver `Privado/`.
-- Resposta do bot no log: só o início ou nenhuma? Proposta: início truncado.
+| Conflito de Syncthing | Donos por arquivo; diário só gerado; escrita atômica e só quando muda |
+| Saúde em texto puro no celular e no PC (o backup é cifrado) | Registrar em `DECISIONS.md`; redação de tokens; dono ciente |
+| Notas com links falsos | Limite por noite, só acrescenta, `audit_log`, dono pode assumir ou apagar |
+| Prompt injection pelo diário ou por notas | Conteúdo em tag de dado; escrita só por tools do registry restritas |
+| Syncthing em 1 GB | Monitorar memória após a 9c; `MemoryMax` já protege o bot |
