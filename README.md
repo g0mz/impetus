@@ -1,32 +1,67 @@
-# Impetus — Spec Kit
+# Impetus
 
-Assistente pessoal de treino, nutrição e saúde via Telegram, para **um único usuário**, com **custo zero** além da assinatura do Claude que você já paga.
+Agente de IA pessoal de treino, nutrição e saúde que conversa pelo Telegram. Ele registra refeições (por texto ou foto), treinos e dados do relógio, e manda relatórios e um check-in pela manhã. Foi feito para um único usuário, com custo zero além da assinatura do Claude.
 
-Este kit é o pacote de especificação que você entrega ao Claude Code para desenvolver o projeto do zero.
+Projeto pessoal, desenvolvido com Claude Code a partir de uma especificação escrita antes do código (`docs/`).
 
-## Como usar
+## Como funciona
 
-1. Crie um repositório vazio (`impetus/`) e copie **todo o conteúdo deste kit** para a raiz.
-2. Abra o Claude Code na raiz do repositório.
-3. Cole o prompt de `KICKOFF.md`. O Claude Code vai ler as specs e executar a **Fase 0** de `docs/TASKS.md`.
-4. A cada fase, revise o resultado e use o prompt da fase seguinte (também em `KICKOFF.md`).
+```
+Telegram / terminal
+        │
+        ▼
+   gateway (Node.js) ── debounce, roteamento de modelo, contexto do turno
+        │
+        ▼
+   cérebro: Claude (LLM) via `claude -p`
+        │  tool calling
+        ▼
+   servidor MCP próprio ──► domínio + SQLite (refeições, treinos, saúde, metas)
+```
 
-## O que tem aqui
+- **Agente com ferramentas (MCP):** o LLM não escreve no banco diretamente. Ele chama ferramentas expostas por um servidor MCP que roda no mesmo processo, e o gateway sabe a qual turno cada escrita pertence. Isso permite desfazer ou corrigir um registro respondendo à mensagem do bot.
+- **Contexto montado por turno:** cada chamada recebe as últimas mensagens com data, um resumo do dia e regras de produto, para o modelo não "adivinhar" datas ou totais.
+- **Roteamento de modelo:** tarefas simples vão para um modelo mais barato, e as que exigem raciocínio vão para um maior, economizando cota.
+- **Memória de longo prazo:** as conversas viram um diário em Markdown (cofre Obsidian), e toda noite o agente organiza metas, objetivos e ideias em notas, com um conjunto de ferramentas separado do chat.
+- **Interface plugável:** canal (Telegram, terminal; WhatsApp via Baileys foi usado no início) e provedor de LLM são adaptadores trocáveis.
+
+## Nutrição com IA, sem chute
+
+Estudos indicam erro alto quando um LLM estima calorias só pela foto. Por isso a estimativa é feita em duas etapas: o modelo primeiro identifica os alimentos e as porções, e o código calcula os valores com base na tabela brasileira **TACO** e em medidas caseiras do IBGE. Cada item guarda a origem do valor (informado pelo usuário, estimado pelo texto ou pela foto).
+
+## Avaliação (evals)
+
+- **Casos de teste do agente** (`evals/cases/`): mensagens reais de uso com a resposta esperada, rodados com `npm run eval`.
+- **Simulação por personas** (`evals/personas/`): um LLM faz o papel do usuário ao longo de vários dias, contra o gateway real, com banco em memória e relógio simulado. Um **LLM-juiz** dá nota de 1 a 5 em 8 critérios de tom e memória, e a simulação falha se algum turno der erro ou tiver nota baixa. Os problemas encontrados assim viraram correções e novos casos de teste (ver `CHANGELOG.md`).
+- **Testes automatizados** de unidade e integração com Vitest.
+
+## Stack
+
+TypeScript, Node.js, Claude (Claude Code em modo headless), MCP (Model Context Protocol), SQLite, Telegram Bot API, Vitest. Dados de saúde chegam do relógio via Health Connect.
+
+## Rodar localmente
+
+Requer Node (versão em `.nvmrc`) e o Claude Code autenticado.
+
+```bash
+npm install
+cp runtime/.env.example .env   # preencha as variáveis
+npm run db:migrate && npm run db:seed
+npm run chat                   # conversa pelo terminal, sem WhatsApp
+npm run check                  # typecheck, lint e testes
+```
+
+## Documentação
 
 | Arquivo | Conteúdo |
 |---|---|
-| `KICKOFF.md` | Prompts prontos para colar no Claude Code (início e cada fase) |
-| `CLAUDE.md` | Memória do projeto para o Claude Code: stack, convenções, regras, comandos |
-| `docs/SPEC.md` | Produto: objetivos, não-objetivos, casos de uso e conversas de exemplo |
-| `docs/ARCHITECTURE.md` | Componentes, fluxos, decisões (ADRs) e riscos |
-| `docs/DATA_MODEL.md` | Schema SQLite completo |
-| `docs/TOOLS.md` | Contratos das tools MCP que o cérebro (Claude) usa |
-| `docs/NUTRITION.md` | Protocolo de estimativa de refeições (texto + foto) |
-| `docs/REPORTS.md` | Métricas, fórmulas, detectores de insight e relatórios |
-| `docs/DEPLOY.md` | Oracle Cloud, autenticação do Claude Code, systemd, rede, backup |
-| `docs/TASKS.md` | Plano faseado com critérios de aceite |
-| `docs/REFERENCES.md` | Fontes da pesquisa que embasou as decisões |
-| `runtime/` | Arquivos usados pelo app em produção: system prompt do coach, `.env.example`, unit do systemd |
+| `docs/SPEC.md` | Produto: objetivos, casos de uso, conversas de exemplo |
+| `docs/ARCHITECTURE.md` | Componentes, fluxos, decisões e riscos |
+| `docs/DATA_MODEL.md` | Esquema do banco |
+| `docs/TOOLS.md` | Contratos das ferramentas MCP |
+| `docs/NUTRITION.md` | Protocolo de estimativa de refeições |
+| `docs/DECISIONS.md` | Registro de decisões ao longo do projeto |
+| `CHANGELOG.md` | Histórico por fase |
 
 ## Decisões principais
 
@@ -41,18 +76,4 @@ Este kit é o pacote de especificação que você entrega ao Claude Code para de
 | Hospedagem | **Oracle A1** (2 OCPU / 12 GB, limite Always Free atual) | Cabe tudo; fallback em E2.1.Micro com swap |
 | Matemática | Sempre em **código**, nunca no LLM | Macros, e1RM, médias e tendências são determinísticos e testáveis |
 
-## Custos
-
-| Item | Custo |
-|---|---|
-| Oracle A1 dentro do Always Free | R$ 0 |
-| Telegram Bot API | R$ 0 |
-| HC Webhook, TACO, free-exercise-db, Open Food Facts | R$ 0 |
-| Claude | Consome a cota da sua assinatura atual |
-| Chip secundário | O que você já pagar no plano pré |
-
-## Riscos que você está aceitando
-
-- **Token do bot:** `TELEGRAM_BOT_TOKEN` é credencial; fica só no ambiente da VM e nunca em logs. Só o dono pareado é atendido.
-- **Regras de cobrança do `claude -p`:** a Anthropic anunciou e depois suspendeu em 2026 a separação do uso programático da cota da assinatura. Hoje o `-p` consome a assinatura, mas o cérebro é plugável (API ou Gemini) caso isso mude.
-- **Precisão nutricional:** estimativa por foto serve para tendência, não para medida exata. O protocolo minimiza o erro, não o elimina.
+O antigo guia de desenvolvimento em fases está em `KICKOFF.md` e `docs/TASKS.md`.
